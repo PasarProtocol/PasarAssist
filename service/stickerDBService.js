@@ -280,7 +280,7 @@ module.exports = {
                     $sort: {blockNumber: -1}
                 },
                 {
-                    $limit: 5,
+                    $limit: pageSize,
                 },
                 {
                     $project: {"_id": 0},
