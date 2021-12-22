@@ -314,28 +314,22 @@ module.exports = {
 
     gettv: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        let date = new Date();
-        let today_timestamp = Math.floor(date.getTime() / 1000);
-        date.setDate(date.getDate() - 1);
-        let yesterday_timestamp = Math.floor(date.getTime() / 1000);
-        
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            console.log(today_timestamp, yesterday_timestamp);
+            const collection = mongoClient.db(config.dbName).collection('pasar_order');
             let result = await collection.aggregate([
                 { 
                     $match :{
-                        timestamp : {$gte: yesterday_timestamp, $lte: today_timestamp}
+                        orderState: "2"
                     }
-                },
-                {
-                    $group: { 
-                        _id  : "$status", 
-                        value: { $sum: 1 }
-                    }
-                } 
+                }
             ]).toArray();
+            let sum = 0;
+            result.forEach(ele => {
+                sum += ele['price'] * ele['amount'];
+            });
+            sum = Math.floor(sum / Math.pow(10, 18));
+            result = {'data' : sum};
             return result;
         } catch (err) {
             logger.error(err);
