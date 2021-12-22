@@ -332,5 +332,25 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    walletaddressnum: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_address_did');
+            return await collection.aggregate([
+                {
+                    $group: { 
+                        _id  : "$status",
+                        value: { $sum:1 }
+                    }
+                }
+            ]).toArray();
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
     }
 }
