@@ -163,4 +163,14 @@ router.get('/listTrans', function(req, res) {
     })
 });
 
+router.get('/gettv', function(req, res) {
+    stickerDBService.gettv().then(result => {
+        console.log(result);
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code : 500, message: 'server error'});
+    })
+});
+
 module.exports = router;

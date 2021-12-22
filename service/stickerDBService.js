@@ -310,5 +310,37 @@ module.exports = {
         } finally {
             await client.close();
         }
+    },
+
+    gettv: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let date = new Date();
+        let today_timestamp = Math.floor(date.getTime() / 1000);
+        date.setDate(date.getDate() - 1);
+        let yesterday_timestamp = Math.floor(date.getTime() / 1000);
+        
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            console.log(today_timestamp, yesterday_timestamp);
+            let result = await collection.aggregate([
+                { 
+                    $match :{
+                        timestamp : {$gte: yesterday_timestamp, $lte: today_timestamp}
+                    }
+                },
+                {
+                    $group: { 
+                        _id  : "$status", 
+                        value: { $sum: 1 }
+                    }
+                } 
+            ]).toArray();
+            return result;
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
     }
 }

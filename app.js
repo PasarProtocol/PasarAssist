@@ -8,6 +8,7 @@ let galleriaApi = require('./routes/galleriaApi');
 let apiV2 = require('./routes/apiV2');
 let jobs = require('./jobs');
 let log4js = require('log4js');
+let cors = require('cors');
 
 log4js.configure({
     appenders: {
@@ -28,7 +29,9 @@ app.use(log4js.connectLogger(logger, { level: log4js.levels.INFO }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-
+app.use(cors({
+    origin: 'http://localhost:3001'
+}));
 app.use('/feeds/api/v1', indexRouter);
 app.use('/pasar/api/v1', pasarApi);
 app.use('/sticker/api/v1', stickerApi);
