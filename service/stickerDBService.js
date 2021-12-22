@@ -315,4 +315,24 @@ module.exports = {
             await mongoClient.close();
         }
     },
+
+    relatednftnum: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let result = await collection.aggregate([
+                {
+                    $group: { 
+                        _id  : "$tokenId"
+                    }
+                }
+            ]).toArray();
+            return {value: result.length}
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    }
 }
