@@ -189,8 +189,6 @@ module.exports = {
 
                 let tokenIds = [];
                 result.map(item => tokenIds.push(item.tokenId));
-
-                let collection = client.db(config.dbName).collection('pasar_panel_event');
             }
             return {code: 200, message: 'success', data: {result}};
         } catch (err) {
