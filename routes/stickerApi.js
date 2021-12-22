@@ -145,4 +145,13 @@ router.get('/nftnumber', function(req, res) {
     })
 });
 
+router.get('/relatednftnum', function(req, res) {
+
+    stickerDBService.relatednftnum().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;
