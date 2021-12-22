@@ -38,27 +38,6 @@ module.exports = {
         }
     },
 
-    listTransactions: async function(pageNum, pageSize) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-
-            let match = {
-                from: {$ne: '0x0000000000000000000000000000000000000000'},
-                to: {$nin: ['0x0000000000000000000000000000000000000000', config.pasarContract]},
-            }
-            let total = await collection.find(match).count();
-            let result = await collection.find(match).sort({blockNumber: -1})
-                .project({"_id": 0}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
-            return {code: 200, message: 'success', data: {total, result}};
-        } catch (err) {
-            logger.error(err);
-        } finally {
-            await mongoClient.close();
-        }
-    },
-
     addEvent: async function(transferEvent) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -207,6 +186,11 @@ module.exports = {
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
                             adult: "$token.adult"}}
                 ]).toArray();
+
+                let tokenIds = [];
+                result.map(item => tokenIds.push(item.tokenId));
+
+                let collection = client.db(config.dbName).collection('pasar_panel_event');
             }
             return {code: 200, message: 'success', data: {result}};
         } catch (err) {
@@ -286,7 +270,7 @@ module.exports = {
                     $project: {"_id": 0},
                 },
                 {
-                    $skip: (pageNum - 1) * pageSize 
+                    $skip: (pageNum - 1) * pageSize
                 }
             ]).toArray();
             let result = [];
@@ -300,7 +284,7 @@ module.exports = {
                     results[i]['method'] = 'CREATE';
                 if(results[i]['to'] == 0x0000000000000000000000000000000000000000)
                     results[i]['method'] = 'DELETE';
-                result.push({...results[i] ,...token_info});                
+                result.push({...results[i] ,...token_info});
             }
             let total = await collection.find().count();
             return {code: 200, message: 'success', data: {total, result}};
