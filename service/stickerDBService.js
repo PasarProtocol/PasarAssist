@@ -274,6 +274,7 @@ module.exports = {
                 { $limit: pageSize },
                 { $skip: (pageNum - 1) * pageSize }
             ]).toArray();
+            client.db(config.dbName).collection('transactiontemp').drop();
             let total = await collection.find().count();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
