@@ -165,6 +165,16 @@ router.get('/walletaddressnum', function(req, res) {
     })
 });
 
+router.get('/gettv', function(req, res) {
+    stickerDBService.gettv().then(result => {
+        console.log(result);
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code : 500, message: 'server error'});   
+    })
+});
+
 router.get('/getTranVolume', function(req, res) {
     let tokenId = req.query.tokenId;
     let type = req.query.type;
