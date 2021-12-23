@@ -342,5 +342,32 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    getTranVolume: async function(tokenId, type) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = mongoClient.db(config.dbName).collection('pasar_order');
+            await collection.find({}).forEach( function (x) {
+                x.updateTime = new Date(x.updateTime * 1000);
+                x.price = type == 0 ? parseInt(x.price) : parseInt(x.royaltyFee);
+                mongoClient.db(config.dbName).collection('token_temp').save(x);
+            });
+            collection =  mongoClient.db(config.dbName).collection('token_temp');
+            let result = await collection.aggregate([
+            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
+            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
+            { $sort: {onlyDate: -1} },
+            { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}]} }
+            ]).toArray();
+            await collection.drop();
+            return result;
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
     }
 }

@@ -164,4 +164,17 @@ router.get('/walletaddressnum', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+router.get('/getTranVolume', function(req, res) {
+    let tokenId = req.query.tokenId;
+    let type = req.query.type;
+    tokenId = tokenId ? tokenId: "^";
+    type = type ? type: 0;
+    stickerDBService.getTranVolume(tokenId, type).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;
