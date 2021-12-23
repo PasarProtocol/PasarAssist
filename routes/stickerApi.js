@@ -188,4 +188,15 @@ router.get('/getTranVolume', function(req, res) {
     })
 });
 
+router.get('/getTranDetails', function(req, res) {
+    let tokenId = req.query.tokenId;
+    let method = req.query.method;
+    let timeOrder = req.query.timeOrder;
+    stickerDBService.getTranDetails(tokenId, method, timeOrder).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;
