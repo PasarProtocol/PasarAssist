@@ -453,5 +453,21 @@ module.exports = {
         } finally {
             await client.close();
         }
+    },
+      
+    getCollectibleByTokenId: async function(tokenId) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            let collection = client.db(config.dbName).collection('pasar_token');
+
+            let result = await collection.find({tokenId: tokenId.toString()}).toArray();
+            return {code: 200, message: 'success', data: result[0]};\
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
     }
 }

@@ -193,10 +193,21 @@ router.get('/getTranDetails', function(req, res) {
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
     stickerDBService.getTranDetails(tokenId, method, timeOrder).then(result => {
+      res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/getCollectibleByTokenId', function(req, res) {
+    let tokenId = req.query.tokenId;
+    stickerDBService.getCollectibleByTokenId(tokenId).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
         res.json({code: 500, message: 'server error'});
     })
 });
+
 module.exports = router;
