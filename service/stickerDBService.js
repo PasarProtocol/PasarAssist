@@ -239,51 +239,41 @@ module.exports = {
     },
 
     listTrans: async function(pageNum, pageSize) {
+        let projectToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
+        tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
+        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+        name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
+        thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
+        adult: "$token.adult", amount: "$order.amount", royaltyfee: "$order.royaltyFee", price: "$order.price", 
+        orderstate: "$order.orderState", orderid: "$order.orderId"};
+
+        let projectTokenFinal = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
+        tokenIndex: 1, quantity: 1, royalties: 1, royaltyOwner: 1, createTime: 1, tokenIdHex: 1, name: 1, description: 1, kind: 1, type: 1,
+        thumbnail: 1, asset: 1, size: 1, tokenDid: 1, adult: 1, amount: 1, royaltyfee: 1, price: 1, 
+        platformfee: "$platformfee.platformFee", orderstate: 1, orderid: 1}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            let results = await collection.aggregate([
-                {
-                    $lookup:
-                    {
-                        from : 'pasar_token',
-                        localField: 'tokenId',
-                        foreignField: 'tokenId',
-                        as: 'pasar_token_info'
-                    }
-                },
-                {
-                    $match:{
-                        "pasar_token_info": {$size : 1}
-                    }
-                },
-                {
-                    $sort: {blockNumber: -1}
-                },
-                {
-                    $limit: pageSize,
-                },
-                {
-                    $project: {"_id": 0},
-                },
-                {
-                    $skip: (pageNum - 1) * pageSize
-                }
+            await collection.aggregate([
+                { $lookup: {from : 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                { $unwind: "$token" },
+                { $lookup:{from : 'pasar_order', localField: 'tokenId', foreignField: 'tokenId', localField: 'from', foreignField: 'sellerAddr',
+                        localField: 'to', foreignField: 'buyerAddr', localField: 'blockNumber', foreignField: 'blockNumber', as: 'order'} },
+                { $unwind:"$order" },
+                { $project: projectToken },
+                { $match:{$and : [{"orderstate" : "2"}]} },
+                { $out: "transactiontemp" }
             ]).toArray();
-            let result = [];
-            for(var i = 0; i < results.length; i++) {
-                let token_info = results[i]['pasar_token_info'][0];
-                if(token_info == undefined)
-                    continue;
-                delete results[i]['pasar_token_info'];
-                results[i]['method'] = 'TRANSFER';
-                if(results[i]['from'] == 0x0000000000000000000000000000000000000000)
-                    results[i]['method'] = 'CREATE';
-                if(results[i]['to'] == 0x0000000000000000000000000000000000000000)
-                    results[i]['method'] = 'DELETE';
-                result.push({...results[i] ,...token_info});
-            }
+            
+            let result = await client.db(config.dbName).collection('transactiontemp').aggregate([
+                { $lookup:{from: "pasar_order_platform_fee", localField: "orderid", foreignField: "orderId", as: "platformfee"} },
+                { $unwind: "$platformfee" },
+                { $project: projectTokenFinal },
+                { $sort: {timestamp: -1} },
+                { $limit: pageSize },
+                { $skip: (pageNum - 1) * pageSize }
+            ]).toArray();
             let total = await collection.find().count();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
