@@ -210,4 +210,48 @@ router.get('/getCollectibleByTokenId', function(req, res) {
     })
 });
 
+router.get('/getTranvolumeandTotalRoyaltyByWalletAddr', function(req, res) {
+    let walletAddr = req.query.walletAddr;
+    let type = req.query.type;
+    walletAddr = walletAddr ? walletAddr.toString(): "^";
+    type = type ? type: 0;
+    stickerDBService.getTranvolumeandTotalRoyaltyByWalletAddr(walletAddr, type).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/getTranDetailsByWalletAddr', function(req, res) {
+    let walletAddr = req.query.walletAddr.toString();
+    let method = req.query.method;
+    let timeOrder = req.query.timeOrder;
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+    let keyword = req.query.keyword;
+
+    let pageNum, pageSize;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+    }catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+    stickerDBService.getTranDetailsByWalletAddr(walletAddr, method, timeOrder, keyword, pageNum, pageSize).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;

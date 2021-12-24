@@ -290,7 +290,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            return await collection.aggregate([
+            let result = await collection.aggregate([
                 {
                     $group: { 
                         _id  : "$status", 
@@ -298,6 +298,7 @@ module.exports = {
                     }
                 } 
             ]).toArray();
+            return {code: 200, message: 'success', data: {result}};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -330,7 +331,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_address_did');
-            return await collection.aggregate([
+            let result = await collection.aggregate([
                 {
                     $group: { 
                         _id  : "$status",
@@ -338,6 +339,7 @@ module.exports = {
                     }
                 }
             ]).toArray();
+            return {code: 200, message: 'success', data: {result}};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -362,7 +364,7 @@ module.exports = {
                 sum += ele['price'] * ele['amount'];
             });
             sum = Math.floor(sum / Math.pow(10, 18));
-            result = {'data' : sum};
+            result = {code: 200, message: 'success', data : sum};
           return result;
         } catch (err) {
             logger.error(err);
@@ -384,13 +386,13 @@ module.exports = {
             collection =  mongoClient.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
             { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
-            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
             { $sort: {onlyDate: -1} },
-            { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}]} }
+            { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
+            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
             ]).toArray();
             await collection.drop();
-            return result;
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -446,7 +448,7 @@ module.exports = {
                 { $sort: {timestamp: parseInt(timeOrder)} }
             ]).toArray();
             client.db(config.dbName).collection('transactiontemp').drop();
-            return {code: 200, message: 'success', data: {result}};
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -462,10 +464,95 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_token');
 
             let result = await collection.find({tokenId: tokenId.toString()}).toArray();
-            return {code: 200, message: 'success', data: result[0]};\
+            return {code: 200, message: 'success', data: result[0]};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
+    },
+
+    getTranvolumeandTotalRoyaltyByWalletAddr: async function(walletAddr, type) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            let collection = client.db(config.dbName).collection('pasar_order');
+            await collection.find({}).forEach( function (x) {
+                x.updateTime = new Date(x.updateTime * 1000);
+                x.price = type == 0 ? parseInt(x.price) : parseInt(x.royaltyFee);
+                client.db(config.dbName).collection('token_temp').save(x);
+            });
+            collection =  client.db(config.dbName).collection('token_temp');
+            let result = await collection.aggregate([
+            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
+            { $sort: {onlyDate: -1} },
+            { $match: {$and : [{$or :[{"sellerAddr": new RegExp('^' + walletAddr)}, {"buyerAddr": new RegExp('^' + walletAddr)}]}, { 'orderState': '2'}]} },
+            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
+            ]).toArray();
+            await collection.drop();
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
+    },
+
+    getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize) {
+        let projectToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
+        tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
+        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+        name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
+        thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
+        adult: "$token.adult", amount: "$order.amount", royaltyfee: "$order.royaltyFee", price: "$order.price", 
+        orderstate: "$order.orderState", orderid: "$order.orderId"};
+
+        let projectTokenFinal = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
+        tokenIndex: 1, quantity: 1, royalties: 1, royaltyOwner: 1, createTime: 1, tokenIdHex: 1, name: 1, description: 1, kind: 1, type: 1,
+        thumbnail: 1, asset: 1, size: 1, tokenDid: 1, adult: 1, amount: 1, royaltyfee: 1, price: 1, 
+        platformfee: "$platformfee.platformFee", orderstate: 1, orderid: 1}
+        let methodCondition = [];
+        switch(method)
+        {
+            case "create":
+                methodCondition.push({'from': "0x0000000000000000000000000000000000000000", 'to': walletAddr});
+                break;
+            case 'transfer':
+                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
+                break;
+            case 'delete':
+                methodCondition.push({'to': "0x0000000000000000000000000000000000000000", 'from': walletAddr});
+
+        }
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            const collection = client.db(config.dbName).collection('pasar_token_event');
+            await collection.aggregate([
+                { $lookup: {from : 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                { $unwind: "$token" },
+                { $lookup:{from : 'pasar_order', localField: 'tokenId', foreignField: 'tokenId', localField: 'from', foreignField: 'sellerAddr',
+                        localField: 'to', foreignField: 'buyerAddr', localField: 'blockNumber', foreignField: 'blockNumber', as: 'order'} },
+                { $unwind:"$order" },
+                { $project: projectToken },
+                { $match:{$and : [{"orderstate" : "2"} , ...methodCondition]} },
+                { $out: "transactiontemp" }
+            ]).toArray();
+            
+            let result = await client.db(config.dbName).collection('transactiontemp').aggregate([
+                { $lookup:{from: " pasar_order_platform_fee", localField: "orderid", foreignField: "orderId", as: "platformfee"} },
+                { $unwind: "$platformfee" },
+                { $project: projectTokenFinal },
+                { $sort: {timestamp: parseInt(timeOrder)} }
+            ]).toArray();
+            client.db(config.dbName).collection('transactiontemp').drop();
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'}; 
         } finally {
             await client.close();
         }
