@@ -298,7 +298,7 @@ module.exports = {
                     }
                 } 
             ]).toArray();
-            return {code: 200, message: 'success', data: result[0]['value']};
+            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -339,7 +339,7 @@ module.exports = {
                     }
                 }
             ]).toArray();
-            return {code: 200, message: 'success', data: result[0]['value']};
+            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
         } catch (err) {
             logger.error(err);
         } finally {
