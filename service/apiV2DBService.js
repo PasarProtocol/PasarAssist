@@ -295,4 +295,40 @@ module.exports = {
             await client.close();
         }
     },
+
+    queryGiveawaysLastSyncHeight: async function () {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let doc = await collection.findOne({}, {sort:{blockNumber: -1}});
+            if(doc) {
+                return {code: 200, message: 'success', data: doc.blockNumber};
+            } else {
+                return {code: 200, message: 'success', data: config.stickerContractDeploy - 1};
+            }
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    queryCollectiblesByPageNumAndPageSize: async function(pageNum, pageSize) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            const collection = client.db(config.dbName).collection('pasar_token');
+            let total = await collection.find().count();
+            let result = await collection.find().sort({createTime: -1})
+                .project({"_id": 0}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
+            return {code: 200, message: 'success', data: {total, result}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
+    }
 }
