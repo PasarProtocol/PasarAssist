@@ -298,7 +298,7 @@ module.exports = {
                     }
                 } 
             ]).toArray();
-            return {code: 200, message: 'success', data: {result}};
+            return {code: 200, message: 'success', data: result[0]['value']};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -318,7 +318,7 @@ module.exports = {
                     }
                 }
             ]).toArray();
-            return {value: result.length}
+            return {code: 200, message: 'success', data: result.length};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -339,7 +339,7 @@ module.exports = {
                     }
                 }
             ]).toArray();
-            return {code: 200, message: 'success', data: {result}};
+            return {code: 200, message: 'success', data: result[0]['value']};
         } catch (err) {
             logger.error(err);
         } finally {
