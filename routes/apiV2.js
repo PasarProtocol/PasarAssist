@@ -19,6 +19,42 @@ router.get('/collectibles/keyword/:keyword', function (req, res) {
     apiV2DBService.queryCollectibleByOther('keyword', req.params.keyword).then(result => {res.json(result)})
 })
 
+router.get('/collectibles/owner/:owner/creator/:creator/types/:types', function (req, res) {
+    let owner = req.params.owner;
+    let creator = req.params.creator;
+    let typesStr = req.params.types;
+
+    let types = undefined;
+    if(typesStr !== undefined) {
+        if(typeof typesStr !== "object") {
+            types = [typesStr];
+        } else {
+            types = typesStr;
+        }
+        if(types[0] === 'image' || types[0] === 'avatar') {
+            if(types[1] === 'feeds-channel' || types.length > 2) {
+                res.json({code: 400, message: 'bad request'})
+            }
+        } else {
+            if(types[0] === 'feeds-channel' && types.length > 1) {
+                res.json({code: 400, message: 'bad request'})
+            }
+        }
+    }
+
+    if(!owner && !creator) {
+        res.json({code: 400, message: 'bad request'})
+        return;
+    }
+
+    apiV2DBService.queryCollectibleByOthers(owner, creator, types).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/collectibles/all', function (req, res) {
     apiV2DBService.queryAllCollectibles().then(result => {res.json(result)})
 })

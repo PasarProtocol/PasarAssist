@@ -68,6 +68,66 @@ module.exports = {
         }
     },
 
+    queryCollectibleByOthers: async function(owner, creator, types) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            let collection = client.db(config.dbName).collection('pasar_token_event');
+
+            let match = {}, result;
+            if(owner) {
+                match["to"] = owner;
+            }
+            if(creator) {
+                match["token.royaltyOwner"] = creator;
+            }
+
+            if(types !== undefined) {
+                match['token.type'] = { "$in": types };
+            }
+
+            if(types !== undefined && types[0] === 'feeds-chanel') {
+                result = await collection.aggregate([
+                    { $sort: {tokenId: 1, blockNumber: -1}},
+                    { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
+                    { $replaceRoot: { newRoot: "$doc"}},
+                    { $lookup: {from: "pasar_token_galleria", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                    { $unwind: "$token"},
+                    { $match: {...match}},
+                    { $project: {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",
+                            tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
+                            royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+                            name: "$token.name", description: "$token.description", type: "$token.type", tippingAddress: "$token.tippingAddress",
+                            entry: "$token.entry", avatar: "$token.avatar", tokenDid: "$token.did", version: '$token.tokenJsonVersion'}}
+                ]).toArray();
+            } else {
+                result = await collection.aggregate([
+                    { $sort: {tokenId: 1, blockNumber: -1}},
+                    { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
+                    { $replaceRoot: { newRoot: "$doc"}},
+                    { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                    { $unwind: "$token"},
+                    { $match: {...match}},
+                    { $project: {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",
+                            tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
+                            royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+                            name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
+                            thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
+                            adult: "$token.adult"}}
+                ]).toArray();
+
+                let tokenIds = [];
+                result.map(item => tokenIds.push(item.tokenId));
+            }
+            return {code: 200, message: 'success', data: {result}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
+    },
+
     queryAllCollectibles: async function() {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
