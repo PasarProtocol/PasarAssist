@@ -46,7 +46,7 @@ module.exports = {
             } else if(types === 'owner') {
                 match["to"] = keyword;
             } else if(types === 'keyword') {
-                match = {$or: [{"token.name": {$regex: keyword}}, {"token.description": {$regex: keyword}}]}
+                match = {$or: [{tokenId: keyword}, {"token.royaltyOwner": keyword}, {"token.name": {$regex: keyword}}, {"token.description": {$regex: keyword}}]}
             }
 
             let result = await collection.aggregate([
