@@ -314,11 +314,12 @@ module.exports = {
             let result = await collection.aggregate([
                 {
                     $group: { 
-                        _id  : "$tokenId"
+                        _id  : "$status",
+                        value: {$sum: 1}
                     }
                 }
             ]).toArray();
-            return {code: 200, message: 'success', data: result.length};
+            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
         } catch (err) {
             logger.error(err);
         } finally {
