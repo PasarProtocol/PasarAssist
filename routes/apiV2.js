@@ -183,4 +183,24 @@ router.get('/transactions/tokenId/:tokenId', function (req, res) {
     })
 });
 
+router.get('/transactions/pagination/:pageNum/:pageSize', function (req, res) {
+    let pageNumStr = req.params.pageNum;
+    let pageSizeStr = req.params.pageSize;
+    let pageNum, pageSize;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+    }catch (e) {
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+    apiV2DBService.queryTransactionsByPageNumAndPageSize(pageNum, pageSize).then(result => {res.json(result)})
+})
+
 module.exports = router;
