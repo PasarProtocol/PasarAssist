@@ -171,7 +171,7 @@ router.get('/gettv', function(req, res) {
         res.json(result);
     }).catch(error => {
         console.log(error);
-        res.json({code : 500, message: 'server error'});   
+        res.json({code : 500, message: 'server error'});
     })
 });
 

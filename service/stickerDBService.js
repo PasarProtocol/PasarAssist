@@ -361,7 +361,7 @@ module.exports = {
             ]).toArray();
             let sum = 0;
             result.forEach(ele => {
-                sum += ele['price'] * ele['amount'];
+                sum += parseInt(ele['price']) * parseInt(ele['amount']);
             });
             sum = Math.floor(sum / Math.pow(10, 18));
             result = {code: 200, message: 'success', data : sum};
