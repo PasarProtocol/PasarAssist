@@ -390,5 +390,19 @@ module.exports = {
         } finally {
             await client.close();
         }
-    }
+    },
+
+    queryTransactionsByTokenId: async function(tokenId) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let result = await collection.find({tokenId}).sort({blockNumber: -1}).toArray();
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }

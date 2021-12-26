@@ -163,4 +163,24 @@ router.get('/collectibles/pagination/:pageNum/:pageSize', function (req, res) {
     apiV2DBService.queryCollectiblesByPageNumAndPageSize(pageNum, pageSize).then(result => {res.json(result)})
 })
 
+router.get('/transactions/tokenId/:tokenId', function (req, res) {
+    let tokenId = req.params.tokenId;
+
+    if(!tokenId) {
+        res.json({code: 400, message: 'bad request'})
+        return;
+    }
+
+    if(tokenId.startsWith('0x') && tokenId.length > 42) {
+        tokenId = new BigNumber(tokenId).toFormat({prefix:""});
+    }
+
+    apiV2DBService.queryTransactionsByTokenId(tokenId).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 module.exports = router;
