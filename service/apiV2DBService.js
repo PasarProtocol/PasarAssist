@@ -401,6 +401,7 @@ module.exports = {
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
+            return {code: 500, message: 'server error'};
         } finally {
             await mongoClient.close();
         }
