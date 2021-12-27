@@ -210,12 +210,12 @@ router.get('/getCollectibleByTokenId', function(req, res) {
     })
 });
 
-router.get('/getTranvolumeandTotalRoyaltyByWalletAddr', function(req, res) {
+router.get('/getTranvolumeTotalRoyaltySaleVolumeByWalletAddr', function(req, res) {
     let walletAddr = req.query.walletAddr;
     let type = req.query.type;
     walletAddr = walletAddr ? walletAddr.toString(): "^";
     type = type ? type: 0;
-    stickerDBService.getTranvolumeandTotalRoyaltyByWalletAddr(walletAddr, type).then(result => {
+    stickerDBService.getTranvolumeTotalRoyaltySaleVolumeByWalletAddr(walletAddr, type).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

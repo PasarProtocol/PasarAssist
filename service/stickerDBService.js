@@ -559,21 +559,27 @@ module.exports = {
         }
     },
 
-    getTranvolumeandTotalRoyaltyByWalletAddr: async function(walletAddr, type) {
+    getTranvolumeTotalRoyaltySaleVolumeByWalletAddr: async function(walletAddr, type) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
+            let addressCondition = [];
+            addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
+            if(type != 2) {
+                // type: 0 => transaction volume, 1 => total royalty, 2 => sale volume
+                addressCondition.push({"buyerAddr": new RegExp('^' + walletAddr)});
+            }
             let collection = client.db(config.dbName).collection('pasar_order');
             await collection.find({}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
-                x.price = type == 0 ? parseInt(x.price) : parseInt(x.royaltyFee);
+                x.price = type == 1 ? parseInt(x.royaltyFee) : parseInt(x.price);
                 client.db(config.dbName).collection('token_temp').save(x);
             });
             collection =  client.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
             { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
             { $sort: {onlyDate: -1} },
-            { $match: {$and : [{$or :[{"sellerAddr": new RegExp('^' + walletAddr)}, {"buyerAddr": new RegExp('^' + walletAddr)}]}, { 'orderState': '2'}]} },
+            { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
             { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
             { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
             ]).toArray();
