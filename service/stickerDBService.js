@@ -1,3 +1,4 @@
+const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 const config = require("../config");
 
@@ -237,51 +238,88 @@ module.exports = {
             await mongoClient.close();
         }
     },
-
+    
     listTrans: async function(pageNum, pageSize) {
-        let projectToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
-        tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
-        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
-        name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
-        thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-        adult: "$token.adult", amount: "$order.amount", royaltyfee: "$order.royaltyFee", price: "$order.price", 
-        orderstate: "$order.orderState", orderid: "$order.orderId"};
-
-        let projectTokenFinal = {"_id": 0, tokenId:1, blockNumber:1, timestamp: 1, value: 1,memo: 1, to: 1, from: 1,
-        tokenIndex: 1, quantity: 1, royalties: 1, royaltyOwner: 1, createTime: 1, tokenIdHex: 1, name: 1, description: 1, kind: 1, type: 1,
-        thumbnail: 1, asset: 1, size: 1, tokenDid: 1, adult: 1, amount: 1, royaltyfee: 1, price: 1, 
-        platformfee: "$platformfee.platformFee", orderstate: 1, orderid: 1}
-        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
-            await client.connect();
-            const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.aggregate([
-                { $lookup: {from : 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let projectFirst = {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
+             timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1};
+            let projectSecond = {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: "$order.buyerAddr",
+             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1};
+            let projectFinal = {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties"};
+            let result = await collection.aggregate([
+                { $facet: {
+                  "collection1": [
+                    { $limit: 1 },
+                    { $lookup: {
+                      from: "pasar_order_event",
+                      pipeline: [
+                        { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+                        { $unwind : "$order" },
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
+                            timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1} }
+                      ],
+                      "as": "collection1"
+                    }}
+                  ],
+                  "collection2": [
+                    { $lookup: {
+                      from: "pasar_token_event",
+                      pipeline: [{ $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: "$order.buyerAddr",
+                        timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1} }],
+                      "as": "collection2"
+                    }}
+                  ]
+                }},
+                { $project: {
+                  data: {
+                    $concatArrays: [
+                      { "$arrayElemAt": ["$collection1.collection1", 0] },
+                      { "$arrayElemAt": ["$collection2.collection2", 0] },
+                    ]
+                  }
+                }},
+                { $unwind: "$data" },
+                { $replaceRoot: { "newRoot": "$data" } },
+                { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $lookup:{from : 'pasar_order', localField: 'tokenId', foreignField: 'tokenId', localField: 'from', foreignField: 'sellerAddr',
-                        localField: 'to', foreignField: 'buyerAddr', localField: 'blockNumber', foreignField: 'blockNumber', as: 'order'} },
-                { $unwind:"$order" },
-                { $project: projectToken },
-                { $match:{$and : [{"orderstate" : "2"}]} },
-                { $out: "transactiontemp" }
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties"} },
+                { $sort: {blockNumber: -1}},
+                { $skip: pageSize * (pageNum - 1) },
+                { $limit: pageSize }
             ]).toArray();
-            
-            let result = await client.db(config.dbName).collection('transactiontemp').aggregate([
-                { $lookup:{from: "pasar_order_platform_fee", localField: "orderid", foreignField: "orderId", as: "platformfee"} },
-                { $unwind: "$platformfee" },
-                { $project: projectTokenFinal },
-                { $sort: {timestamp: -1} },
-                { $limit: pageSize },
-                { $skip: (pageNum - 1) * pageSize }
-            ]).toArray();
-            client.db(config.dbName).collection('transactiontemp').drop();
-            let total = await collection.find().count();
+            for(var i = 0; i < result.length; i++) {
+                if(result[i]['event'] == "notSetYet") {
+                    if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
+                        result[i]['event'] = 'Mint';
+                    }
+                    if(result[i]['to'] == '0x0000000000000000000000000000000000000000') {
+                        result[i]['event'] = 'Burn';
+                    }
+                    if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
+                        if(result[i]['price'] == '')
+                            result[i]['event'] = 'SafeTranserFrom';
+                        else result[i]['event'] = 'SafeTranserFromWithMemo';
+                    }
+                    result[i]['price'] = '0';
+                }
+                if(result[i]['event'] == 'OrderFilled')
+                    result[i]['event'] = "BuyOrder";
+                if(result[i]['event'] == 'OrderCancelled')
+                    result[i]['event'] = "CancelOrder";
+                if(result[i]['event'] == 'OrderPriceChanged')
+                    result[i]['event'] = "ChangeOrderPrice";
+                if(result[i]['event'] == 'OrderForSale')
+                    result[i]['event'] = "CreateOrderForSale";
+            }
+            let total = await collection.find().count() + await mongoClient.db(config.dbName).collection('pasar_token_event').find().count();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
-            return {code: 500, message: 'server error'};
         } finally {
-            await client.close();
+            await mongoClient.close();
         }
     },
 
@@ -310,16 +348,9 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let result = await collection.aggregate([
-                {
-                    $group: { 
-                        _id  : "$status",
-                        value: {$sum: 1}
-                    }
-                }
-            ]).toArray();
-            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
+            const clientDB = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let total = await clientDB.collection('pasar_token_event').find().count() + await clientDB.collection('pasar_token_event').find().count();
+            return {code: 200, message: 'success', data: total};
         } catch (err) {
             logger.error(err);
         } finally {
