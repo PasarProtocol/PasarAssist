@@ -223,6 +223,17 @@ router.get('/getTranvolumeTotalRoyaltySaleVolumeByWalletAddr', function(req, res
     })
 });
 
+router.get('/getStastisDataByWalletAddr', function(req, res) {
+    let walletAddr = req.query.walletAddr;
+    walletAddr = walletAddr ? walletAddr.toString(): "^";
+    stickerDBService.getStastisDataByWalletAddr(walletAddr).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 router.get('/getTranDetailsByWalletAddr', function(req, res) {
     let walletAddr = req.query.walletAddr.toString();
     let method = req.query.method;

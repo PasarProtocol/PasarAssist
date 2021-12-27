@@ -1,3 +1,4 @@
+const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 const config = require("../config");
@@ -577,11 +578,11 @@ module.exports = {
             });
             collection =  client.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
-            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
-            { $sort: {onlyDate: -1} },
-            { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
-            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
+                { $sort: {onlyDate: -1} },
+                { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
+                { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
             ]).toArray();
             await collection.drop();
             return {code: 200, message: 'success', data: result};
@@ -590,6 +591,35 @@ module.exports = {
             return {code: 500, message: 'server error'};
         } finally {
             await client.close();
+        }
+    },
+
+    getStastisDataByWalletAddr: async function(walletAddr) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let result = {};
+            let collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let count_collectibles = await collection.find({royaltyOwner: walletAddr}).count();
+            collection = mongoClient.db(config.dbName).collection('pasar_order');
+            let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
+            let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
+            collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let count_transactions = await collection.aggregate([
+                { $project: {"_id": 0, orderId: 1} },
+                { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+                { $unwind: '$order' },
+                { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
+                { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
+            ]).toArray();
+            console.log(count_transactions);
+            result = {assets: count_collectibles, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
         }
     },
 
