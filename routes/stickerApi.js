@@ -175,12 +175,12 @@ router.get('/gettv', function(req, res) {
     })
 });
 
-router.get('/getTranVolume', function(req, res) {
+router.get('/getTranVolumeByTokenId', function(req, res) {
     let tokenId = req.query.tokenId;
     let type = req.query.type;
     tokenId = tokenId ? tokenId: "^";
     type = type ? type: 0;
-    stickerDBService.getTranVolume(tokenId, type).then(result => {
+    stickerDBService.getTranVolumeByTokenId(tokenId, type).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -188,11 +188,11 @@ router.get('/getTranVolume', function(req, res) {
     })
 });
 
-router.get('/getTranDetails', function(req, res) {
+router.get('/getTranDetailsByTokenId', function(req, res) {
     let tokenId = req.query.tokenId;
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
-    stickerDBService.getTranDetails(tokenId, method, timeOrder).then(result => {
+    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder).then(result => {
       res.json(result);
     }).catch(error => {
         console.log(error);
