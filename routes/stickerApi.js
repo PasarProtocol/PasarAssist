@@ -110,13 +110,15 @@ router.get('/tokenTrans', function(req, res) {
 router.get('/listTrans', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
-
-    let pageNum, pageSize;
+    let methodStr = req.query.method;
+    let timeOrderStr = req.query.timeOrder;
+    let pageNum, pageSize, method, timeOrder;
 
     try {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
-
+        method = methodStr ? methodStr : 'All';
+        timeOrder = timeOrderStr ? parseInt(timeOrderStr) : -1; 
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
@@ -126,8 +128,7 @@ router.get('/listTrans', function(req, res) {
         res.json({code: 400, message: 'bad request'});
         return;
     }
-
-    stickerDBService.listTrans(pageNum, pageSize).then(result => {
+    stickerDBService.listTrans(pageNum, pageSize, method, timeOrder).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -240,7 +241,7 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
     let timeOrder = req.query.timeOrder;
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
-    let keyword = req.query.keyword;
+    let keyword = req.query.keyword ? req.query.keyword : "";
 
     let pageNum, pageSize;
 
