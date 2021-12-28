@@ -1,5 +1,6 @@
 const {MongoClient} = require("mongodb");
 const config = require("../config");
+const sendMail = require("../send_mail");
 
 let burnAddress = '0x0000000000000000000000000000000000000000';
 
@@ -42,4 +43,13 @@ async function checkTokenHolder() {
     }
 }
 
-checkTokenHolder().then(console.log)
+checkTokenHolder().then(async result => {
+    let recipients = [];
+    recipients.push('lifayi2008@163.com');
+
+    if(result > 0) {
+        await sendMail(`Pasar Token Creator Check [${config.serviceName}]`,
+            `there are ${result} pasar token creator not match`,
+            recipients.join());
+    }
+})

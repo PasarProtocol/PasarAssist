@@ -1,5 +1,6 @@
 const {MongoClient} = require("mongodb");
 const config = require("../config");
+const sendMail = require("../send_mail");
 
 async function checkOrderState() {
     let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -38,5 +39,14 @@ async function checkOrderState() {
     }
 }
 
-checkOrderState().then(console.log)
+checkOrderState().then(async result => {
+    let recipients = [];
+    recipients.push('lifayi2008@163.com');
+
+    if(result > 0) {
+        await sendMail(`Pasar Order State Check [${config.serviceName}]`,
+            `there are ${result} pasar order state not match`,
+            recipients.join());
+    }
+})
 

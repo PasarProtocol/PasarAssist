@@ -1,5 +1,6 @@
 const {MongoClient} = require("mongodb");
 const config = require("../config");
+const sendMail = require("../send_mail");
 
 async function checkOrderPrice() {
     let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -42,5 +43,14 @@ async function checkOrderPrice() {
     }
 }
 
-checkOrderPrice().then(console.log)
+checkOrderPrice().then(async result => {
+    let recipients = [];
+    recipients.push('lifayi2008@163.com');
+
+    if(result > 0) {
+        await sendMail(`Pasar Order Price Check [${config.serviceName}]`,
+            `there are ${result} pasar order price not match`,
+            recipients.join());
+    }
+})
 
