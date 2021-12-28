@@ -6,13 +6,13 @@ const BigNumber = require('bignumber.js');
 router.get('/listStickers', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
-
-    let pageNum, pageSize;
+    let timeOrderStr = req.query.timeOrder;
+    let pageNum, pageSize, timeOrder;
 
     try {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
-
+        timeOrder = timeOrderStr ? parseInt(timeOrderStr) : -1; 
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
@@ -23,7 +23,7 @@ router.get('/listStickers', function(req, res) {
         return;
     }
 
-    stickerDBService.listStickers(pageNum, pageSize).then(result => {
+    stickerDBService.listStickers(pageNum, pageSize, timeOrder).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
