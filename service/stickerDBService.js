@@ -22,7 +22,96 @@ module.exports = {
             await mongoClient.close();
         }
     },
-
+    verifyEvents: function(result) {
+        for(var i = 0; i < result.length; i++) {
+            if(result[i]['event'] == "notSetYet") {
+                if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
+                    result[i]['event'] = 'Mint';
+                }
+                if(result[i]['to'] == '0x0000000000000000000000000000000000000000') {
+                    result[i]['event'] = 'Burn';
+                }
+                if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
+                    if(result[i]['price'] == '')
+                        result[i]['event'] = 'SafeTransferFrom';
+                    else result[i]['event'] = 'SafeTransferFromWithMemo';
+                }
+                result[i]['price'] = '0';
+            }
+            if(result[i]['event'] == 'OrderFilled')
+                result[i]['event'] = "BuyOrder";
+            if(result[i]['event'] == 'OrderCanceled')
+                result[i]['event'] = "CancelOrder";
+            if(result[i]['event'] == 'OrderPriceChanged')
+                result[i]['event'] = "ChangeOrderPrice";
+            if(result[i]['event'] == 'OrderForSale')
+                result[i]['event'] = "CreateOrderForSale";
+        }
+        return result;
+    },
+    composeMethodCondition: function(method, requestType, data) {
+        let methodCondition = [];
+        switch(method)
+        {
+            case "Mint":
+                methodCondition.push({'from': "0x0000000000000000000000000000000000000000"});
+                if(requestType == "walletAddr")
+                    methodCondition.push({'to': data});
+                methodCondition.push({'event': 'notSetYet'});
+                break;
+            case 'SafeTransferFrom':
+                if(requestType == "walletAddr")
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                else {
+                    methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
+                    methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});   
+                }
+                methodCondition.push({'event': 'notSetYet'});
+                break;
+            case 'SafeTransferFromWithMemo':
+                if(requestType == "walletAddr")
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                else {
+                    methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
+                    methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});   
+                }                
+                methodCondition.push({'event': 'notSetYet'});
+                methodCondition.push({'price': {$ne: ''}});
+                break;
+            case 'Burn':
+                methodCondition.push({'to': "0x0000000000000000000000000000000000000000"});
+                if(requestType == "walletAddr")
+                    methodCondition.push({'from': data});
+                methodCondition.push({'event': 'notSetYet'});
+                break;
+            case 'BuyOrder':
+                methodCondition.push({'event': "OrderFilled"});
+                if(requestType == 'walletAddr')
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                break;
+            case 'CreateOrderForSale':
+                methodCondition.push({'event': 'OrderForSale'});
+                if(requestType == 'walletAddr')
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                break;
+            case 'CancelOrder':
+                methodCondition.push({'event': 'OrderCanceled'});
+                if(requestType == 'walletAddr')
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                break;
+            case 'ChangeOrderPrice':
+                methodCondition.push({'event': 'OrderPriceChanged'});
+                if(requestType == 'walletAddr')
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                break;
+            case 'All':
+                if(requestType == 'walletAddr')
+                    methodCondition.push({$or: [{'from': data}, {'to': data}]});
+                else methodCondition.push({'event': {$ne: 'All'}});
+                break;
+        }
+        return methodCondition;
+    },
     listStickers: async function(pageNum, pageSize) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -242,71 +331,35 @@ module.exports = {
     
     listTrans: async function(pageNum, pageSize, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        let methodCondition = [];
-        switch(method)
-        {
-            case "Mint":
-                methodCondition.push({'from': "0x0000000000000000000000000000000000000000"});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'SafeTransferFrom':
-                methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
-                methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'SafeTransferFromWithMemo':
-                methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
-                methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});
-                methodCondition.push({'event': 'notSetYet'});
-                methodCondition.push({'price': {$ne: ''}});
-                break;
-            case 'Burn':
-                methodCondition.push({'to': "0x0000000000000000000000000000000000000000"});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'BuyOrder':
-                methodCondition.push({'event': "OrderFilled"});
-                break;
-            case 'CreateOrderForSale':
-                methodCondition.push({'event': 'OrderForSale'});
-                break;
-            case 'CancelOrder':
-                methodCondition.push({'event': 'OrderCancelled'});
-                break;
-            case 'ChangeOrderPrice':
-                methodCondition.push({'event': 'OrderPriceChanged'});
-                break;
-            case 'All':
-                methodCondition.push({'event': {$ne: 'All'}});
-
-        }
-
+        let methodCondition = this.composeMethodCondition(method, "null", "null");
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
-                { $facet: {
-                  "collection1": [
-                    { $limit: 1 },
-                    { $lookup: {
-                      from: "pasar_order_event",
-                      pipeline: [
-                        { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
-                        { $unwind : "$order" },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
-                            timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee"} },
-                        { $match: {$and: [...methodCondition]} }
-                      ],
-                      "as": "collection1"
-                    }}
-                  ],
+                {   $facet: {
+                    "collection1": [
+                        { $limit: 1 },
+                        { $lookup: {
+                            from: "pasar_order_event",
+                            pipeline: [
+                                { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+                                { $unwind : "$order" },
+                                { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
+                                    timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee", data: 1} },
+                                { $match: {$and: [...methodCondition]} }
+                            ],
+                            "as": "collection1"
+                            }
+                        }
+                    ],
                   "collection2": [
-                    { $lookup: {
-                      from: "pasar_token_event",
-                      pipeline: [
-                          { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
-                          { $match: {$and: [...methodCondition]} }
+                    { $limit: 1 },
+                    {   $lookup: {
+                        from: "pasar_token_event",
+                        pipeline: [
+                            { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
+                                timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
+                            { $match: {$and: [...methodCondition]} }
                     ],
                       "as": "collection2"
                     }}
@@ -324,37 +377,19 @@ module.exports = {
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties"} },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", data: 1} },
                 { $sort: {blockNumber: timeOrder}},
-                { $skip: pageSize * (pageNum - 1) },
-                { $limit: pageSize }
             ]).toArray();
-            for(var i = 0; i < result.length; i++) {
-                if(result[i]['event'] == "notSetYet") {
-                    if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Mint';
-                    }
-                    if(result[i]['to'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Burn';
-                    }
-                    if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
-                        if(result[i]['price'] == '')
-                            result[i]['event'] = 'SafeTransferFrom';
-                        else result[i]['event'] = 'SafeTransferFromWithMemo';
-                    }
-                    result[i]['price'] = '0';
-                }
-                if(result[i]['event'] == 'OrderFilled')
-                    result[i]['event'] = "BuyOrder";
-                if(result[i]['event'] == 'OrderCancelled')
-                    result[i]['event'] = "CancelOrder";
-                if(result[i]['event'] == 'OrderPriceChanged')
-                    result[i]['event'] = "ChangeOrderPrice";
-                if(result[i]['event'] == 'OrderForSale')
-                    result[i]['event'] = "CreateOrderForSale";
+            let results = [];
+            for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
+            {
+                if(i >= result.length)
+                    break;
+                results.push(result[i]);
             }
-            let total = await collection.find().count() + await mongoClient.db(config.dbName).collection('pasar_token_event').find().count();
-            return {code: 200, message: 'success', data: {total, result}};
+            results = this.verifyEvents(results);
+            let total = result.length;
+            return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -387,8 +422,8 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const clientDB = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let total = await clientDB.collection('pasar_token_event').find().count() + await clientDB.collection('pasar_token_event').find().count();
+            const clientDB = mongoClient.db(config.dbName);
+            let total = await clientDB.collection('pasar_token_event').find().count() + await clientDB.collection('pasar_order_event').find().count();
             return {code: 200, message: 'success', data: total};
         } catch (err) {
             logger.error(err);
@@ -473,7 +508,7 @@ module.exports = {
     
     getTranDetailsByTokenId: async function(tokenId, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        let methodCondition = [];
+        let methodCondition = this.composeMethodCondition(method, "tokenId", tokenId);
         switch(method)
         {
             case "Mint":
@@ -502,14 +537,13 @@ module.exports = {
                 methodCondition.push({'event': 'OrderForSale'});
                 break;
             case 'CancelOrder':
-                methodCondition.push({'event': 'OrderCancelled'});
+                methodCondition.push({'event': 'OrderCanceled'});
                 break;
             case 'ChangeOrderPrice':
                 methodCondition.push({'event': 'OrderPriceChanged'});
                 break;
 
         }
-        console.log(methodCondition, 'fdsfdsf');
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -523,7 +557,7 @@ module.exports = {
                       pipeline: [
                         { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
                         { $unwind : "$order" },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr", data: 1,
                             timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, ...methodCondition]} }
                       ],
@@ -531,6 +565,7 @@ module.exports = {
                     }}
                   ],
                   "collection2": [
+                    { $limit: 1 },
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
@@ -551,32 +586,12 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
+                { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                { $unwind: "$token" },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset"} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
-            for(var i = 0; i < result.length; i++) {
-                if(result[i]['event'] == "notSetYet") {
-                    if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Mint';
-                    }
-                    if(result[i]['to'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Burn';
-                    }
-                    if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
-                        if(result[i]['price'] == '')
-                            result[i]['event'] = 'SafeTransferFrom';
-                        else result[i]['event'] = 'SafeTransferFromWithMemo';
-                    }
-                    result[i]['price'] = '0';
-                }
-                if(result[i]['event'] == 'OrderFilled')
-                    result[i]['event'] = "BuyOrder";
-                if(result[i]['event'] == 'OrderCancelled')
-                    result[i]['event'] = "CancelOrder";
-                if(result[i]['event'] == 'OrderPriceChanged')
-                    result[i]['event'] = "ChangeOrderPrice";
-                if(result[i]['event'] == 'OrderForSale')
-                    result[i]['event'] = "CreateOrderForSale";
-            }
+            result = this.verifyEvents(result);
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -665,48 +680,7 @@ module.exports = {
     
     getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        let methodCondition = [];
-        switch(method)
-        {
-            case "Mint":
-                methodCondition.push({'from': "0x0000000000000000000000000000000000000000"});
-                methodCondition.push({'to': walletAddr});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'SafeTransferFrom':
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'SafeTransferFromWithMemo':
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                methodCondition.push({'event': 'notSetYet'});
-                methodCondition.push({'price': {$ne: ''}});
-                break;
-            case 'Burn':
-                methodCondition.push({'to': "0x0000000000000000000000000000000000000000"});
-                methodCondition.push({'from': walletAddr});
-                methodCondition.push({'event': 'notSetYet'});
-                break;
-            case 'BuyOrder':
-                methodCondition.push({'event': "OrderFilled"});
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                break;
-            case 'CreateOrderForSale':
-                methodCondition.push({'event': 'OrderForSale'});
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                break;
-            case 'CancelOrder':
-                methodCondition.push({'event': 'OrderCancelled'});
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                break;
-            case 'ChangeOrderPrice':
-                methodCondition.push({'event': 'OrderPriceChanged'});
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                break;
-            case 'All':
-                methodCondition.push({$or: [{'from': walletAddr}, {'to': walletAddr}]});
-                break;
-        }
+        let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -717,9 +691,12 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
+                        { $sort: {blockNumber: parseInt(timeOrder)} },
+                        { $skip: pageSize * (pageNum - 1) },
+                        { $limit: pageSize },
                         { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
                         { $unwind : "$order" },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr", data: 1,
                             timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee"} },
                         { $match : {$and: [...methodCondition]} }
                       ],
@@ -730,6 +707,9 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
+                        { $sort: {blockNumber: parseInt(timeOrder)} },
+                        { $skip: pageSize * (pageNum - 1) },
+                        { $limit: pageSize },
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
                             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }, 
                         { $match : {$and: [...methodCondition]} }],
@@ -749,38 +729,20 @@ module.exports = {
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties"} },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset"} },
                 { $match: {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}},
-                { $sort: {blockNumber: parseInt(timeOrder)} },
-                { $skip: pageSize * (pageNum - 1) },
-                { $limit: pageSize }
+                { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
-
-            for(var i = 0; i < result.length; i++) {
-                if(result[i]['event'] == "notSetYet") {
-                    if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Mint';
-                    }
-                    if(result[i]['to'] == '0x0000000000000000000000000000000000000000') {
-                        result[i]['event'] = 'Burn';
-                    }
-                    if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
-                        if(result[i]['price'] == '')
-                            result[i]['event'] = 'SafeTransferFrom';
-                        else result[i]['event'] = 'SafeTransferFromWithMemo';
-                    }
-                    result[i]['price'] = '0';
-                }
-                if(result[i]['event'] == 'OrderFilled')
-                    result[i]['event'] = "BuyOrder";
-                if(result[i]['event'] == 'OrderCancelled')
-                    result[i]['event'] = "CancelOrder";
-                if(result[i]['event'] == 'OrderPriceChanged')
-                    result[i]['event'] = "ChangeOrderPrice";
-                if(result[i]['event'] == 'OrderForSale')
-                    result[i]['event'] = "CreateOrderForSale";
+            let results = [];
+            for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
+            {
+                if(i >= result.length)
+                    break;
+                results.push(result[i]);
             }
-            return {code: 200, message: 'success', data: result};
+            results = this.verifyEvents(results);
+            let total = result.length;
+            return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
         } finally {
