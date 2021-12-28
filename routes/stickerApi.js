@@ -193,6 +193,7 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     let tokenId = req.query.tokenId;
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
+    method = method ? method : 'All';
     stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder).then(result => {
       res.json(result);
     }).catch(error => {
@@ -248,7 +249,7 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
     try {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
-
+        method = method ? method : 'All';
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
