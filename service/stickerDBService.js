@@ -335,13 +335,36 @@ module.exports = {
             await mongoClient.close();
         }
     },
+
+    udpateOrderEventCollection: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection_event = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let result = await collection_event.aggregate([
+                { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+                { $unwind : "$order" },
+                { $project: {'_id': 1, id: 1, orderId: 1, tIndex: 1, logIndex: 1, blockHash: 1, removed: 1, event: 1, tHash: 1, sellerAddr: "$order.sellerAddr", buyerAddr: "$order.buyerAddr",
+                    timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee", data: 1} }
+            ]).toArray();
+            await collection_event.remove({});
+            await collection_event.insertMany(result);
+            return {result:result, total: result.length};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
     
-    listTrans: async function(pageNum, pageSize, method, timeOrder) {
+    listTrans: async function(pageNum, pageSize, landing, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         console.log(methodCondition);
         try {
             await mongoClient.connect();
+            let limit = [{ $sort: {blockNumber: parseInt(timeOrder)} }];
+            if(landing == 1) ddd.push({$limit : pageSize * landing});
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
                 {   $facet: {
@@ -350,10 +373,8 @@ module.exports = {
                     { $lookup: {
                         from: "pasar_order_event",
                         pipeline: [
-                            { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
-                            { $unwind : "$order" },
-                            { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr",
-                                timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee", data: 1} },
+                            { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr",
+                                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1} },
                             { $match: {$and: [methodCondition]} }
                         ],
                         "as": "collection1"
@@ -383,16 +404,26 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
-                { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
-                { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", data: 1, royaltyFee: 1} },
-                { $sort: {blockNumber: timeOrder}},
+                ...limit
+                // { $sort: {blockNumber: parseInt(timeOrder)} },
+                // { $skip: pageSize * (pageNum - 1) },
+                // { $limit: landing * pageSize },
+                // { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                // { $unwind: "$token" },
+                // { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", data: 1, royaltyFee: 1} },
             ]).toArray();
             let results = [];
+            let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
             {
                 if(i >= result.length)
                     break;
+                let res  = await collection_token.findOne({tokenId: result[i]['tokenId']});
+                if(res != null) {
+                    result[i]['name'] = res['name'];
+                    result[i]['royalties'] = res['royalties'];
+                    result[i]['asset'] = res['asset'];
+                }
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
@@ -528,10 +559,8 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
-                        { $unwind : "$order" },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr", data: 1,
-                            timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee"} },
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1,
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }
                       ],
                       "as": "collection1"
@@ -664,10 +693,8 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $lookup : {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
-                        { $unwind : "$order" },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$order.sellerAddr", to: "$order.buyerAddr", data: 1,
-                            timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee"} },
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1,
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1} },
                         { $match : {$and: [methodCondition]} }
                       ],
                       "as": "collection1"
@@ -678,9 +705,6 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
-                        { $sort: {blockNumber: parseInt(timeOrder)} },
-                        { $skip: pageSize * (pageNum - 1) },
-                        { $limit: pageSize },
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
                             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }, 
                         { $match : {$and: [methodCondition]} }],
@@ -698,17 +722,24 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
-                { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
-                { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1} },
-                { $match: {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}},
+                // { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                // { $unwind: "$token" },
+                // { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1} },
+                // { $match: {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}},
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let results = [];
+            let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
             {
                 if(i >= result.length)
                     break;
+                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId']}, {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}]});
+                if(res != null) {
+                    result[i]['name'] = res['name'];
+                    result[i]['royalties'] = res['royalties'];
+                    result[i]['asset'] = res['asset'];
+                }
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
