@@ -528,11 +528,11 @@ module.exports = {
             });
             collection =  mongoClient.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
-            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
-            { $sort: {onlyDate: -1} },
+            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} }, 
             { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
             { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
+            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
+            { $sort: {onlyDate: 1} }
             ]).toArray();
             await collection.drop();
             return {code: 200, message: 'success', data: result};
@@ -634,11 +634,11 @@ module.exports = {
             });
             collection =  client.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d', date: '$updateTime'}}} }, 
-                { $sort: {onlyDate: -1} },
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} }, 
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
-                { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} }
+                { $group: { "_id"  : { onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, onlyDate: "$_id.onlyDate", price:1} },
+                { $sort: {onlyDate: 1} },
             ]).toArray();
             await collection.drop();
             return {code: 200, message: 'success', data: result};

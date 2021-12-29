@@ -52,6 +52,7 @@ module.exports = {
         let isGetForSaleOrderJobRun = false;
         let isGetTokenInfoJobRun = false;
         let isGetTokenInfoWithMemoJobRun = false;
+        let isGetApprovalRun = false;
         let now = Date.now();
 
         let recipients = [];
@@ -324,6 +325,22 @@ module.exports = {
             });
         }
 
+        let approval  = schedule.scheduleJob(new Date(now + 10 * 1000), async()=> {
+            isGetApprovalRun = true;
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+            logger.info(`[approval] Sync Starting ... from block ${lastHeight + 1}`)
+            stickerContractWs.events.ApprovalForAll({
+                fromBlock: lastHeight + 1
+            }).on("error", function(error) {
+                logger.info(error);
+                logger.info("[approval] Sync Ending ...aaaaaa");
+                isGetApprovalRun = false;
+            }).on("data", async function (event) {
+                console.log(event, 'bbbbbbbbbbb');
+                return;
+            });
+        });
+
         let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
             isGetTokenInfoJobRun = true;
@@ -416,6 +433,8 @@ module.exports = {
             if(!isGetTokenInfoWithMemoJobRun) {
                 tokenInfoWithMemoSyncJobId.reschedule(new Date(now + 60 * 1000))
             }
+            if(!isGetApprovalRun)
+                approval.reschedule(new Date(now + 60 * 1000))
         });
 
         /**
