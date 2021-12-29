@@ -57,9 +57,10 @@ module.exports = {
         let recipients = [];
         recipients.push('lifayi2008@163.com');
 
-        async function updateOrder(orderId, blockNumber) {
+        async function updateOrder(result, blockNumber) {
             try {
-                let result = await pasarContract.methods.getOrderById(orderId).call();
+                // let result = await pasarContract.methods.getOrderById(orderId).call();
+                let orderId = result.orderId;
                 let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
                     tokenId: result.tokenId, amount: result.amount, price: result.price, endTime: result.endTime,
                     sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
@@ -156,7 +157,7 @@ module.exports = {
                 isGetForSaleOrderJobRun = false
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderId).call();
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -164,7 +165,7 @@ module.exports = {
 
                 logger.info(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(orderInfo._orderId, event.blockNumber);
+                await updateOrder(result, event.blockNumber);
             })
         });
 
@@ -180,7 +181,7 @@ module.exports = {
                 logger.info("[OrderPriceChanged] Sync Ending ...");
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderId).call();
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
@@ -189,7 +190,7 @@ module.exports = {
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(orderInfo._orderId, event.blockNumber);
+                await updateOrder(result, event.blockNumber);
             })
         });
 
@@ -216,7 +217,7 @@ module.exports = {
 
                 logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(orderInfo._orderId, event.blockNumber);
+                await updateOrder(result, event.blockNumber);
             })
         });
 
@@ -233,7 +234,7 @@ module.exports = {
             }).on("data", async function (event) {
 
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderId).call();
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -241,7 +242,7 @@ module.exports = {
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(orderInfo._orderId, event.blockNumber);
+                await updateOrder(result, event.blockNumber);
             })
         });
 
