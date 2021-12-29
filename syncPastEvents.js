@@ -29,9 +29,9 @@ let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.sticke
 let now = Date.now();
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let updateOrder = async function(orderId, blockNumber, eventType) {
+let updateOrder = async function(result, blockNumber) {
     try {
-        let result = await pasarContract.methods.getOrderById(orderId).call();
+        let orderId = result.orderId;
         let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
             tokenId: result.tokenId, amount: result.amount, price: result.price, endTime: result.endTime,
             sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
@@ -55,7 +55,7 @@ let updateOrder = async function(orderId, blockNumber, eventType) {
         let res = await pasarDBService.updateOrInsert(pasarOrder, blockNumber);
         if(res.modifiedCount !== 1 && res.upsertedCount !== 1) {
             console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            console.log(`${eventType}]  update or insert order info error : ${JSON.stringify(pasarOrder)}`)
+            console.log(`update or insert order info error : ${JSON.stringify(pasarOrder)}`)
             console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
         }
     } catch(error) {
@@ -88,13 +88,15 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).then(events => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime}
 
                 console.log(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(orderInfo._orderId, event.blockNumber, 'OrderForSale');
+                await updateOrder(result, event.blockNumber);
             })
             orderForSaleJobCurrent = toBlock + 1;
         }).catch(error => {
@@ -118,16 +120,18 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         pasarContractWs.getPastEvents('OrderPriceChanged', {
             fromBlock: orderPriceChangedJobCurrent, toBlock
         }).then(events => {
-            events.forEach(event => {
+            events.forEach(async event => {
                 let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}}
+                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime}
 
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
-                pasarDBService.insertOrderEvent(orderEventDetail);
-                updateOrder(orderInfo._orderId, event.blockNumber, 'OrderPriceChanged');
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber);
             })
 
             orderPriceChangedJobCurrent = toBlock + 1;
@@ -151,15 +155,17 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         pasarContractWs.getPastEvents('OrderFilled', {
             fromBlock: orderFilledJobCurrent, toBlock
         }).then(events => {
-            events.forEach(event => {
+            events.forEach(async event => {
                 let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime}
 
                 console.log(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
-                pasarDBService.insertOrderEvent(orderEventDetail);
-                updateOrder(orderInfo._orderId, event.blockNumber, 'OrderFilled');
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber);
             })
             orderFilledJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -182,15 +188,17 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         pasarContractWs.getPastEvents('OrderCanceled', {
             fromBlock: orderCanceledJobCurrent, toBlock
         }).then(events => {
-            events.forEach(event => {
+            events.forEach(async event => {
                 let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id};
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime};
 
                 console.log(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
-                pasarDBService.insertOrderEvent(orderEventDetail);
-                updateOrder(orderInfo._orderId, event.blockNumber, 'OrderCanceled');
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber);
             })
             orderCanceledJobCurrent = toBlock + 1;
         }).catch( error => {
