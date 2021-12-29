@@ -110,17 +110,15 @@ router.get('/tokenTrans', function(req, res) {
 router.get('/listTrans', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
-    let landingStr = req.query.landing;
     let methodStr = req.query.method;
     let timeOrderStr = req.query.timeOrder;
-    let pageNum, pageSize, landing, method, timeOrder;
+    let pageNum, pageSize, method, timeOrder;
 
     try {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
         method = methodStr ? methodStr : 'All';
         timeOrder = timeOrderStr ? parseInt(timeOrderStr) : -1; 
-        landing = landingStr ? parseInt(landingStr) : 1; 
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
@@ -130,7 +128,7 @@ router.get('/listTrans', function(req, res) {
         res.json({code: 400, message: 'bad request'});
         return;
     }
-    stickerDBService.listTrans(pageNum, pageSize, landing, method, timeOrder).then(result => {
+    stickerDBService.listTrans(pageNum, pageSize, method, timeOrder).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

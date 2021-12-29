@@ -357,14 +357,12 @@ module.exports = {
         }
     },
     
-    listTrans: async function(pageNum, pageSize, landing, method, timeOrder) {
+    listTrans: async function(pageNum, pageSize, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         console.log(methodCondition);
         try {
             await mongoClient.connect();
-            let limit = [{ $sort: {blockNumber: parseInt(timeOrder)} }];
-            if(landing == 1) ddd.push({$limit : pageSize * landing});
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
                 {   $facet: {
@@ -404,7 +402,7 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
-                ...limit
+                { $sort: {blockNumber: parseInt(timeOrder)} }
                 // { $sort: {blockNumber: parseInt(timeOrder)} },
                 // { $skip: pageSize * (pageNum - 1) },
                 // { $limit: landing * pageSize },
