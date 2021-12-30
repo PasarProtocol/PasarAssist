@@ -38,8 +38,11 @@ module.exports = {
                 }
                 result[i]['price'] = '0';
             }
-            if(result[i]['event'] == 'OrderFilled')
+            if(result[i]['event'] == 'OrderFilled') {
                 result[i]['event'] = "BuyOrder";
+                if(result[i]['royaltyOwner'] == result[i]['from']) // this the primary sale
+                    result[i]['royaltyFee'] = 0;
+            }
             if(result[i]['event'] == 'OrderCanceled')
                 result[i]['event'] = "CancelOrder";
             if(result[i]['event'] == 'OrderPriceChanged')
@@ -421,6 +424,7 @@ module.exports = {
                     result[i]['name'] = res['name'];
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
+                    result[i]['royaltyOwner'] = res['royaltyOwner'];
                 }
                 results.push(result[i]);
             }
@@ -588,7 +592,7 @@ module.exports = {
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1} },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner"} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             result = this.verifyEvents(result);
@@ -601,12 +605,27 @@ module.exports = {
     },
       
     getCollectibleByTokenId: async function(tokenId) {
+        let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",
+        tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
+        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+        name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
+        thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
+        adult: "$token.adult"}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
-            let collection = client.db(config.dbName).collection('pasar_token');
+            let collection = client.db(config.dbName).collection('pasar_token_event');
 
-            let result = await collection.find({tokenId: tokenId.toString()}).toArray();
+            let result = await collection.aggregate([
+                { $match: {tokenId}},
+                { $sort: {tokenId: 1, blockNumber: -1}},
+                { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
+                { $replaceRoot: { newRoot: "$doc"}},
+                { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                { $unwind: "$token"},
+                { $project: projectionToken}
+            ]).toArray();
+
             return {code: 200, message: 'success', data: result[0]};
         } catch (err) {
             logger.error(err);
@@ -737,6 +756,7 @@ module.exports = {
                     result[i]['name'] = res['name'];
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
+                    result[i]['royaltyOwner'] = res['royaltyOwner'];
                 }
                 results.push(result[i]);
             }
