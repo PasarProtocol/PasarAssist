@@ -2,6 +2,7 @@ const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 const config = require("../config");
+const pasarDBService = require("./pasarDBService")
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -71,7 +72,7 @@ module.exports = {
                         methodCondition.push({$or: [{'from': data}, {'to': data}]});
                     else {
                         methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
-                        methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});   
+                        methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});
                     }
                     methodCondition.push({'event': 'notSetYet'});
                     break;
@@ -80,8 +81,8 @@ module.exports = {
                         methodCondition.push({$or: [{'from': data}, {'to': data}]});
                     else {
                         methodCondition.push({'from': {$ne: "0x0000000000000000000000000000000000000000"}});
-                        methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});   
-                    }                
+                        methodCondition.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});
+                    }
                     methodCondition.push({'event': 'notSetYet'});
                     methodCondition.push({'price': {$ne: ''}});
                     break;
@@ -119,7 +120,7 @@ module.exports = {
             }
             conditions.push({$and:[...methodCondition]});
         }
-        
+
         return {$or:[...conditions]};
     },
     listStickers: async function(pageNum, pageSize, timeOrder) {
@@ -287,11 +288,23 @@ module.exports = {
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
                             adult: "$token.adult"}}
                 ]).toArray();
-
-                let tokenIds = [];
-                result.map(item => tokenIds.push(item.tokenId));
             }
-            return {code: 200, message: 'success', data: {result}};
+
+            if(owner) {
+                collection = client.db(config.dbName).collection('pasar_order');
+                let pipeline = [
+                    { $match: {sellerAddr: owner, orderState: "1"}},
+                    { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                    { $unwind: "$token"},
+                    { $project: pasarDBService.resultProject},
+                    { $sort: {blockNumber: -1}},
+                ];
+
+                let result2 = await collection.aggregate(pipeline).toArray();
+                result = [...result, ...result2]
+            }
+
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -359,7 +372,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    
+
     listTrans: async function(pageNum, pageSize, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "null", "null");
@@ -445,11 +458,11 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let result = await collection.aggregate([
                 {
-                    $group: { 
-                        _id  : "$status", 
+                    $group: {
+                        _id  : "$status",
                         value: {$sum: 1 }
                     }
-                } 
+                }
             ]).toArray();
             return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
         } catch (err) {
@@ -480,7 +493,7 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_address_did');
             let result = await collection.aggregate([
                 {
-                    $group: { 
+                    $group: {
                         _id  : "$status",
                         value: { $sum:1 }
                     }
@@ -500,7 +513,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
             let result = await collection.aggregate([
-                { 
+                {
                     $match :{
                         orderState: "2"
                     }
@@ -519,7 +532,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-      
+
     getTranVolumeByTokenId: async function(tokenId, type) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -532,7 +545,7 @@ module.exports = {
             });
             collection =  mongoClient.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
-            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} }, 
+            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
             { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
             { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
             { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
@@ -546,14 +559,14 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    
+
     getTranDetailsByTokenId: async function(tokenId, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "tokenId", tokenId);
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            
+
             let result = await collection.aggregate([
                 { $facet: {
                   "collection1": [
@@ -574,7 +587,7 @@ module.exports = {
                       from: "pasar_token_event",
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }, 
+                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }],
                       "as": "collection2"
                     }}
@@ -603,7 +616,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-      
+
     getCollectibleByTokenId: async function(tokenId) {
         let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",
         tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
@@ -653,7 +666,7 @@ module.exports = {
             });
             collection =  client.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} }, 
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
                 { $group: { "_id"  : { onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
                 { $project: {_id: 0, onlyDate: "$_id.onlyDate", price:1} },
@@ -696,7 +709,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    
+
     getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
@@ -723,7 +736,7 @@ module.exports = {
                       from: "pasar_token_event",
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }, 
+                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [methodCondition]} }],
                       "as": "collection2"
                     }}

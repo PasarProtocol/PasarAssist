@@ -2,6 +2,7 @@ let express = require('express');
 let router = express.Router();
 let indexDBService = require('../service/indexDBService');
 let pasarDBService = require('../service/pasarDBService');
+const BigNumber = require("bignumber.js");
 
 router.post('/register', function(req, res) {
     let nftToken = req.body;
@@ -86,10 +87,12 @@ router.get('/listPasarOrder', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
     let blockNumberStr = req.query.blockNumber;
+    let endBlockNumberStr = req.query.endBlockNumber;
+    let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
     let orderState = req.query.orderState;
     let sort = req.query.sort === "asc" ? 1 : -1;
 
-    let pageNum, pageSize, blockNumber;
+    let pageNum, pageSize, blockNumber, endBlockNumber;
 
     try {
         if(pageNumStr) {
@@ -105,23 +108,87 @@ router.get('/listPasarOrder', function(req, res) {
             blockNumber = parseInt(blockNumberStr);
         }
 
+        if(endBlockNumberStr) {
+            endBlockNumber = parseInt(endBlockNumberStr);
+        }
+
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
         }
-    }catch (e) {
+    } catch (e) {
         console.log(e);
         res.json({code: 400, message: 'bad request'});
         return;
     }
 
-    pasarDBService.listPasarOrder(pageNum, pageSize, blockNumber, orderState, sort).then(result => {
+    pasarDBService.listPasarOrder(pageNum, pageSize, blockNumber, endBlockNumber, orderState, sort, adult).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
         res.json({code: 500, message: 'server error'});
     })
 });
+
+router.get('/allSaleOrders', function (req, res) {
+    let sortType = req.query.sortType === 'price' ? 'price' : 'createTime';
+    let sort = req.query.sort === 'asc' ? 1 : -1;
+
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+
+    let pageNum, pageSize;
+    try {
+        if(pageNumStr) {
+            let number = parseInt(pageNumStr);
+            pageNum = number > 0 ? number : 1;
+
+            if(pageSizeStr) {
+                let size = parseInt(pageSizeStr);
+                pageSize = size > 0 ? size <= 100 ? size : 20 : 20;
+            } else {
+                pageSize = 20;
+            }
+        }
+    } catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+
+    pasarDBService.allSaleOrders(sortType, sort, pageNum, pageSize).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/searchSaleOrders', function (req, res) {
+    let searchType = req.query.searchType;
+    let key = req.query.key;
+
+    if(!key) {
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+    if(key.startsWith('0x') && key.length > 42) {
+        key = new BigNumber(key).toFormat({prefix:""});
+    }
+
+    if(!['tokenId', 'royaltyAddress', 'ownerAddress', 'name', 'description'].includes(searchType)) {
+        searchType = undefined;
+    }
+
+    pasarDBService.searchSaleOrders(searchType, key).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
 
 router.get('/whitelist', function(req, res) {
     let address = req.query.address;
