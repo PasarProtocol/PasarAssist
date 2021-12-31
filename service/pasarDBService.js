@@ -204,11 +204,16 @@ module.exports = {
         }
     },
 
-    listPasarOrder: async function(pageNum=1, pageSize=10, blockNumber, endBlockNumber, orderState, sort, adult) {
+    listPasarOrder: async function(pageNum=1, pageSize=10, blockNumber, endBlockNumber, orderState,sortType, sort, adult) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
+
+            let latestBlockNumber = 0;
+            if(sortType === 'price' && pageNum === 1) {
+                latestBlockNumber = (await collection.findOne({}, {$sort: {blockNumber: -1}})).blockNumber;
+            }
 
             let match = {}
 
@@ -249,13 +254,13 @@ module.exports = {
                 total = await collection.find(match).count();
             }
             pipeline.push({ $project: this.resultProject });
-            pipeline.push({ $sort: {blockNumber: sort} });
+            pipeline.push({ $sort: {[sortType]: sort}});
             pipeline.push({ $skip: (pageNum - 1) * pageSize });
             pipeline.push({ $limit: pageSize });
 
             let result = await collection.aggregate(pipeline).toArray();
 
-            return {code: 200, message: 'success', data: {total, result}};
+            return {code: 200, message: 'success', data: {total,latestBlockNumber, result}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
