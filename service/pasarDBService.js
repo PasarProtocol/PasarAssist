@@ -187,7 +187,7 @@ module.exports = {
                 { $unwind: "$token"},
             ];
 
-            if(match !== undefined) {
+            if(Object.keys(match).length !== 0) {
                 pipeline.push({$match: match})
             }
             pipeline.push({$project: this.resultProject})
