@@ -105,21 +105,36 @@ module.exports = {
         tokenDid: "$token.did", thumbnail: "$token.thumbnail", tokenCreateTime: "$token.createTime",
         tokenUpdateTime: "$token.updateTime", adult: "$token.adult"},
 
-    allSaleOrders: async function(sortType, sort, pageNum, pageSize) {
+    allSaleOrders: async function(sortType, sort, pageNum, pageSize, adult) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
 
-            let total = await collection.find({orderState: "1"}).count();
-
             let pipeline = [
                 { $match: {orderState: "1"}},
                 { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
                 { $unwind: "$token"},
-                { $project: this.resultProject},
-                { $sort: {[sortType]: sort}},
             ];
+
+            let total
+            if(adult !== undefined) {
+                let pipeline2 = [
+                    { $match: {orderState: "1"}},
+                    { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                    { $unwind: "$token"},
+                    { $match: {"token.adult": adult}},
+                    { $count: "total"}
+                ];
+                total = (await collection.aggregate(pipeline2).toArray())[0].total;
+
+                pipeline.push({ $match: {"token.adult": adult}});
+            } else {
+                total = await collection.find({orderState: "1"}).count();
+            }
+
+            pipeline.push({ $project: this.resultProject});
+            pipeline.push({ $sort: {[sortType]: sort}});
 
             if(pageNum !== undefined) {
                 pipeline.push({ $skip: (pageNum - 1) * pageSize });
@@ -137,27 +152,31 @@ module.exports = {
         }
     },
 
-    searchSaleOrders: async function(searchType, key) {
+    searchSaleOrders: async function(searchType, key, adult) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
 
-            let firstMatch = {}, match;
+            let firstMatch = {}, match = {};
+            if(adult !== undefined) {
+                match["token.adult"] = adult;
+            }
+
             if(searchType !== undefined) {
                 if(searchType === 'ownerAddress') {
                     firstMatch["sellerAddr"] = key;
                 } else if (searchType === 'tokenId'){
                     firstMatch["tokenId"] = key;
                 } else if(searchType === 'name') {
-                    match = {"token.name": {$regex: key}};
+                    match["token.name"] = {$regex: key};
                 } else if(searchType === 'royaltyAddress') {
-                    match = {"token.royaltyOwner": key};
+                    match["token.royaltyOwner"] = key;
                 } else {
-                    match = {"token.description": {$regex: key}};
+                    match["token.description"] = {$regex: key};
                 }
             } else {
-                match = {$or: [{"tokenId": key}, {"token.royaltyOwner": key}, {"sellerAddr": key}, {"token.name": {$regex: key}}, {"token.description": {$regex: key}}]};
+                match["$or"] = [{"tokenId": key}, {"token.royaltyOwner": key}, {"sellerAddr": key}, {"token.name": {$regex: key}}, {"token.description": {$regex: key}}];
             }
 
             firstMatch["orderState"] = "1";
@@ -221,7 +240,6 @@ module.exports = {
                     { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
                     { $unwind: "$token"},
                     { $match: {"token.adult": adult}},
-                    { $project: this.resultProject},
                     { $count: "total"}
                 ];
                 total = (await collection.aggregate(pipeline2).toArray())[0].total;

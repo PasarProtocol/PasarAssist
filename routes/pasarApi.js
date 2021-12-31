@@ -133,6 +133,7 @@ router.get('/listPasarOrder', function(req, res) {
 router.get('/allSaleOrders', function (req, res) {
     let sortType = req.query.sortType === 'price' ? 'price' : 'createTime';
     let sort = req.query.sort === 'asc' ? 1 : -1;
+    let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
 
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
@@ -157,7 +158,7 @@ router.get('/allSaleOrders', function (req, res) {
     }
 
 
-    pasarDBService.allSaleOrders(sortType, sort, pageNum, pageSize).then(result => {
+    pasarDBService.allSaleOrders(sortType, sort, pageNum, pageSize, adult).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -168,6 +169,7 @@ router.get('/allSaleOrders', function (req, res) {
 router.get('/searchSaleOrders', function (req, res) {
     let searchType = req.query.searchType;
     let key = req.query.key;
+    let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
 
     if(!key) {
         res.json({code: 400, message: 'bad request'});
@@ -182,7 +184,7 @@ router.get('/searchSaleOrders', function (req, res) {
         searchType = undefined;
     }
 
-    pasarDBService.searchSaleOrders(searchType, key).then(result => {
+    pasarDBService.searchSaleOrders(searchType, key, adult).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
