@@ -211,8 +211,8 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
 
             let latestBlockNumber = 0;
-            if(sortType === 'price' && pageNum === 1) {
-                latestBlockNumber = (await collection.findOne({}, {$sort: {blockNumber: -1}})).blockNumber;
+            if(sortType !== undefined && pageNum === 1) {
+                latestBlockNumber = (await collection.findOne({}, {sort: {blockNumber: -1}})).blockNumber;
             }
 
             let match = {}

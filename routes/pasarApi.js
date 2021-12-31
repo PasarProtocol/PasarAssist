@@ -90,7 +90,7 @@ router.get('/listPasarOrder', function(req, res) {
     let endBlockNumberStr = req.query.endBlockNumber;
     let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
     let orderState = req.query.orderState;
-    let sortType = req.query.sortType === 'price' ? 'price' : 'blockNumber';
+    let sortType = req.query.sortType === 'price' ? 'price' : 'createTime';
     let sort = req.query.sort === "asc" ? 1 : -1;
 
     let pageNum, pageSize, blockNumber, endBlockNumber;
