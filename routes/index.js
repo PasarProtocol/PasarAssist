@@ -2,8 +2,6 @@ let express = require('express');
 let router = express.Router();
 let dbService = require('../service/indexDBService');
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 /* Used for service check. */
 router.get('/check', function(req, res) {
     res.json({code: 200, message: 'success'});
