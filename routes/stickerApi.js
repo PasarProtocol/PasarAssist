@@ -186,12 +186,10 @@ router.get('/gettv', function(req, res) {
     })
 });
 
-router.get('/getTranVolumeByTokenId', function(req, res) {
+router.get('/getNftPriceByTokenId', function(req, res) {
     let tokenId = req.query.tokenId;
-    let type = req.query.type;
     tokenId = tokenId ? tokenId: "^";
-    type = type ? type: 0;
-    stickerDBService.getTranVolumeByTokenId(tokenId, type).then(result => {
+    stickerDBService.getNftPriceByTokenId(tokenId).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -222,12 +220,12 @@ router.get('/getCollectibleByTokenId', function(req, res) {
     })
 });
 
-router.get('/getTranvolumeTotalRoyaltySaleVolumeByWalletAddr', function(req, res) {
+router.get('/getTotalRoyaltyandTotalSaleByWalletAddr', function(req, res) {
     let walletAddr = req.query.walletAddr;
     let type = req.query.type;
     walletAddr = walletAddr ? walletAddr.toString(): "^";
     type = type ? type: 0;
-    stickerDBService.getTranvolumeTotalRoyaltySaleVolumeByWalletAddr(walletAddr, type).then(result => {
+    stickerDBService.getTotalRoyaltyandTotalSaleByWalletAddr(walletAddr, type).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

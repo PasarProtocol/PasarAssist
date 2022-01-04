@@ -584,14 +584,14 @@ module.exports = {
         }
     },
 
-    getTranVolumeByTokenId: async function(tokenId, type) {
+    getNftPriceByTokenId: async function(tokenId) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.find({}).forEach( function (x) {
+            await collection.find({"tokenId": tokenId}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
-                x.price = type == 0 ? parseInt(x.price) : parseInt(x.royaltyFee);
+                x.price = parseInt(x.price);
                 mongoClient.db(config.dbName).collection('token_temp').save(x);
             });
             collection =  mongoClient.db(config.dbName).collection('token_temp');
@@ -699,28 +699,28 @@ module.exports = {
         }
     },
 
-    getTranvolumeTotalRoyaltySaleVolumeByWalletAddr: async function(walletAddr, type) {
+    getTotalRoyaltyandTotalSaleByWalletAddr: async function(walletAddr, type) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
             let addressCondition = [];
-            addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
-            if(type != 2) {
-                // type: 0 => transaction volume, 1 => total royalty, 2 => sale volume
-                addressCondition.push({"buyerAddr": new RegExp('^' + walletAddr)});
-            }
+            //type 0: total royalties, 1: total sales
+            if(type == 0)
+                addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
+            else 
+                addressCondition.push({"royaltyOwner": new RegExp('^' + walletAddr)});
             let collection = client.db(config.dbName).collection('pasar_order');
             await collection.find({}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
-                x.price = type == 1 ? parseInt(x.royaltyFee) : parseInt(x.price);
+                x.value = type == 1 ? parseInt(x.royaltyFee) : parseInt(x.price) * parseFloat(x.amount);
                 client.db(config.dbName).collection('token_temp').save(x);
             });
             collection =  client.db(config.dbName).collection('token_temp');
             let result = await collection.aggregate([
                 { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
-                { $group: { "_id"  : { onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, onlyDate: "$_id.onlyDate", price:1} },
+                { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
+                { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
                 { $sort: {onlyDate: 1} },
             ]).toArray();
             await collection.drop();
