@@ -62,10 +62,10 @@ module.exports = {
                 // let result = await pasarContract.methods.getOrderById(orderId).call();
                 let orderId = result.orderId;
                 let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
-                    tokenId: result.tokenId, amount: result.amount, price: parseInt(result.price), endTime: result.endTime,
+                    tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), endTime: result.endTime,
                     sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-                    createTime: parseInt(result.createTime), updateTime: parseInt(result.updateTime), blockNumber}
+                    createTime: result.createTime, updateTime: result.updateTime, blockNumber}
 
                 if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
                     let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
@@ -102,10 +102,9 @@ module.exports = {
 
                 if(blockNumber > config.upgradeBlock) {
                     let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
+                    token.didUri = extraInfo.didUri;
                     if(extraInfo.didUri !== '') {
-                        token.didUri = extraInfo.didUri;
                         token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-
                         await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                     }
                 }
@@ -125,6 +124,28 @@ module.exports = {
                     logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                     await stickerDBService.replaceToken(token);
                 }
+            } catch (e) {
+                logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
+                logger.info(e);
+            }
+        }
+
+        async function updateToken(blockNumber,tokenId,to) {
+            try {
+                let result = await stickerContract.methods.tokenInfo(tokenId).call();
+                let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
+                    holder: to, updateTime: result.updateTime}
+
+                if(blockNumber > config.upgradeBlock) {
+                    let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
+                    token.didUri = extraInfo.didUri;
+                    if(extraInfo.didUri !== '') {
+                        token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
+                        await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
+                    }
+                }
+
+                await stickerDBService.updateToken()
             } catch (e) {
                 logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
