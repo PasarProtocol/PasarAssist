@@ -328,16 +328,16 @@ module.exports = {
 
         let approval  = schedule.scheduleJob(new Date(now + 10 * 1000), async()=> {
             isGetApprovalRun = true;
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+            let lastHeight = await stickerDBService.getLastApprovalSyncHeight();
             logger.info(`[approval] Sync Starting ... from block ${lastHeight + 1}`)
             stickerContractWs.events.ApprovalForAll({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function(error) {
                 logger.info(error);
-                logger.info("[approval] Sync Ending ...aaaaaa");
+                logger.info("[approval] Sync Ending ...");
                 isGetApprovalRun = false;
             }).on("data", async function (event) {
-                console.log(event, 'bbbbbbbbbbb');
+                await stickerDBService.addAprovalForAllEvent(event);
                 return;
             });
         });
