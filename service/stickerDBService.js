@@ -1,3 +1,4 @@
+const fetch = require('node-fetch');
 const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
@@ -226,6 +227,57 @@ module.exports = {
         }
     },
 
+    getLastApprovalSyncHeight: async function () {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_approval_event');
+            let doc = await collection.findOne({}, {sort:{blockNumber: -1}});
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                return 1;
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    addAprovalForAllEvent: async function (eventData) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const db = mongoClient.db(config.dbName);
+            const response = await fetch(
+                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + eventData.transactionHash
+            );
+            
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+             
+            let data = await response.json();
+            data = data.result;
+            let transactionFee = data.gasUsed * data.gasPrice / (10 ** 18)
+            let record = {blockNumber: eventData.blockNumber, transactionHash: eventData.transactionHash, blockHash: eventData.blockHash,
+                 owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee: transactionFee, timestamp: data.timeStamp};
+            let lastHeight = await this.getLastApprovalSyncHeight();
+            if (lastHeight == 1) {
+                await db.createCollection('pasar_approval_event');
+            }
+            await db.collection('pasar_approval_event').insertOne(record);
+            return;
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     search: async function(keyword) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -376,7 +428,6 @@ module.exports = {
     listTrans: async function(pageNum, pageSize, method, timeOrder) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "null", "null");
-        console.log(methodCondition);
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -715,6 +766,12 @@ module.exports = {
         let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
         try {
             await mongoClient.connect();
+            let approval_record = await mongoClient.db(config.dbName).collection('pasar_approval_event').aggregate([
+                { $match: {owner: walletAddr} },
+                { $sort: {blockNumber: 1} },
+                { $limit: 1 },
+                { $project: {'_id': 0, tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1, method: 'SetApprovalForAll'} }
+            ]).toArray();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
                 { $facet: {
@@ -752,10 +809,6 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
-                // { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
-                // { $unwind: "$token" },
-                // { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1} },
-                // { $match: {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}},
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let results = [];
@@ -774,7 +827,10 @@ module.exports = {
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
-            let total = result.length;
+            let is_exist_approval = approval_record.concat(results);
+            if(is_exist_approval != -1)
+                results = approval_record.concat(results);
+            let total = result.length + is_exist_approval != -1 ? approval_record.length : 0;
             return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
