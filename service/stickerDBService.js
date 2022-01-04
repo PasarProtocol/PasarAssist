@@ -3,7 +3,8 @@ const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 const config = require("../config");
-const pasarDBService = require("./pasarDBService")
+const pasarDBService = require("./pasarDBService");
+const { ReplSet } = require('mongodb/lib/core');
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -683,14 +684,27 @@ module.exports = {
             let result = await collection.aggregate([
                 { $match: {tokenId}},
                 { $sort: {tokenId: 1, blockNumber: -1}},
+                { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
                 { $replaceRoot: { newRoot: "$doc"}},
                 { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
                 { $unwind: "$token"},
                 { $project: projectionToken}
             ]).toArray();
-
-            return {code: 200, message: 'success', data: result[0]};
+            result = result[0];
+            collection = client.db(config.dbName).collection('pasar_order_event');
+            let orderForSaleRecord = await collection.aggregate([
+                { $match: {$and: [{tokenId: tokenId}, {sellerAddr: result['holder']}, {event: 'OrderForSale'}]} },
+                { $sort: {tokenId: 1, blockNumber: -1}}
+            ]).toArray();
+            if(orderForSaleRecord.length > 0) {
+                result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
+                result['lastSeller'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+            } else {
+                result['DateOnMarket'] = "NotOnSale";
+                result['SaleType'] = "NotOnSale";
+            }
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
