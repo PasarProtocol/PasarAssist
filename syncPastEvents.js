@@ -35,10 +35,10 @@ let updateOrder = async function(result, blockNumber) {
     try {
         let orderId = result.orderId;
         let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
-            tokenId: result.tokenId, amount: result.amount, price: parseInt(result.price), endTime: result.endTime,
+            tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), endTime: result.endTime,
             sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
             lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-            createTime: parseInt(result.createTime), updateTime: parseInt(result.updateTime), blockNumber}
+            createTime: result.createTime, updateTime: result.updateTime, blockNumber}
 
         if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
             let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
@@ -256,8 +256,8 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                         if(blockNumber > config.upgradeBlock) {
                             let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
+                            token.didUri = extraInfo.didUri;
                             if(extraInfo.didUri !== '') {
-                                token.didUri = extraInfo.didUri;
                                 token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
                                 await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                             }
