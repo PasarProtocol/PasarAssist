@@ -1,5 +1,3 @@
-import jobService from "./service/jobService";
-
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 let pasarDBService = require('./service/pasarDBService');
@@ -7,9 +5,10 @@ let stickerDBService = require('./service/stickerDBService');
 let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
+let jobService = require('./service/jobService');
 const BigNumber = require("bignumber.js");
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
     reconnect: {
