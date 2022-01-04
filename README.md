@@ -110,7 +110,9 @@ method:       GET
 parameter:    pageNum (页码 从1开始 选填 默认1)
               pageSize (每页条目 大于0 选填 默认10)
               blockNumber (返回本高度之后的数据 选填)
+              endBlockNumber (返回本高度之前的数据 选填)
               orderState (订单状态： 1(OrderForSale), 2(OrderCanceled), 3(OrderFilled))
+              adult （值只能是纯小写 true 或者 false 选填）
               sort (排序方式: 默认按BlockNumber降序， 传 asc表示按BlockNumber升序)
               
 response:     {"code": 200, "message": "success", data: {total: 100, result: [{}, ...]}}  成功
@@ -118,7 +120,36 @@ response:     {"code": 200, "message": "success", data: {total: 100, result: [{}
               {"code": 500, "message": <descripton>}  服务器错误
 ```
 
-6. 获取 `Whitelist`
+6. (可选分页)获取上架 `Orders`
+
+````
+url:          /allSaleOrders
+method:       GET
+parameter:    pageNum  (页码 从1开始 选填, 如果未指定则获取所有)
+              pageSize (每页条目 大于0 选填， 如果未指定则获取所有)
+              sortType (排序字段: 默认按订单创建时间(createTime), 可以指定为 price)
+              sort     (排序方式: 默认降序， 传asc表示升序)
+
+response:     {"code": 200, "message": "success", data: {total: 100, result: [{}, ...]}}  成功
+              {"code": 400, "message": <descripton>}  参数错误
+              {"code": 500, "message": <descripton>}  服务器错误
+````
+
+7. 搜索上架的 `Orders`
+
+````
+url:          /searchSaleOrders
+method:       GET
+parameter:    key (搜索关键字, 必选)
+              searchType  (搜索类型, 值只能是 'tokenId', 'royaltyAddress', 'ownerAddress', 'name', 'description'其中之一, 可选的 )
+
+response:     {"code": 200, "message": "success", data: [{}, ...]}  成功
+              {"code": 400, "message": <descripton>}  参数错误
+              {"code": 500, "message": <descripton>}  服务器错误
+````
+
+
+8. 获取 `Whitelist`
 
 ```
 url:          /whitelist

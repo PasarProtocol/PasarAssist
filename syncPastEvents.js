@@ -1,3 +1,5 @@
+import jobService from "./service/jobService";
+
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 let pasarDBService = require('./service/pasarDBService');
@@ -33,10 +35,10 @@ let updateOrder = async function(result, blockNumber) {
     try {
         let orderId = result.orderId;
         let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
-            tokenId: result.tokenId, amount: result.amount, price: result.price, endTime: result.endTime,
+            tokenId: result.tokenId, amount: result.amount, price: parseInt(result.price), endTime: result.endTime,
             sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
             lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-            createTime: result.createTime, updateTime: result.updateTime, blockNumber}
+            createTime: parseInt(result.createTime), updateTime: parseInt(result.updateTime), blockNumber}
 
         if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
             let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
@@ -44,20 +46,13 @@ let updateOrder = async function(result, blockNumber) {
                 pasarOrder.platformAddr = extraInfo.platformAddr;
                 pasarOrder.platformFee = extraInfo.platformFee;
                 pasarOrder.sellerUri = extraInfo.sellerUri;
-
-                let tokenCID = extraInfo.sellerUri.split(":")[2];
-                let response = await fetch(config.ipfsNodeUrl + tokenCID);
-                pasarOrder.sellerDid = await response.json();
+                pasarOrder.sellerDid = await jobService.getInfoByIpfsUri(extraInfo.sellerUri);
 
                 await pasarDBService.replaceDid({address: result.sellerAddr, did: pasarOrder.sellerDid});
             }
         }
-        let res = await pasarDBService.updateOrInsert(pasarOrder, blockNumber);
-        if(res.modifiedCount !== 1 && res.upsertedCount !== 1) {
-            console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-            console.log(`update or insert order info error : ${JSON.stringify(pasarOrder)}`)
-            console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-        }
+
+        await pasarDBService.updateOrInsert(pasarOrder);
     } catch(error) {
         console.log(error);
         console.log(`[OrderForSale] Sync - getOrderById(${orderId}) at ${blockNumber} call error`);
@@ -126,7 +121,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    data: {oldPrice: parseInt(orderInfo._oldPrice), newPrice: parseInt(orderInfo._newPrice)}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime}
 
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
@@ -253,9 +248,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                         token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
 
-                        let tokenCID = result.tokenUri.split(":")[2];
-                        let response = await fetch(config.ipfsNodeUrl + tokenCID);
-                        let data = await response.json();
+                        let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                         token.tokenJsonVersion = data.version;
                         token.type = data.type;
                         token.name = data.name;
@@ -265,12 +258,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
                             if(extraInfo.didUri !== '') {
                                 token.didUri = extraInfo.didUri;
-
-                                let creatorCID = extraInfo.didUri.split(":")[2];
-                                let response = await fetch(config.ipfsNodeUrl + creatorCID);
-                                token.did = await response.json();
-
-                                console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                                token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
                                 await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                             }
                         }
@@ -279,6 +267,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.tippingAddress = data.tippingAddress;
                             token.entry = data.entry;
                             token.avatar = data.avatar;
+                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                             await stickerDBService.replaceGalleriaToken(token);
                         } else {
                             token.thumbnail = data.thumbnail;
@@ -286,6 +275,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.kind = data.kind;
                             token.size = data.size;
                             token.adult = data.adult ? data.adult : false;
+                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                             await stickerDBService.replaceToken(token);
                         }
                     } catch (e) {

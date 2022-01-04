@@ -19,6 +19,7 @@ log4js.configure({
     pm2InstanceVar: 'INSTANCE_ID'
 });
 global.logger = log4js.getLogger('default');
+global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let app = express();
 
