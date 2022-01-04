@@ -765,7 +765,7 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
-            result = {assets: count_collectibles, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: count_collectibles - count_sold + count_purchased, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
