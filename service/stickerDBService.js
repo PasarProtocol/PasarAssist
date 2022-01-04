@@ -701,8 +701,8 @@ module.exports = {
                 result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
                 result['lastSeller'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
             } else {
-                result['DateOnMarket'] = "NotOnSale";
-                result['SaleType'] = "NotOnSale";
+                result['DateOnMarket'] = "Not on sale";
+                result['SaleType'] = "Not on sale";
             }
             return {code: 200, message: 'success', data: result};
         } catch (err) {
