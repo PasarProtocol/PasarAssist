@@ -120,7 +120,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    data: {oldPrice: parseInt(orderInfo._oldPrice), newPrice: parseInt(orderInfo._newPrice)}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime}
 
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
