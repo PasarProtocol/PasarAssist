@@ -5,7 +5,6 @@ const {MongoClient} = require("mongodb");
 const config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
-const app = require('../app');
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -256,11 +255,11 @@ module.exports = {
             const response = await fetch(
                 'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + eventData.transactionHash
             );
-            
+
             if (!response.ok) {
                 throw new Error(response.statusText);
             }
-             
+
             let data = await response.json();
             data = data.result;
             let transactionFee = data.gasUsed * data.gasPrice / (10 ** 18)
@@ -738,7 +737,7 @@ module.exports = {
             //type 0: total royalties, 1: total sales
             if(type == 0)
                 addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
-            else 
+            else
                 addressCondition.push({"royaltyOwner": new RegExp('^' + walletAddr)});
             let collection = client.db(config.dbName).collection('pasar_order');
             await collection.find({}).forEach( function (x) {

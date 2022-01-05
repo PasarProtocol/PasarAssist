@@ -11,6 +11,13 @@ const BigNumber = require("bignumber.js");
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
+    clientConfig: {
+        // Useful if requests are large
+        maxReceivedFrameSize: 100000000,   // bytes - default: 1MiB
+        maxReceivedMessageSize: 100000000, // bytes - default: 8MiB
+        keepalive: true, // Useful to keep a connection alive
+        keepaliveInterval: 60000 // ms
+    },
     reconnect: {
         auto: true,
         delay: 5000,
