@@ -169,14 +169,15 @@ module.exports = {
                 } else if (searchType === 'tokenId'){
                     firstMatch["tokenId"] = key;
                 } else if(searchType === 'name') {
-                    match["token.name"] = {$regex: key};
+                    match["token.name"] = {$regex: key, $options: 'i'};
                 } else if(searchType === 'royaltyAddress') {
                     match["token.royaltyOwner"] = key;
                 } else {
-                    match["token.description"] = {$regex: key};
+                    match["token.description"] = {$regex: key, $options: 'i'};
                 }
             } else {
-                match["$or"] = [{"tokenId": key}, {"token.royaltyOwner": key}, {"sellerAddr": key}, {"token.name": {$regex: key}}, {"token.description": {$regex: key}}];
+                match["$or"] = [{"tokenId": key}, {"token.royaltyOwner": key}, {"sellerAddr": key},
+                    {"token.name": {$regex: key, $options: 'i'}}, {"token.description": {$regex: key, $options: 'i'}}];
             }
 
             firstMatch["orderState"] = "1";
