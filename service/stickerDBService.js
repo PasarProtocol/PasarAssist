@@ -440,7 +440,7 @@ module.exports = {
                     { $lookup: {
                         from: "pasar_order_event",
                         pipeline: [
-                            { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr",
+                            { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1} },
                             { $match: {$and: [methodCondition]} }
                         ],
@@ -481,6 +481,7 @@ module.exports = {
             ]).toArray();
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
             {
                 if(i >= result.length)
@@ -491,6 +492,12 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                }
+                if(result[i]['event'] == 'OrderFilled') {
+                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
+                    if(res != null) {
+                        result[i]['platformfee'] = res['platformFee'];
+                    }
                 }
                 results.push(result[i]);
             }
@@ -627,7 +634,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1,
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1,
                             timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }
                       ],
@@ -658,9 +665,18 @@ module.exports = {
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner"} },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
+            let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
+            for(var i = 0; i < result.length; i++) {
+                if(result[i]['event'] == 'OrderFilled') {
+                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
+                    if(res != null) {
+                        result[i]['platformfee'] = res['platformFee'];
+                    }
+                }
+            }
             result = this.verifyEvents(result);
             return {code: 200, message: 'success', data: result};
         } catch (err) {
@@ -796,7 +812,7 @@ module.exports = {
                       from: "pasar_order_event",
                       pipeline: [
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1} },
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} },
                         { $match : {$and: [methodCondition]} }
                       ],
                       "as": "collection1"
@@ -828,6 +844,7 @@ module.exports = {
             ]).toArray();
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             let start = (pageNum - 1) * pageSize;
             start = pageNum == 1 ? start: start - approval_record.length;
             let end = pageSize * pageNum - approval_record.length;
@@ -841,6 +858,12 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                }
+                if(result[i]['event'] == 'OrderFilled') {
+                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
+                    if(res != null) {
+                        result[i]['platformfee'] = res['platformFee'];
+                    }
                 }
                 results.push(result[i]);
             }
