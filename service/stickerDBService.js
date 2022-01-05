@@ -337,7 +337,7 @@ module.exports = {
                             royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
                             name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-                            adult: "$token.adult"}}
+                            adult: "$token.adult", video: "$token.video"}}
                 ]).toArray();
             }
 
@@ -735,7 +735,7 @@ module.exports = {
             //type 0: total royalties, 1: total sales
             if(type == 0)
                 addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
-            else 
+            else
                 addressCondition.push({"royaltyOwner": new RegExp('^' + walletAddr)});
             let collection = client.db(config.dbName).collection('pasar_order');
             await collection.find({}).forEach( function (x) {
