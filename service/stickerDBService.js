@@ -5,6 +5,7 @@ const {MongoClient} = require("mongodb");
 const config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
+const app = require('../app');
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -827,7 +828,10 @@ module.exports = {
             ]).toArray();
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
-            for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
+            let start = (pageNum - 1) * pageSize;
+            start = pageNum == 1 ? start: start - approval_record.length;
+            let end = pageSize * pageNum - approval_record.length;
+            for(var i = start; i < end; i++)
             {
                 if(i >= result.length)
                     break;
@@ -841,10 +845,9 @@ module.exports = {
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
-            let is_exist_approval = approval_record.concat(results);
-            if(is_exist_approval != -1)
+            if(approval_record.length != 0 && pageNum == 1)
                 results = approval_record.concat(results);
-            let total = result.length + is_exist_approval != -1 ? approval_record.length : 0;
+            let total = result.length + approval_record.length;
             return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
