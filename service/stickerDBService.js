@@ -3,7 +3,9 @@ const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 const config = require("../config");
-const pasarDBService = require("./pasarDBService")
+const pasarDBService = require("./pasarDBService");
+const { ReplSet } = require('mongodb/lib/core');
+const app = require('../app');
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -683,14 +685,27 @@ module.exports = {
             let result = await collection.aggregate([
                 { $match: {tokenId}},
                 { $sort: {tokenId: 1, blockNumber: -1}},
+                { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
                 { $replaceRoot: { newRoot: "$doc"}},
                 { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
                 { $unwind: "$token"},
                 { $project: projectionToken}
             ]).toArray();
-
-            return {code: 200, message: 'success', data: result[0]};
+            result = result[0];
+            collection = client.db(config.dbName).collection('pasar_order_event');
+            let orderForSaleRecord = await collection.aggregate([
+                { $match: {$and: [{tokenId: tokenId}, {sellerAddr: result['holder']}, {event: 'OrderForSale'}]} },
+                { $sort: {tokenId: 1, blockNumber: -1}}
+            ]).toArray();
+            if(orderForSaleRecord.length > 0) {
+                result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
+                result['lastSeller'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+            } else {
+                result['DateOnMarket'] = "Not on sale";
+                result['SaleType'] = "Not on sale";
+            }
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -751,7 +766,7 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
-            result = {assets: count_collectibles, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: count_collectibles - count_sold + count_purchased, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -813,7 +828,10 @@ module.exports = {
             ]).toArray();
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
-            for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
+            let start = (pageNum - 1) * pageSize;
+            start = pageNum == 1 ? start: start - approval_record.length;
+            let end = pageSize * pageNum - approval_record.length;
+            for(var i = start; i < end; i++)
             {
                 if(i >= result.length)
                     break;
@@ -827,10 +845,9 @@ module.exports = {
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
-            let is_exist_approval = approval_record.concat(results);
-            if(is_exist_approval != -1)
+            if(approval_record.length != 0 && pageNum == 1)
                 results = approval_record.concat(results);
-            let total = result.length + is_exist_approval != -1 ? approval_record.length : 0;
+            let total = result.length + approval_record.length;
             return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
