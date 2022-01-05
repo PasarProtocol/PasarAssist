@@ -115,15 +115,20 @@ module.exports = {
                     token.avatar = data.avatar;
                     logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                     await stickerDBService.replaceGalleriaToken(token);
+                    return;
+                }
+
+                if(token.type === 'feeds-video') {
+                    token.video = data.video;
                 } else {
                     token.thumbnail = data.thumbnail;
                     token.asset = data.image;
                     token.kind = data.kind;
                     token.size = data.size;
-                    token.adult = data.adult ? data.adult : false;
-                    logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-                    await stickerDBService.replaceToken(token);
                 }
+                token.adult = data.adult ? data.adult : false;
+                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                await stickerDBService.replaceToken(token);
             } catch (e) {
                 logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
