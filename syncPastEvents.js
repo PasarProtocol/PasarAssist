@@ -273,17 +273,22 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.tippingAddress = data.tippingAddress;
                             token.entry = data.entry;
                             token.avatar = data.avatar;
-                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                            logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                             await stickerDBService.replaceGalleriaToken(token);
+                            return;
+                        }
+
+                        if(token.type === 'feeds-video') {
+                            token.video = data.video;
                         } else {
                             token.thumbnail = data.thumbnail;
                             token.asset = data.image;
                             token.kind = data.kind;
                             token.size = data.size;
-                            token.adult = data.adult ? data.adult : false;
-                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-                            await stickerDBService.replaceToken(token);
                         }
+                        token.adult = data.adult ? data.adult : false;
+                        logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                        await stickerDBService.replaceToken(token);
                     } catch (e) {
                         console.log(`[TokenInfo] Sync error at ${event.blockNumber} ${tokenId}`);
                         console.log(e);
