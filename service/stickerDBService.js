@@ -148,6 +148,8 @@ module.exports = {
         for(var i = 0; i < methods.length; i++) {
             var method = methods[i];
             let methodCondition = [];
+            if(method == 'SetApprovalForAll')
+                continue;
             switch(method)
             {
                 case "Mint":
@@ -207,9 +209,10 @@ module.exports = {
                     else methodCondition.push({'event': {$ne: 'All'}});
                     break;
             }
+            console.log({$and:[...methodCondition]}, method)
             conditions.push({$and:[...methodCondition]});
         }
-
+        console.log({$or:[...conditions]})
         return {$or:[...conditions]};
     },
     listStickers: async function(pageNum, pageSize, timeOrder) {
