@@ -146,9 +146,19 @@ router.get('/nftnumber', function(req, res) {
     })
 });
 
-router.get('/udpateOrderEventCollection', function(req, res) {
+router.get('/updateOrderEventCollection', function(req, res) {
 
-    stickerDBService.udpateOrderEventCollection().then(result => {
+    stickerDBService.updateOrderEventCollection().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/updateAllEventCollectionForGasFee', function(req, res) {
+
+    stickerDBService.updateAllEventCollectionForGasFee().then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

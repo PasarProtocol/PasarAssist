@@ -25,6 +25,41 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getGasFee: async function(txHash) {
+        let transactionFee;
+        try {
+            const response = await fetch(
+                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + txHash
+            );
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+            let data = await response.json();
+            data = data.result;
+            transactionFee = data.gasUsed * data.gasPrice / (10 ** 18);
+        } catch (err) {
+        } finally {
+            return transactionFee;
+        }
+    },
+    getTimestamp: async function(txHash) {
+        let timeStamp;
+        try {
+            const response = await fetch(
+                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + txHash
+            );
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+            let data = await response.json();
+            data = data.result;
+            timeStamp = data.timeStamp;
+        } catch (err) {
+
+        } finally {
+            return timeStamp;
+        }
+    },
     verifyEvents: function(result) {
         for(var i = 0; i < result.length; i++) {
             if(result[i]['event'] == "notSetYet") {
@@ -252,17 +287,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const db = mongoClient.db(config.dbName);
-            const response = await fetch(
-                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + eventData.transactionHash
-            );
-            if (!response.ok) {
-                throw new Error(response.statusText);
-            }
-            let data = await response.json();
-            data = data.result;
-            let transactionFee = data.gasUsed * data.gasPrice / (10 ** 18)
+            let transactionFee = this.getGasFee(eventData.transactionHash);
+            let timestamp = this.getTimestamp(eventData.transactionHash);
             let record = {blockNumber: eventData.blockNumber, transactionHash: eventData.transactionHash, blockHash: eventData.blockHash,
-                 owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee: transactionFee, timestamp: data.timeStamp};
+                 owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee: transactionFee, timestamp: timestamp};
             let lastHeight = await this.getLastApprovalSyncHeight();
             if (lastHeight == 1) {
                 await db.createCollection('pasar_approval_event');
@@ -403,7 +431,7 @@ module.exports = {
         }
     },
 
-    udpateOrderEventCollection: async function() {
+    updateOrderEventCollection: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -414,7 +442,35 @@ module.exports = {
                 { $project: {'_id': 1, id: 1, orderId: 1, tIndex: 1, logIndex: 1, blockHash: 1, removed: 1, event: 1, tHash: 1, sellerAddr: "$order.sellerAddr", buyerAddr: "$order.buyerAddr",
                     timestamp: "$order.updateTime", price: "$order.price", tokenId: "$order.tokenId", blockNumber: 1, royaltyFee: "$order.royaltyFee", data: 1} }
             ]).toArray();
-            await collection_event.remove({});
+            await collection_event.deleteMany({});
+            await collection_event.insertMany(result);
+            return {result:result, total: result.length};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    updateAllEventCollectionForGasFee: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection_event = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let result = await collection_event.find({}).toArray();
+            for(var i = 0; i < result.length; i++) {
+                console.log(i, "aaa");
+                result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
+            }
+            await collection_event.deleteMany({});
+            await collection_event.insertMany(result);
+
+            collection_event = mongoClient.db(config.dbName).collection('pasar_token_event');
+            result = await collection_event.find({}).toArray();
+            for(var i = 0; i < result.length; i++) {
+                console.log(i);
+                result[i]['gasFee'] = await this.getGasFee(result[i]['txHash']);
+            }
+            await collection_event.deleteMany({});
             await collection_event.insertMany(result);
             return {result:result, total: result.length};
         } catch (err) {
@@ -438,7 +494,7 @@ module.exports = {
                         from: "pasar_order_event",
                         pipeline: [
                             { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
-                                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1} },
+                                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
                             { $match: {$and: [methodCondition]} }
                         ],
                         "as": "collection1"
@@ -450,7 +506,7 @@ module.exports = {
                     {   $lookup: {
                         from: "pasar_token_event",
                         pipeline: [
-                            { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
+                            { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
                                 timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                             { $match: {$and: [methodCondition]} }
                         ],
@@ -631,7 +687,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1,
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1, gasFee: 1,
                             timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }
                       ],
@@ -643,7 +699,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
+                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1, 
                             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }],
                       "as": "collection2"
@@ -662,7 +718,8 @@ module.exports = {
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1} },
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
+                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
@@ -766,8 +823,8 @@ module.exports = {
         try {
             await mongoClient.connect();
             let result = {};
-            let collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let count_collectibles = await collection.find({royaltyOwner: walletAddr}).count();
+            let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let count_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: this.walletaddressnum}]}).count() - await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: this.walletaddressnum}]}).count();
             collection = mongoClient.db(config.dbName).collection('pasar_order');
             let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
             let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
@@ -808,7 +865,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1,
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1, 
                             timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} },
                         { $match : {$and: [methodCondition]} }
                       ],
@@ -820,7 +877,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1,
+                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
                             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [methodCondition]} }],
                       "as": "collection2"
