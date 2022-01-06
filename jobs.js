@@ -49,8 +49,12 @@ module.exports = {
         let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
 
         let isGetForSaleOrderJobRun = false;
+        let isGetForOrderPriceChangedJobRun = false;
+        let isGetForOrderCancelledJobRun = false;
+        let isGetForOrderFilledJobRun = false;
         let isGetTokenInfoJobRun = false;
         let isGetTokenInfoWithMemoJobRun = false;
+        let isGetForPlatformFeeJobRun = false;
         let isGetApprovalRun = false;
         let now = Date.now();
 
@@ -158,17 +162,23 @@ module.exports = {
         }
 
         let orderForSaleJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            isGetForSaleOrderJobRun = true;
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale');
+            if(isGetForSaleOrderJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForSale');
+            } else {
+                lastHeight += 1;
+            }
+            isGetForSaleOrderJobRun = true;
 
             logger.info(`[OrderForSale] Sync start from height: ${lastHeight}`);
 
             pasarContractWs.events.OrderForSale({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
                 logger.info(error);
                 logger.info("[OrderForSale] Sync Ending ...")
-                isGetForSaleOrderJobRun = false
+                isGetForSaleOrderJobRun = false;
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
                 let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
@@ -186,12 +196,20 @@ module.exports = {
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 2 * 60 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
+            if(isGetForOrderPriceChangedJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
+            } else {
+                lastHeight += 1;
+            }
+            isGetForOrderPriceChangedJobRun = true;
 
             logger.info(`[OrderPriceChanged] Sync start from height: ${lastHeight}`);
 
             pasarContractWs.events.OrderPriceChanged({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
+                isGetForOrderPriceChangedJobRun = false;
                 logger.info(error);
                 logger.info("[OrderPriceChanged] Sync Ending ...");
             }).on("data", async function (event) {
@@ -212,12 +230,20 @@ module.exports = {
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 3 * 60 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
+            if(isGetForOrderFilledJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
+            } else {
+                lastHeight += 1;
+            }
+            isGetForOrderFilledJobRun = true;
 
             logger.info(`[OrderFilled] Sync start from height: ${lastHeight}`);
 
             pasarContractWs.events.OrderFilled({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
+                isGetForOrderFilledJobRun = false;
                 logger.info(error);
                 logger.info("[OrderFilled] Sync Ending ...");
             }).on("data", async function (event) {
@@ -239,12 +265,20 @@ module.exports = {
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 3 * 60 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled');
+            if(isGetForOrderCancelledJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
+            } else {
+                lastHeight += 1;
+            }
+            isGetForOrderCancelledJobRun = true;
 
             logger.info(`[OrderCanceled] Sync start from height: ${lastHeight}`);
 
             pasarContractWs.events.OrderCanceled({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
+                isGetForOrderCancelledJobRun = false;
                 logger.info(error);
                 logger.info("[OrderCanceled] Sync Ending ...");
             }).on("data", async function (event) {
@@ -265,12 +299,20 @@ module.exports = {
 
         let orderPlatformFeeId = schedule.scheduleJob(new Date(now + 4 * 60 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastOrderPlatformFeeSyncHeight();
+            if(isGetForPlatformFeeJobRun == false) {
+                //initial state
+                stickerDBService.removePlatformFeeByHeight(lastHeight);
+            } else {
+                lastHeight += 1;
+            }
+            isGetForPlatformFeeJobRun = true;
 
             logger.info(`[OrderPlatformFee] Sync start from height: ${lastHeight}`);
 
             pasarContractWs.events.OrderPlatformFee({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
+                isGetForPlatformFeeJobRun = false;
                 logger.info(error);
                 logger.info("[OrderPlatformFee] Sync Ending ...");
             }).on("data", async function (event) {
@@ -294,7 +336,7 @@ module.exports = {
                 }).on("error", function (error) {
                     logger.info(error);
                     logger.info("[GalleriaPanelCreated] Sync Ending ...");
-                    isGetTokenInfoWithMemoJobRun = false
+                    isGetTokenInfoWithMemoJobRun = 1
                 }).on("data", async function (event) {
                     let user = event.returnValues._user;
                     let panelId = event.returnValues._panelId;
@@ -326,7 +368,7 @@ module.exports = {
                 }).on("error", function (error) {
                     logger.info(error);
                     logger.info("[GalleriaPanelRemoved] Sync Ending ...");
-                    isGetTokenInfoWithMemoJobRun = false
+                    isGetTokenInfoWithMemoJobRun = 1
                 }).on("data", async function (event) {
                     let user = event.returnValues._user;
                     let panelId = event.returnValues._panelId;
@@ -343,8 +385,14 @@ module.exports = {
         }
 
         let approval  = schedule.scheduleJob(new Date(now + 10 * 1000), async()=> {
-            isGetApprovalRun = true;
             let lastHeight = await stickerDBService.getLastApprovalSyncHeight();
+            if(isGetApprovalRun == false) {
+                //initial state
+                stickerDBService.removeApprovalByHeight(lastHeight);
+            } else {
+                lastHeight += 1;
+            }
+            isGetApprovalRun = true;
             logger.info(`[approval] Sync Starting ... from block ${lastHeight + 1}`)
             stickerContractWs.events.ApprovalForAll({
                 fromBlock: lastHeight
@@ -360,11 +408,17 @@ module.exports = {
 
         let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+            if(isGetTokenInfoJobRun == false) {
+                //initial state
+                stickerDBService.removeTokenInfoByHeight(lastHeight);
+            } else {
+                lastHeight += 1;
+            }
             isGetTokenInfoJobRun = true;
             logger.info(`[TokenInfo] Sync Starting ... from block ${lastHeight + 1}`)
 
             stickerContractWs.events.TransferSingle({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
                 logger.info(error);
                 logger.info("[TokenInfo] Sync Ending ...");
@@ -377,9 +431,9 @@ module.exports = {
                 let to = event.returnValues._to;
 
                 //After contract upgrade, this job just deal Mint and Burn event
-                if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
-                    return;
-                }
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                //     return;
+                // }
 
                 let tokenId = event.returnValues._id;
                 let value = event.returnValues._value;
@@ -401,11 +455,17 @@ module.exports = {
 
         let tokenInfoWithMemoSyncJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+            if(isGetTokenInfoWithMemoJobRun == false) {
+                //initial state
+                stickerDBService.removeTokenInfoByHeight(lastHeight);
+            } else {
+                lastHeight += 1;
+            }
             isGetTokenInfoWithMemoJobRun = true;
             logger.info(`[TokenInfoWithMemo] Sync Starting ... from block ${lastHeight + 1}`)
 
             stickerContractWs.events.TransferSingleWithMemo({
-                fromBlock: lastHeight + 1
+                fromBlock: lastHeight
             }).on("error", function (error) {
                 logger.info(error);
                 logger.info("[TokenInfoWithMemo] Sync Ending ...");
@@ -420,7 +480,7 @@ module.exports = {
                 let txHash = event.transactionHash;
                 let txIndex = event.transactionIndex;
                 let timestamp = (await web3Rpc.eth.getBlock(blockNumber)).timestamp;
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let gasFee = await stickerDBService.getGasFee(txHash);
                 let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee: gasFee};
                 logger.info(`[TokenInfoWithMemo] transferToken: ${JSON.stringify(transferEvent)}`)
                 await stickerDBService.addEvent(transferEvent);
@@ -433,25 +493,28 @@ module.exports = {
 
             if(!isGetForSaleOrderJobRun) {
                 orderForSaleJobId.reschedule(new Date(now + 60 * 1000));
-                orderPriceChangedJobId.reschedule(new Date(now + 2 * 60 * 1000));
-                orderFilledJobId.reschedule(new Date(now + 3 * 60 * 1000));
-                orderCanceledJobId.reschedule(new Date(now + 3 * 60 * 1000));
 
                 if(config.galleriaContract !== '' && config.galleriaContractDeploy !== 0) {
                     panelCreatedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
                     panelRemovedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
                 }
             }
-
+            if(!isGetForOrderPriceChangedJobRun)
+                orderPriceChangedJobId.reschedule(new Date(now + 2 * 60 * 1000));
+            if(!isGetForOrderFilledJobRun)
+                orderFilledJobId.reschedule(new Date(now + 3 * 60 * 1000));
+            if(!isGetForOrderCancelledJobRun)
+                orderCanceledJobId.reschedule(new Date(now + 3 * 60 * 1000));
             if(!isGetTokenInfoJobRun) {
                 tokenInfoSyncJobId.reschedule(new Date(now + 60 * 1000))
             }
-
             if(!isGetTokenInfoWithMemoJobRun) {
                 tokenInfoWithMemoSyncJobId.reschedule(new Date(now + 60 * 1000))
             }
             if(!isGetApprovalRun)
                 approval.reschedule(new Date(now + 60 * 1000))
+            if(!isGetForPlatformFeeJobRun)
+                orderPlatformFeeId.reschedule(new Date(now + 60 * 1000))
         });
 
         /**
@@ -462,9 +525,9 @@ module.exports = {
             let orderCountContract = parseInt(await pasarContract.methods.getOrderCount().call());
             logger.info(`[Order Count Check] DbCount: ${orderCount}   ContractCount: ${orderCountContract}`)
             if(orderCountContract !== orderCount) {
-                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                    `pasar assist sync service sync failed!\nDbCount: ${orderCount}   ContractCount: ${orderCountContract}`,
-                    recipients.join());
+                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                //     `pasar assist sync service sync failed!\nDbCount: ${orderCount}   ContractCount: ${orderCountContract}`,
+                //     recipients.join());
             }
         });
 
@@ -476,9 +539,9 @@ module.exports = {
             let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
             logger.info(`[Token Count Check] DbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`)
             if(stickerCountContract !== stickerCount) {
-                await sendMail(`Sticker Sync [${config.serviceName}]`,
-                    `pasar assist sync service sync failed!\nDbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`,
-                    recipients.join());
+                // await sendMail(`Sticker Sync [${config.serviceName}]`,
+                //     `pasar assist sync service sync failed!\nDbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`,
+                //     recipients.join());
             }
         });
 
@@ -502,9 +565,9 @@ module.exports = {
             if(orderCount !== contractOrderCount) {
                 logger.info(`Order Event Count Check: StartBlock: ${fromBlock}    EndBlock: ${toBlock}`);
                 logger.info(`Order Event Count Check: DBEventCount: ${orderCount}    ContractEventCount: ${contractOrderCount}`);
-                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                    `pasar assist sync service sync failed!\nDbEventCount: ${orderCount}   ContractEventCount: ${contractOrderCount}`,
-                    recipients.join());
+                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                //     `pasar assist sync service sync failed!\nDbEventCount: ${orderCount}   ContractEventCount: ${contractOrderCount}`,
+                //     recipients.join());
             }
 
             pasarOrderEventCheckBlockNumber = toBlock + 1;
@@ -527,9 +590,9 @@ module.exports = {
             if(stickerEventCountDB !== stickerEventCount) {
                 logger.info(`Sticker Event Count Check: StartBlock: ${fromBlock}    EndBlock: ${toBlock}`);
                 logger.info(`Sticker Event Count Check: DBEventCount: ${stickerEventCountDB}    ContractEventCount: ${stickerEventCount}`);
-                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                    `pasar assist sync service sync failed!\nDbEventCount: ${stickerEventCountDB}   ContractEventCount: ${stickerEventCount}`,
-                    recipients.join());
+                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                //     `pasar assist sync service sync failed!\nDbEventCount: ${stickerEventCountDB}   ContractEventCount: ${stickerEventCount}`,
+                //     recipients.join());
             }
 
             stickerEventCheckBlockNumber = toBlock + 1;

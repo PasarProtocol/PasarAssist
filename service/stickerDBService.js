@@ -25,6 +25,58 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    removePasarOrderByHeight: async function(lastHeight, eventType) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection_event = mongoClient.db(config.dbName).collection('pasar_order_event');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}, {event: eventType} ]});
+            collection_event = mongoClient.db(config.dbName).collection('pasar_order');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}]});
+            return true;
+        } catch (err) {
+            logger.error(err);
+            return false;
+        }
+    },
+    removePlatformFeeByHeight: async function(lastHeight) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection_event = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight} ]});
+            return true;
+        } catch (err) {
+            logger.error(err);
+            return false;
+        }
+    },
+    removeApprovalByHeight: async function(lastHeight) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection_event = mongoClient.db(config.dbName).collection('pasar_approval_event');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight} ]});
+            return true;
+        } catch (err) {
+            logger.error(err);
+            return false;
+        }
+    },
+    removeTokenInfoByHeight: async function(lastHeight) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection_event = mongoClient.db(config.dbName).collection('pasar_token_event');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight} ]});
+            collection_event = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}]});
+            return true;
+        } catch (err) {
+            logger.error(err);
+            return false;
+        }
+    },
     getGasFee: async function(txHash) {
         let transactionFee;
         try {
@@ -287,12 +339,11 @@ module.exports = {
         try {
             await mongoClient.connect();
             const db = mongoClient.db(config.dbName);
-            let transactionFee = this.getGasFee(eventData.transactionHash);
-            let timestamp = this.getTimestamp(eventData.transactionHash);
+            let transactionFee = await this.getGasFee(eventData.transactionHash);
+            let timestamp = await this.getTimestamp(eventData.transactionHash);
             let record = {blockNumber: eventData.blockNumber, transactionHash: eventData.transactionHash, blockHash: eventData.blockHash,
                  owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee: transactionFee, timestamp: timestamp};
-            let lastHeight = await this.getLastApprovalSyncHeight();
-            if (lastHeight == 1) {
+            if (db.collection('pasar_approval_event').find({}).count() == 0) {
                 await db.createCollection('pasar_approval_event');
             }
             await db.collection('pasar_approval_event').insertOne(record);
@@ -765,12 +816,13 @@ module.exports = {
             result = result[0];
             collection = client.db(config.dbName).collection('pasar_order_event');
             let orderForSaleRecord = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {sellerAddr: result['holder']}, {event: 'OrderForSale'}]} },
+                { $match: {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {event: 'OrderForSale'}]} },
                 { $sort: {tokenId: 1, blockNumber: -1}}
             ]).toArray();
+            console.log(tokenId, config.pasarContract)
             if(orderForSaleRecord.length > 0) {
                 result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
-                result['lastSeller'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+                result['SaleType'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
@@ -836,7 +888,7 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
-            result = {assets: count_collectibles - count_sold + count_purchased, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: count_collectibles, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
