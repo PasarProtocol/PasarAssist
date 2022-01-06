@@ -103,7 +103,7 @@ module.exports = {
         description: "$token.description", kind: "$token.kind", type: "$token.type", size: "$token.size",
         royalties: "$token.royalties",royaltyOwner: "$token.royaltyOwner", quantity: "$token.quantity",
         tokenDid: "$token.did", thumbnail: "$token.thumbnail", tokenCreateTime: "$token.createTime",
-        tokenUpdateTime: "$token.updateTime", adult: "$token.adult"},
+        tokenUpdateTime: "$token.updateTime", adult: "$token.adult", video: "$token.video"},
 
     allSaleOrders: async function(sortType, sort, pageNum, pageSize, adult) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});

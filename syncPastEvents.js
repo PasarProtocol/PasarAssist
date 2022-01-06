@@ -277,7 +277,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.tippingAddress = data.tippingAddress;
                             token.entry = data.entry;
                             token.avatar = data.avatar;
-                            logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                             await stickerDBService.replaceGalleriaToken(token);
                             return;
                         }
@@ -291,7 +291,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.size = data.size;
                         }
                         token.adult = data.adult ? data.adult : false;
-                        logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                        console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                         await stickerDBService.replaceToken(token);
                     } catch (e) {
                         console.log(`[TokenInfo] Sync error at ${event.blockNumber} ${tokenId}`);
