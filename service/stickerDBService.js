@@ -640,20 +640,13 @@ module.exports = {
         }
     },
 
-    walletaddressnum: async function() {
+    owneraddressnum: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_address_did');
-            let result = await collection.aggregate([
-                {
-                    $group: {
-                        _id  : "$status",
-                        value: { $sum:1 }
-                    }
-                }
-            ]).toArray();
-            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let result = await collection.aggregate( [ { $group : { _id : "$to" } }, {$sort: {_id: 1}} ] ).toArray();
+            return {code: 200, message: 'success', data: result.length};
         } catch (err) {
             logger.error(err);
         } finally {

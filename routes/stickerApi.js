@@ -176,9 +176,9 @@ router.get('/relatednftnum', function(req, res) {
     })
 });
 
-router.get('/walletaddressnum', function(req, res) {
+router.get('/owneraddressnum', function(req, res) {
 
-    stickerDBService.walletaddressnum().then(result => {
+    stickerDBService.owneraddressnum().then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
