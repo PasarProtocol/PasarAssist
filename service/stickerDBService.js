@@ -564,13 +564,20 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            let rows = await collection.find({ $and: [methodCondition_order] }).project({'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
-                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1}).toArray();
+            let rows = await collection.aggregate([
+                { $match: { $and: [methodCondition_order] }},
+                { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
+                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
+            ]).toArray();
+            console.log(rows);
             await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
 
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            rows = await collection.find({ $and: [methodCondition_token] }).project({'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"}).toArray();
+            rows = await collection.aggregate([
+                { $match: { $and: [methodCondition_token] } },
+                { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
+                timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+            ]).toArray();
             await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
             collection =  mongoClient.db(config.dbName).collection('token_temp');
             let result = await collection.find({}).sort({blockNumber: parseInt(timeOrder)}).toArray();
