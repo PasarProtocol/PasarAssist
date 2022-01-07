@@ -114,7 +114,7 @@ module.exports = {
     },
     verifyEvents: function(result) {
         for(var i = 0; i < result.length; i++) {
-            if(result[i]['event'] == "notSetYet") {
+            if(result[i]['event'] == undefined || result[i]['event'] == "notSetYet") {
                 if(result[i]['from'] == '0x0000000000000000000000000000000000000000') {
                     result[i]['event'] = 'Mint';
                 }
@@ -561,7 +561,6 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            console.log(methodCondition_order)
             let rows = await collection.find({ $and: [methodCondition_order] }).project({'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1}).toArray();
             await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
@@ -890,14 +889,10 @@ module.exports = {
 
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
+        console.log(walletAddr);
+        console.log(methodCondition_order, methodCondition_token)
         try {
             await mongoClient.connect();
-            let approval_record = await mongoClient.db(config.dbName).collection('pasar_approval_event').aggregate([
-                { $match: {owner: walletAddr} },
-                { $sort: {blockNumber: 1} },
-                { $limit: 1 },
-                { $project: {'_id': 0, tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1, method: 'SetApprovalForAll'} }
-            ]).toArray();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
                 { $facet: {
@@ -906,9 +901,9 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
+                        { $match : {$and: [methodCondition_order]} },
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1, 
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} },
-                        { $match : {$and: [methodCondition_order]} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} }
                       ],
                       "as": "collection1"
                     }}
@@ -918,10 +913,22 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
+                        { $match : {$and: [methodCondition_token]} },
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
-                        { $match : {$and: [methodCondition_token]} }],
+                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+                      ],
                       "as": "collection2"
+                    }}
+                  ],
+                  "collection3": [
+                    { $limit: 1 },
+                    { $lookup: {
+                      from: "pasar_approval_event",
+                      pipeline: [
+                        { $match: {owner: walletAddr} },
+                        { $project: {'_id': 0, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
+                        { $limit: 1 }],
+                      "as": "collection3"
                     }}
                   ]
                 }},
@@ -930,6 +937,7 @@ module.exports = {
                     $concatArrays: [
                       { "$arrayElemAt": ["$collection1.collection1", 0] },
                       { "$arrayElemAt": ["$collection2.collection2", 0] },
+                      { "$arrayElemAt": ["$collection3.collection3", 0] },
                     ]
                   }
                 }},
@@ -941,8 +949,6 @@ module.exports = {
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             let start = (pageNum - 1) * pageSize;
-            start = pageNum == 1 && (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? start: start - approval_record.length;
-            let end = pageSize * pageNum - approval_record.length;
             for(var i = start, count = 0; count < pageSize; i++)
             {
                 if(i >= result.length)
@@ -954,7 +960,8 @@ module.exports = {
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
                     count++;
-                } else continue;
+                } else if(result[i]['event'] != 'SetApprovalForAll') continue;
+                
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
                     if(res != null) {
@@ -964,9 +971,7 @@ module.exports = {
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
-            if(approval_record.length != 0 && pageNum == 1 && (method == 'All' || method.indexOf('SetApprovalForAll') != -1))
-                results = approval_record.concat(results);
-            let total = result.length + approval_record.length;
+            let total = result.length;
             return {code: 200, message: 'success', data: {total, results}};
         } catch (err) {
             logger.error(err);
