@@ -448,7 +448,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
             })
         });
@@ -484,7 +484,7 @@ module.exports = {
                 let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee: gasFee};
                 logger.info(`[TokenInfoWithMemo] transferToken: ${JSON.stringify(transferEvent)}`)
                 await stickerDBService.addEvent(transferEvent);
-                await stickerDBService.updateToken(tokenId, to, timestamp);
+                await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
         });
 

@@ -298,7 +298,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         console.log(e);
                     }
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
             })
             tokenInfoSyncJobCurrent = toBlock + 1;
@@ -346,7 +346,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let gasFee = await stickerDBService.getGasFee(txHash);
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, memo, gasFee: gasFee}
                 await stickerDBService.addEvent(transferEvent);
-                await stickerDBService.updateToken(tokenId, to, timestamp);
+                await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
             tokenInfoMemoSyncJobCurrent = toBlock + 1;
         }).catch(error => {

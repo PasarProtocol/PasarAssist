@@ -322,12 +322,13 @@ module.exports = {
         }
     },
 
-    updateToken: async function (tokenId, holder, timestamp) {
+    updateToken: async function (tokenId, holder, timestamp, blockNumber) {
+        console.log(tokenId, holder, timestamp, 'aaaaaaaaaaaaa');
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, updateTime: {"$lt": timestamp}}, {$set: {holder, updateTime: timestamp}});
+            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, updateTime: timestamp}});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -639,13 +640,48 @@ module.exports = {
         }
     },
 
+    // owneraddressnum: async function() {
+    //     let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+    //     try {
+    //         await mongoClient.connect();
+    //         let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+    //         let tokens = await collection.find({}).toArray();
+    //         collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+    //         let owners = [];
+    //         for (let i = 0; i < tokens.length; i++) {
+    //             const tokenId = tokens[i]['tokenId'];
+    //             let result = await collection.aggregate([
+    //                 { $match: {$and: [ {tokenId: tokenId}, {to: {$ne: config.pasarContract}} ]}},
+    //                 { $project: {_id: 0, to: 1, blockNumber: 1, tokenId: 1} },
+    //                 { $sort: {tokenId: 1, blockNumber: -1}},
+    //                 { $limit: 1},
+    //                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
+    //                 { $replaceRoot: { newRoot: "$doc"}}
+    //             ]).toArray();
+    //             const owner = result[0]['to'];
+    //             if(owners.indexOf(owner) == -1 && owner != '0x0000000000000000000000000000000000000000')
+    //                 owners.push(owner);
+    //         }
+    //         return {code: 200, message: 'success', data: owners.length};
+    //     } catch (err) {
+    //         logger.error(err);
+    //     } finally {
+    //         await mongoClient.close();
+    //     }
+    // },
+
     owneraddressnum: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let result = await collection.aggregate( [ { $group : { _id : "$to" } }, {$sort: {_id: 1}} ] ).toArray();
-            return {code: 200, message: 'success', data: result.length};
+            let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let owners = await collection.aggregate([
+                {
+                    $group: {
+                        _id: "$holder"
+                    }
+                }]).toArray();
+            return {code: 200, message: 'success', data: owners.length};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -859,9 +895,16 @@ module.exports = {
         try {
             await mongoClient.connect();
             let result = {};
+            let tokens_created = await mongoClient.db(config.dbName).collection('pasar_token').find({royaltyOwner: walletAddr}).project({"_id": 0, tokenId: 1}).toArray();
+            let tokens = [];
+            tokens_created.forEach(ele => {
+                tokens.push(ele['tokenId']);
+            });
             let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let mint_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: walletAddr}]}).toArray() 
-            let burn_collectibles = await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: walletAddr}]}).toArray();
+            let mint_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: walletAddr}]}).toArray();
+
+            let burn_collectibles = await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: walletAddr}, {tokenId: {$in: tokens}}]}).toArray();
+
             collection = mongoClient.db(config.dbName).collection('pasar_order');
             let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
             let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
@@ -873,8 +916,9 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
+            console.log(mint_collectibles.length, burn_collectibles.length);
             result = {assets: mint_collectibles.length - burn_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
-            return {code: 200, message: 'success', data: result};
+            return {code: 200, message: 'success', data: result, data1ss: tokens_created};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
