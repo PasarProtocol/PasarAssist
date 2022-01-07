@@ -949,7 +949,7 @@ module.exports = {
             let start = (pageNum - 1) * pageSize;
             start = pageNum == 1 && (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? start: start - approval_record.length;
             let end = pageSize * pageNum - approval_record.length;
-            for(var i = start; i < end; i++)
+            for(var i = start, count = 0; count < pageSize; i++)
             {
                 if(i >= result.length)
                     break;
@@ -959,7 +959,8 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
-                }
+                    count++;
+                } else continue;
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
                     if(res != null) {
