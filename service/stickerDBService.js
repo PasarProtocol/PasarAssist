@@ -947,7 +947,7 @@ module.exports = {
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             let start = (pageNum - 1) * pageSize;
-            start = pageNum == 1 ? start: start - approval_record.length;
+            start = pageNum == 1 && (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? start: start - approval_record.length;
             let end = pageSize * pageNum - approval_record.length;
             for(var i = start; i < end; i++)
             {
@@ -969,7 +969,7 @@ module.exports = {
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
-            if(approval_record.length != 0 && pageNum == 1)
+            if(approval_record.length != 0 && pageNum == 1 && (method == 'All' || method.indexOf('SetApprovalForAll') != -1))
                 results = approval_record.concat(results);
             let total = result.length + approval_record.length;
             return {code: 200, message: 'success', data: {total, results}};
