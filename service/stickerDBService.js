@@ -324,6 +324,8 @@ module.exports = {
 
     updateToken: async function (tokenId, holder, timestamp, blockNumber) {
         console.log(tokenId, holder, timestamp, 'aaaaaaaaaaaaa');
+        if(holder == config.pasarContract)
+            return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -824,7 +826,7 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_token_event');
 
             let result = await collection.aggregate([
-                { $match: {tokenId}},
+                { $match: {$and: [{tokenId: tokenId}, {to: {$ne: config.pasarContract}}] }},
                 { $sort: {tokenId: 1, blockNumber: -1}},
                 { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
