@@ -861,7 +861,8 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
             let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let count_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: this.walletaddressnum}]}).count() - await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: this.walletaddressnum}]}).count();
+            let mint_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: walletAddr}]}).toArray() 
+            let burn_collectibles = await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: walletAddr}]}).toArray();
             collection = mongoClient.db(config.dbName).collection('pasar_order');
             let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
             let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
@@ -873,7 +874,7 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
-            result = {assets: count_collectibles, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: mint_collectibles.length - burn_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
