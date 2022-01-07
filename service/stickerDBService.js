@@ -1006,11 +1006,9 @@ module.exports = {
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             let start = (pageNum - 1) * pageSize;
-            for(var i = start, count = 0; count < pageSize; i++)
-            {
-                if(i >= result.length)
-                    break;
-                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId']}, {$or: [{name: new RegExp(keyword.toString())}, {tokenId: keyword}]}]});
+            let tempResult = [];
+            for(var i = 0; i < result.length; i++) {
+                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId']}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
                 if(res != null) {
                     result[i]['name'] = res['name'];
                     result[i]['royalties'] = res['royalties'];
@@ -1018,7 +1016,13 @@ module.exports = {
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
                     count++;
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
-                
+                tempResult.push(result[i]);
+            };
+            result = tempResult;
+            for(var i = start, count = 0; count < pageSize; i++)
+            {
+                if(i >= result.length)
+                    break;
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
                     if(res != null) {
