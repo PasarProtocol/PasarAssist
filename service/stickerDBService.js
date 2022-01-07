@@ -1014,7 +1014,6 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
-                    count++;
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
                 tempResult.push(result[i]);
             };
@@ -1023,6 +1022,7 @@ module.exports = {
             {
                 if(i >= result.length)
                     break;
+                count++;
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
                     if(res != null) {
