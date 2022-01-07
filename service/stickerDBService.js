@@ -927,12 +927,13 @@ module.exports = {
         }
     },
 
-    getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize) {
+    getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize, performer) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
 
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
+        let condition_performer = performer == "By" ? {from: walletAddr} : {to: walletAddr};
         let methodCondition_approval = (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? {event: 'SetApprovalForAll'}: {event: 'notSetApprovalForAll'}
         console.log(walletAddr);
         console.log(methodCondition_order, methodCondition_token)
@@ -989,6 +990,7 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
+                { $match: condition_performer },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let results = [];

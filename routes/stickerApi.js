@@ -261,6 +261,7 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
     let keyword = req.query.keyword ? req.query.keyword : "";
+    let performer = req.query.performer;
 
     let pageNum, pageSize;
 
@@ -278,7 +279,7 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
         return;
     }
 
-    stickerDBService.getTranDetailsByWalletAddr(walletAddr, method, timeOrder, keyword, pageNum, pageSize).then(result => {
+    stickerDBService.getTranDetailsByWalletAddr(walletAddr, method, timeOrder, keyword, pageNum, pageSize, performer).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
