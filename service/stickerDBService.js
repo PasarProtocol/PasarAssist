@@ -889,6 +889,7 @@ module.exports = {
 
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
+        let methodCondition_approval = (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? {event: 'SetApprovalForAll'}: {event: 'notSetApprovalForAll'}
         console.log(walletAddr);
         console.log(methodCondition_order, methodCondition_token)
         try {
@@ -927,7 +928,8 @@ module.exports = {
                       pipeline: [
                         { $match: {owner: walletAddr} },
                         { $project: {'_id': 0, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
-                        { $limit: 1 }],
+                        { $limit:  1 },
+                        { $match: methodCondition_approval}],
                       "as": "collection3"
                     }}
                   ]
