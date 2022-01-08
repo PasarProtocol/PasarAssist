@@ -323,7 +323,6 @@ module.exports = {
     },
 
     updateToken: async function (tokenId, holder, timestamp, blockNumber) {
-        console.log(tokenId, holder, timestamp, 'aaaaaaaaaaaaa');
         if(holder == config.pasarContract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -533,7 +532,6 @@ module.exports = {
             let collection_event = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection_event.find({}).toArray();
             for(var i = 0; i < result.length; i++) {
-                console.log(i, "aaa");
                 result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
             }
             await collection_event.deleteMany({});
@@ -542,7 +540,6 @@ module.exports = {
             collection_event = mongoClient.db(config.dbName).collection('pasar_token_event');
             result = await collection_event.find({}).toArray();
             for(var i = 0; i < result.length; i++) {
-                console.log(i);
                 result[i]['gasFee'] = await this.getGasFee(result[i]['txHash']);
             }
             await collection_event.deleteMany({});
@@ -560,7 +557,6 @@ module.exports = {
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
-        console.log(methodCondition_order, methodCondition_token);
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -569,7 +565,6 @@ module.exports = {
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
             ]).toArray();
-            console.log(rows);
             await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
 
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
@@ -848,7 +843,6 @@ module.exports = {
                 { $match: {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {event: 'OrderForSale'}]} },
                 { $sort: {tokenId: 1, blockNumber: -1}}
             ]).toArray();
-            console.log(tokenId, config.pasarContract)
             if(orderForSaleRecord.length > 0) {
                 result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
                 result['SaleType'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
@@ -925,7 +919,6 @@ module.exports = {
                 { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
                 { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
             ]).toArray();
-            console.log(mint_collectibles.length, burn_collectibles.length);
             result = {assets: mint_collectibles.length - burn_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result, data1ss: tokens_created};
         } catch (err) {
@@ -944,8 +937,6 @@ module.exports = {
         let methodCondition_token = methodCondition['token'];
         let condition_performer = performer == "By" ? {from: walletAddr} : {to: walletAddr};
         let methodCondition_approval = (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? {event: 'SetApprovalForAll'}: {event: 'notSetApprovalForAll'}
-        console.log(walletAddr);
-        console.log(methodCondition_order, methodCondition_token)
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
