@@ -90,8 +90,9 @@ module.exports = {
             data = data.result;
             transactionFee = data.gasUsed * data.gasPrice / (10 ** 18);
         } catch (err) {
+            transactionFee = 0
         } finally {
-            return transactionFee;
+            return transactionFee == 0 ? await this.getGasFee(txHash): transactionFee;
         }
     },
     getTimestamp: async function(txHash) {
@@ -329,7 +330,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, updateTime: timestamp}});
+            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, blockNumber, updateTime: timestamp}});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -597,6 +598,9 @@ module.exports = {
                         result[i]['platformfee'] = res['platformFee'];
                     }
                 }
+                if(result[i]['gasFee'] == null) {
+                    result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
+                }
                 results.push(result[i]);
             }
             results = this.verifyEvents(results);
@@ -805,6 +809,9 @@ module.exports = {
                         result[i]['platformfee'] = res['platformFee'];
                     }
                 }
+                if(result[i]['gasFee'] == null) {
+                    result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
+                }
             }
             result = this.verifyEvents(result);
             return {code: 200, message: 'success', data: result};
@@ -932,7 +939,7 @@ module.exports = {
     getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize, performer) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
-
+        console.log('dddddd');
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
         let condition_performer = performer == "By" ? {from: walletAddr} : {to: walletAddr};
@@ -1008,6 +1015,7 @@ module.exports = {
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
                 tempResult.push(result[i]);
             };
+            console.log('dfdsfdsfds');
             result = tempResult;
             for(var i = start, count = 0; count < pageSize; i++)
             {
@@ -1019,6 +1027,10 @@ module.exports = {
                     if(res != null) {
                         result[i]['platformfee'] = res['platformFee'];
                     }
+                }
+                console.log(count)
+                if(result[i]['gasFee'] == null) {
+                    result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
                 }
                 results.push(result[i]);
             }
