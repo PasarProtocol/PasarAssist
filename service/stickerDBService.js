@@ -108,7 +108,7 @@ module.exports = {
             data = data.result;
             timeStamp = data.timeStamp;
         } catch (err) {
-            timestamp = 0;
+            timeStamp = 0;
         } finally {
             return timeStamp == 0 ? await this.getTimeStamp(txHash): timeStamp;
         }
@@ -234,6 +234,7 @@ module.exports = {
         }
         return {'order': {$or:[...conditions_order_event]}, 'token':  {$or:[...conditions_token_event]}};
     },
+    
     listStickers: async function(pageNum, pageSize, timeOrder) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
