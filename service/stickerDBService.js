@@ -225,10 +225,10 @@ module.exports = {
                     methodCondition_token.push({from: {$ne: 'random'}});
                     break;
             }
-            if(methodCondition_order.length > 0) 
+            if(methodCondition_order.length > 0)
                 conditions_order_event.push({$and: methodCondition_order});
-            
-            if(methodCondition_token.length > 0) 
+
+            if(methodCondition_token.length > 0)
                 conditions_token_event.push({$and: methodCondition_token});
         }
         return {'order': {$or: conditions_order_event}, 'token':  {$or: conditions_token_event}};
@@ -440,7 +440,7 @@ module.exports = {
                             royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
                             name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-                            adult: "$token.adult", video: "$token.video"}}
+                            adult: "$token.adult", data: "$token.data"}}
                 ]).toArray();
             }
 
@@ -780,7 +780,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1, 
+                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
                             timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_token]} }],
                       "as": "collection2"
@@ -883,7 +883,7 @@ module.exports = {
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
                 { $sort: {updateTime: 1}},
                 { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, price: 1, royaltyFee: 1, updateTime: 1, amount: 1} },
-                { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },                
+                { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },
             ]).toArray();
             result.forEach(x => {
                 x.time = new Date(x.updateTime * 1000);
@@ -965,7 +965,7 @@ module.exports = {
                       from: "pasar_order_event",
                       pipeline: [
                         { $match : {$and: [methodCondition_order]} },
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1, 
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1,
                             timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} }
                       ],
                       "as": "collection1"
