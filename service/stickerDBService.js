@@ -123,11 +123,10 @@ module.exports = {
                     result[i]['event'] = 'Burn';
                 }
                 if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
-                    if(result[i]['price'] == '')
+                    if(result[i]['memo'] == undefined || result[i]['memo'] == '')
                         result[i]['event'] = 'SafeTransferFrom';
                     else result[i]['event'] = 'SafeTransferFromWithMemo';
                 }
-                result[i]['price'] = '0';
             }
             if(result[i]['event'] == 'OrderFilled') {
                 result[i]['event'] = "BuyOrder";
@@ -145,6 +144,7 @@ module.exports = {
     },
     composeMethodCondition: function(methodStr, requestType, data) {
         let methods = methodStr.split(",");
+        console.log(methods);
         let conditions_order_event = [];
         let conditions_token_event = [];
         for(var i = 0; i < methods.length; i++) {
@@ -227,14 +227,14 @@ module.exports = {
                     break;
             }
             if(methodCondition_order.length > 0) 
-                conditions_order_event.push({$and: [...methodCondition_order]});
+                conditions_order_event.push({$and: methodCondition_order});
             
             if(methodCondition_token.length > 0) 
-                conditions_token_event.push({$and: [...methodCondition_token]});
+                conditions_token_event.push({$and: methodCondition_token});
         }
-        return {'order': {$or:[...conditions_order_event]}, 'token':  {$or:[...conditions_token_event]}};
+        return {'order': {$or: conditions_order_event}, 'token':  {$or: conditions_token_event}};
     },
-    
+
     listStickers: async function(pageNum, pageSize, timeOrder) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -559,6 +559,7 @@ module.exports = {
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
+        console.log(methodCondition_order, methodCondition_token);
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -567,17 +568,19 @@ module.exports = {
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
             ]).toArray();
-            await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
+            if(rows.length > 0)
+                await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
 
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_token] } },
                 { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+                timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
             ]).toArray();
-            await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
+            if(rows.length > 0)
+                await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
             collection =  mongoClient.db(config.dbName).collection('token_temp');
-            let result = await collection.find({}).sort({blockNumber: parseInt(timeOrder)}).toArray();
+            let result = await collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
             await collection.drop();
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
@@ -780,7 +783,7 @@ module.exports = {
                       from: "pasar_token_event",
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1, 
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
+                            timestamp: 1, meemo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_token]} }],
                       "as": "collection2"
                     }}
@@ -940,7 +943,6 @@ module.exports = {
     getTranDetailsByWalletAddr: async function(walletAddr, method, timeOrder, keyword, pageNum, pageSize, performer) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "walletAddr", walletAddr);
-        console.log('dddddd');
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
         let condition_performer = performer == "By" ? {from: walletAddr} : {to: walletAddr};
@@ -969,7 +971,7 @@ module.exports = {
                       pipeline: [
                         { $match : {$and: [methodCondition_token]} },
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                            timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+                            timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
                       ],
                       "as": "collection2"
                     }}
@@ -1016,7 +1018,6 @@ module.exports = {
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
                 tempResult.push(result[i]);
             };
-            console.log('dfdsfdsfds');
             result = tempResult;
             for(var i = start, count = 0; count < pageSize; i++)
             {
