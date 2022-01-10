@@ -118,8 +118,8 @@ module.exports = {
                     return;
                 }
 
-                if(token.type === 'feeds-video') {
-                    token.video = data.video;
+                if(token.type === 'video') {
+                    token.data = data.data;
                 } else {
                     token.thumbnail = data.thumbnail;
                     token.asset = data.image;

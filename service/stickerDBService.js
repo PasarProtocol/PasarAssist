@@ -365,7 +365,7 @@ module.exports = {
                             royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
                             name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-                            adult: "$token.adult", video: "$token.video"}}
+                            adult: "$token.adult", data: "$token.data"}}
                 ]).toArray();
             }
 
@@ -699,7 +699,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_token_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1, 
+                        { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
                             timestamp: 1, price: "$memo", tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition]} }],
                       "as": "collection2"
@@ -865,7 +865,7 @@ module.exports = {
                     { $lookup: {
                       from: "pasar_order_event",
                       pipeline: [
-                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1, 
+                        { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1,
                             timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} },
                         { $match : {$and: [methodCondition]} }
                       ],
