@@ -108,9 +108,9 @@ module.exports = {
             data = data.result;
             timeStamp = data.timeStamp;
         } catch (err) {
-
+            timestamp = 0;
         } finally {
-            return timeStamp;
+            return timeStamp == 0 ? await this.getTimeStamp(txHash): timeStamp;
         }
     },
     verifyEvents: function(result) {
