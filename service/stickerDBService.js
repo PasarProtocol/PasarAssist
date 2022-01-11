@@ -123,7 +123,7 @@ module.exports = {
                     result[i]['event'] = 'Burn';
                 }
                 if(result[i]['from'] != '0x0000000000000000000000000000000000000000' && result[i]['to'] != '0x0000000000000000000000000000000000000000') {
-                    if(result[i]['memo'] == undefined || result[i]['memo'] == '')
+                    if(result[i]['memo'] == undefined)
                         result[i]['event'] = 'SafeTransferFrom';
                     else result[i]['event'] = 'SafeTransferFromWithMemo';
                 }
