@@ -144,7 +144,6 @@ module.exports = {
     },
     composeMethodCondition: function(methodStr, requestType, data) {
         let methods = methodStr.split(",");
-        console.log(methods);
         let conditions_order_event = [];
         let conditions_token_event = [];
         for(var i = 0; i < methods.length; i++) {
@@ -559,7 +558,6 @@ module.exports = {
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
-        console.log(methodCondition_order, methodCondition_token);
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
@@ -881,15 +879,25 @@ module.exports = {
             else
                 addressCondition.push({"royaltyOwner": new RegExp('^' + walletAddr)});
             let collection = client.db(config.dbName).collection('pasar_order');
-            await collection.find({}).forEach( function (x) {
-                x.updateTime = new Date(x.updateTime * 1000);
-                x.value = type == 1 ? parseInt(x.royaltyFee) : parseInt(x.price) * parseFloat(x.amount);
-                client.db(config.dbName).collection('token_temp').save(x);
-            });
-            collection =  client.db(config.dbName).collection('token_temp');
+            let rows = [];
             let result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
+                { $sort: {updateTime: 1}},
+                { $project: {"_id": 0, orderId: 1, price: 1, royaltyFee: 1, updateTime: 1, amount: 1} },
+                { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },                
+            ]).toArray();
+            result.forEach(x => {
+                x.time = new Date(x.updateTime * 1000);
+                let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
+                x.value = type == 1 ? parseInt(x.royaltyFee) : parseInt(x.price) * parseFloat(x.amount) - parseInt(platformFee);
+                rows.push(x);
+            });
+            if(rows.length > 0) {
+                await client.db(config.dbName).collection('token_temp').insertMany(rows);
+            }
+            collection =  client.db(config.dbName).collection('token_temp');
+            result = await collection.aggregate([
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
                 { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
                 { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
                 { $sort: {onlyDate: 1} },
@@ -1030,7 +1038,6 @@ module.exports = {
                         result[i]['platformfee'] = res['platformFee'];
                     }
                 }
-                console.log(count)
                 if(result[i]['gasFee'] == null) {
                     result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
                 }
