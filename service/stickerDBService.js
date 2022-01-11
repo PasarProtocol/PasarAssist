@@ -241,7 +241,7 @@ module.exports = {
             const collection = client.db(config.dbName).collection('pasar_token');
             let total = await collection.find().count();
             let result = await collection.find().sort({createTime: -1})
-                .project({"_id": 0}).sort({"blockNumber": timeOrder}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
+                .project({"_id": 0}).sort({"createTime": timeOrder}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
@@ -848,10 +848,9 @@ module.exports = {
             ]).toArray();
             result = result[0];
             collection = client.db(config.dbName).collection('pasar_order_event');
-            let orderForSaleRecord = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {buyerAddr: config.pasarContract}, {sellerAddr: result.holder}, {event: 'OrderForSale'}]} },
-                { $sort: {tokenId: 1, blockNumber: -1}}
-            ]).toArray();
+            let orderForSaleRecord = await collection.find(
+                {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {event: 'OrderForSale'}]}
+            ).toArray();
             if(orderForSaleRecord.length > 0) {
                 result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
                 result['SaleType'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
