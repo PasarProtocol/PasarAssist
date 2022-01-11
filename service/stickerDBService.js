@@ -849,7 +849,7 @@ module.exports = {
             result = result[0];
             collection = client.db(config.dbName).collection('pasar_order_event');
             let orderForSaleRecord = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {event: 'OrderForSale'}]} },
+                { $match: {$and: [{tokenId: tokenId}, {buyerAddr: config.pasarContract}, {sellerAddr: result.holder}, {event: 'OrderForSale'}]} },
                 { $sort: {tokenId: 1, blockNumber: -1}}
             ]).toArray();
             if(orderForSaleRecord.length > 0) {
