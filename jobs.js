@@ -118,7 +118,7 @@ module.exports = {
                     return;
                 }
 
-                if(token.type === 'video') {
+                if(token.type === 'video' || data.version === "2") {
                     token.data = data.data;
                 } else {
                     token.thumbnail = data.thumbnail;

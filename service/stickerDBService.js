@@ -365,7 +365,7 @@ module.exports = {
                             royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
                             name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
                             thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-                            adult: "$token.adult", data: "$token.data"}}
+                            adult: "$token.adult", data: "$token.data", version: '$token.tokenJsonVersion'}}
                 ]).toArray();
             }
 

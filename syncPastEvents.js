@@ -278,8 +278,8 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             return;
                         }
 
-                        if(token.type === 'feeds-video') {
-                            token.video = data.video;
+                        if(token.type === 'feeds-video' || data.version === "2") {
+                            token.data = data.data;
                         } else {
                             token.thumbnail = data.thumbnail;
                             token.asset = data.image;
