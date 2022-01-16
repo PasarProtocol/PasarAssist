@@ -781,7 +781,7 @@ module.exports = {
                       from: "pasar_token_event",
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1, 
-                            timestamp: 1, meemo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
+                            timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_token]} }],
                       "as": "collection2"
                     }}
