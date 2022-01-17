@@ -56,6 +56,8 @@ module.exports = {
         let isGetTokenInfoWithMemoJobRun = false;
         let isGetForPlatformFeeJobRun = false;
         let isGetApprovalRun = false;
+        let isGetOrderForAuctionJobRun = false;
+        let isGetOrderBidJobRun = false;
         let now = Date.now();
 
         let recipients = [];
@@ -429,9 +431,80 @@ module.exports = {
                 await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
         });
+
+        
+
+        let orderForAuctionJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction');
+            if(isGetOrderForAuctionJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForAuction');
+            } else {
+                lastHeight += 1;
+            }
+            isGetOrderForAuctionJobRun = true;
+
+            logger.info(`[OrderForAuction] Sync start from height: ${lastHeight}`);
+
+            pasarContractWs.events.OrderForAuction({
+                fromBlock: lastHeight
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[OrderForAuction] Sync Ending ...")
+                isGetOrderForAuctionJobRun = false;
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                console.log('OrderForAuction event data is ', event)
+                let result = await stickerContract.methods.getOrderById(orderInfo._orderId).call();
+                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+
+                logger.info(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber, orderInfo._orderId);
+            })
+        });
+
+        let orderBidJobId = schedule.scheduleJob(new Date(now + 110 * 1000), async () => {
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid');
+            if(isGetOrderBidJobRun == false) {
+                //initial state
+                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderBid');
+            } else {
+                lastHeight += 1;
+            }
+            isGetOrderBidJobRun = true;
+
+            logger.info(`[OrderBid] Sync start from height: ${lastHeight}`);
+
+            pasarContractWs.events.OrderBid({
+                fromBlock: lastHeight
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[OrderBid] Sync Ending ...")
+                isGetOrderBidJobRun = false;
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                console.log('OrderBid event data is ', event);
+                let result = await stickerContract.methods.getOrderById(orderInfo._orderId).call();
+                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+
+                logger.info(`[OrderForBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber, orderInfo._orderId);
+            })
+        });
+
         let panelCreatedSyncJobId, panelRemovedSyncJobId;
         if(config.galleriaContract !== '' && config.galleriaContractDeploy !== 0) {
-            panelCreatedSyncJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
+            panelCreatedSyncJobId = schedule.scheduleJob(new Date(now + 120 * 1000), async () => {
                 let lastHeight = await galleriaDbService.getLastPanelEventSyncHeight('PanelCreated');
                 logger.info(`[GalleriaPanelCreated] Sync Starting ... from block ${lastHeight + 1}`)
 
@@ -463,7 +536,7 @@ module.exports = {
                 })
             });
 
-            panelRemovedSyncJobId = schedule.scheduleJob(new Date(now + 120 * 1000), async () => {
+            panelRemovedSyncJobId = schedule.scheduleJob(new Date(now + 130 * 1000), async () => {
                 let lastHeight = await galleriaDbService.getLastPanelEventSyncHeight('PanelRemoved');
                 logger.info(`[GalleriaPanelRemoved] Sync Starting ... from block ${lastHeight + 1}`)
 
@@ -515,6 +588,10 @@ module.exports = {
                 approval.reschedule(new Date(now + 70 * 1000))
             if(!isGetForPlatformFeeJobRun)
                 orderPlatformFeeId.reschedule(new Date(now + 90 * 1000))
+            if(!isGetOrderForAuctionJobRun)
+                orderForAuctionJobId.reschedule(new Date(now + 100 * 1000))
+            if(!isGetOrderBidJobRun)
+                orderBidJobId.reschedule(new Date(now + 110 * 1000))
         });
 
         /**
