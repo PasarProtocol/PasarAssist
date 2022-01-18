@@ -358,15 +358,13 @@ module.exports = {
         }
     },
 
-    addAprovalForAllEvent: async function (eventData) {
+    addAprovalForAllEvent: async function (eventData, gasFee, timestamp) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const db = mongoClient.db(config.dbName);
-            let transactionFee = await this.getGasFee(eventData.transactionHash);
-            let timestamp = await this.getTimestamp(eventData.transactionHash);
             let record = {blockNumber: eventData.blockNumber, transactionHash: eventData.transactionHash, blockHash: eventData.blockHash,
-                 owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee: transactionFee, timestamp: timestamp};
+                 owner: eventData.returnValues._owner, operator: eventData.returnValues._operator, approved: eventData.returnValues._approved, gasFee, timestamp};
             if (db.collection('pasar_approval_event').find({}).count() == 0) {
                 await db.createCollection('pasar_approval_event');
             }

@@ -41,6 +41,7 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_panel_event');
 
             let total = await collection.aggregate([
+                { $sort: {panelId: -1, blockNumber: -1}},
                 { $group: {_id: "$panelId", doc: {$first: "$$ROOT"}}},
                 { $replaceRoot: { newRoot: "$doc"}},
                 { $match: {event: 'PanelCreated'}},

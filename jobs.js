@@ -356,8 +356,15 @@ module.exports = {
                 logger.info("[approval] Sync Ending ...");
                 isGetApprovalRun = false;
             }).on("data", async function (event) {
-                await stickerDBService.addAprovalForAllEvent(event);
-                return;
+
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+                    {method: web3Rpc.eth.getBlock, params: event.blockNumber},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let timestamp = blockInfo.timestamp;
+
+                await stickerDBService.addAprovalForAllEvent(event, gasFee, timestamp);
             });
         });
 
