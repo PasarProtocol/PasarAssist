@@ -16,7 +16,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.stickerContractDeploy - 1;
+                return config.stickerContractDeploy;
             }
         } catch (err) {
             logger.error(err);
@@ -348,7 +348,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return 1;
+                return config.stickerContractDeploy;
             }
         } catch (err) {
             logger.error(err);
