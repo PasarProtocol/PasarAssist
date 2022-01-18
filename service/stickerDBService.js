@@ -1050,5 +1050,41 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
-    }
+    },
+    getLatestBids: async function (tokenId, sellerAddr) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let result = await collection.aggregate([ 
+                { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {event: 'OrderBid'} ] } },
+                { $sort: {timestamp: -1} }
+            ]).toArray();
+            return { code: 200, message: 'success', data: result };
+        } catch (err) {
+            logger.err(err)
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getAuctionOrdersByTokenId: async function (tokenId) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let result = await collection.findOne({tokenId}).toArray();
+            let sellerAddr = result.holder;
+            collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            result = collection.aggregate([
+                { $match: {$and: [{tokenId: tokenId}, {sellerAddr: sellerAddr}, {event: 'OrderForAuction'}]} },
+                { $sort: {blockNumber: 1} }
+            ]).toArray();
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.err(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }

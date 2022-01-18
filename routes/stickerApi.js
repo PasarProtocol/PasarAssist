@@ -286,4 +286,28 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+
+router.get('/getAuctionOrdersByTokenId', function(req, res) {
+    let tokenId = res.query.tokenId;
+    stickerDBService.getAuctionOrdersByTokenId(tokenId.toString()).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+
+router.get('/getLatestBids', function(req, res) {
+    let tokenId = req.query.tokenId;
+    let ownerAddr = req.query.owner;
+    tokenId = tokenId ? tokenId : '';
+    stickerDBService.getLatestBids(tokenId, ownerAddr).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;
