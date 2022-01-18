@@ -930,15 +930,18 @@ module.exports = {
             let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
             let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            // let count_transactions = await collection.aggregate([
+            //     { $project: {"_id": 0, orderId: 1} },
+            //     { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+            //     { $unwind: '$order' },
+            //     { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
+            //     { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
+            // ]).toArray();
             let count_transactions = await collection.aggregate([
-                { $project: {"_id": 0, orderId: 1} },
-                { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
-                { $unwind: '$order' },
-                { $project: {orderId: 1, from: '$order.sellerAddr', to: '$order.buyerAddr'} },
-                { $match: { $or: [{from: walletAddr}, {to: walletAddr}] } }
+                { $match: {$or: [{sellerAddr: walletAddr}, {buyerAddr: walletAddr}]} }
             ]).toArray();
             result = {assets: mint_collectibles.length - burn_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
-            return {code: 200, message: 'success', data: result, data1ss: tokens_created};
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
