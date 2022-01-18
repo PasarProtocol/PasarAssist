@@ -1060,6 +1060,11 @@ module.exports = {
                 { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {event: 'OrderBid'} ] } },
                 { $sort: {timestamp: -1} }
             ]).toArray();
+            const collection_address = mongoClient.db(config.dbName).collection('pasar_address_did');
+            for(var i = 0; i < result.length; i++) {
+                let rec = collection_address.findOne({address: result[i].buyerAddr});
+                result[i] = {...result[i], ...rec};
+            }
             return { code: 200, message: 'success', data: result };
         } catch (err) {
             logger.err(err)
