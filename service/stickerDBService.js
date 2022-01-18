@@ -858,6 +858,8 @@ module.exports = {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
             }
+            if(result.type == 'image')
+                result.type = "General";
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
