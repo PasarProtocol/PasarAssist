@@ -90,11 +90,11 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
                 let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                // let gasFee = await stickerDBService.getGasFee(event.transactionHash);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: 0}
 
                 console.log(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -125,12 +125,12 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
                 let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                // let gasFee = await stickerDBService.getGasFee(event.transactionHash);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: 0}
 
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -161,11 +161,11 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
                 let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                // let gasFee = await stickerDBService.getGasFee(event.transactionHash);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: 0}
 
                 console.log(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -195,11 +195,11 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
                 let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                // let gasFee = await stickerDBService.getGasFee(event.transactionHash);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee};
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: 0};
 
                 console.log(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -243,8 +243,8 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let tokenId = event.returnValues._id;
                 let value = event.returnValues._value;
                 let timestamp = (await web3Rpc.eth.getBlock(blockNumber)).timestamp;
-                let gasFee = await stickerDBService.getGasFee(txHash);
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee: gasFee}
+                // let gasFee = await stickerDBService.getGasFee(txHash);
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee: 0}
                 await stickerDBService.addEvent(transferEvent);
 
                 if(to === burnAddress) {
@@ -343,8 +343,8 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let txHash = event.transactionHash;
                 let txIndex = event.transactionIndex;
                 let timestamp = (await web3Rpc.eth.getBlock(blockNumber)).timestamp;
-                let gasFee = await stickerDBService.getGasFee(txHash);
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, memo, gasFee: gasFee}
+                // let gasFee = await stickerDBService.getGasFee(txHash);
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, memo, gasFee: 0}
                 await stickerDBService.addEvent(transferEvent);
                 await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
