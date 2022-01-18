@@ -37,21 +37,6 @@ let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.sticke
 let now = Date.now();
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-function makeBatchRequest(calls) {
-    let batch = new web3Rpc.BatchRequest();
-    let promises = calls.map(call => {
-        return new Promise((res, rej) => {
-            let req = call["method"].request(call["params"], (err, data) => {
-                if(err) rej(err);
-                else res(data)
-            });
-            batch.add(req)
-        })
-    })
-    batch.execute()
-    return Promise.all(promises)
-}
-
 let updateOrder = async function(result, blockNumber) {
     try {
         let orderId = result.orderId;
@@ -104,11 +89,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).then(events => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
-                // let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let [result, txInfo] = await makeBatchRequest([
+                let [result, txInfo] = await jobService.makeBatchRequest([
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -143,10 +127,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).then(events => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
-                let [result, txInfo] = await makeBatchRequest([
+                let [result, txInfo] = await jobService.makeBatchRequest([
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -182,10 +166,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).then(events => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
-                let [result, txInfo] = await makeBatchRequest([
+                let [result, txInfo] = await jobService.makeBatchRequest([
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -219,10 +203,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).then(events => {
             events.forEach(async event => {
                 let orderInfo = event.returnValues;
-                let [result, txInfo] = await makeBatchRequest([
+                let [result, txInfo] = await jobService.makeBatchRequest([
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -271,10 +255,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let tokenId = event.returnValues._id;
                 let value = event.returnValues._value;
 
-                let [blockInfo, txInfo] = await makeBatchRequest([
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let timestamp = blockInfo.timestamp;
 
@@ -377,10 +361,10 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let txHash = event.transactionHash;
                 let txIndex = event.transactionIndex;
 
-                let [blockInfo, txInfo] = await makeBatchRequest([
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ])
+                ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice;
                 let timestamp = blockInfo.timestamp;
 

@@ -182,12 +182,15 @@ module.exports = {
                 isGetForSaleOrderJobRun = false;
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -215,13 +218,16 @@ module.exports = {
                 logger.info("[OrderPriceChanged] Sync Ending ...");
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -249,15 +255,18 @@ module.exports = {
                 logger.info(error);
                 logger.info("[OrderFilled] Sync Ending ...");
             }).on("data", async function (event) {
-
                 let orderInfo = event.returnValues;
 
-                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -284,14 +293,16 @@ module.exports = {
                 logger.info(error);
                 logger.info("[OrderCanceled] Sync Ending ...");
             }).on("data", async function (event) {
-
                 let orderInfo = event.returnValues;
-                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee};
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee};
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -381,9 +392,15 @@ module.exports = {
 
                 let tokenId = event.returnValues._id;
                 let value = event.returnValues._value;
-                let timestamp = (await web3Rpc.eth.getBlock(blockNumber)).timestamp;
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee: gasFee};
+
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+                    {method: web3Rpc.eth.getBlock, params: blockNumber},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let timestamp = blockInfo.timestamp;
+
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
                 logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
                 await stickerDBService.replaceEvent(transferEvent);
 
@@ -423,16 +440,22 @@ module.exports = {
                 let blockNumber = event.blockNumber;
                 let txHash = event.transactionHash;
                 let txIndex = event.transactionIndex;
-                let timestamp = (await web3Rpc.eth.getBlock(blockNumber)).timestamp;
-                let gasFee = await stickerDBService.getGasFee(txHash);
-                let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee: gasFee};
+
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+                    {method: web3Rpc.eth.getBlock, params: blockNumber},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let timestamp = blockInfo.timestamp;
+
+                let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee};
                 logger.info(`[TokenInfoWithMemo] transferToken: ${JSON.stringify(transferEvent)}`)
                 await stickerDBService.addEvent(transferEvent);
                 await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
         });
 
-        
+
 
         let orderForAuctionJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction');
@@ -455,12 +478,17 @@ module.exports = {
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
                 console.log('OrderForAuction event data is ', event)
-                let result = await stickerContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -489,12 +517,17 @@ module.exports = {
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
                 console.log('OrderBid event data is ', event);
-                let result = await stickerContract.methods.getOrderById(orderInfo._orderId).call();
-                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice;
+
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderForBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -524,8 +557,11 @@ module.exports = {
                     let blockNumber = event.blockNumber;
                     let txHash = event.transactionHash;
                     let txIndex = event.transactionIndex;
-                    let gasFee = await stickerDBService.getGasFee(event.transactionHash);
-                    let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, tokenId, amount, fee, didUri, gasFee: gasFee}
+
+                    let txInfo = await web3Rpc.eth.getTransaction(event.transactionHash)
+                    let gasFee = txInfo.gas * txInfo.gasPrice;
+
+                    let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, tokenId, amount, fee, didUri, gasFee}
 
                     let creatorCID = didUri.split(":")[2];
                     let response = await fetch(config.ipfsNodeUrl + creatorCID);
@@ -552,8 +588,11 @@ module.exports = {
                     let blockNumber = event.blockNumber;
                     let txHash = event.transactionHash;
                     let txIndex = event.transactionIndex;
-                    let gasFee = await stickerDBService.getGasFee(event.transactionHash);
-                    let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, gasFee: gasFee}
+
+                    let txInfo = await web3Rpc.eth.getTransaction(event.transactionHash)
+                    let gasFee = txInfo.gas * txInfo.gasPrice;
+
+                    let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, gasFee}
 
                     logger.info(`[GalleriaPanelRemoved] Panel Detail: ${JSON.stringify(panelEvent)}`)
                     await galleriaDbService.addPanelEvent(panelEvent);
@@ -602,9 +641,9 @@ module.exports = {
             let orderCountContract = parseInt(await pasarContract.methods.getOrderCount().call());
             logger.info(`[Order Count Check] DbCount: ${orderCount}   ContractCount: ${orderCountContract}`)
             if(orderCountContract !== orderCount) {
-                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                //     `pasar assist sync service sync failed!\nDbCount: ${orderCount}   ContractCount: ${orderCountContract}`,
-                //     recipients.join());
+                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                    `pasar assist sync service sync failed!\nDbCount: ${orderCount}   ContractCount: ${orderCountContract}`,
+                    recipients.join());
             }
         });
 
@@ -616,9 +655,9 @@ module.exports = {
             let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
             logger.info(`[Token Count Check] DbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`)
             if(stickerCountContract !== stickerCount) {
-                // await sendMail(`Sticker Sync [${config.serviceName}]`,
-                //     `pasar assist sync service sync failed!\nDbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`,
-                //     recipients.join());
+                await sendMail(`Sticker Sync [${config.serviceName}]`,
+                    `pasar assist sync service sync failed!\nDbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`,
+                    recipients.join());
             }
         });
 
@@ -642,9 +681,9 @@ module.exports = {
             if(orderCount !== contractOrderCount) {
                 logger.info(`Order Event Count Check: StartBlock: ${fromBlock}    EndBlock: ${toBlock}`);
                 logger.info(`Order Event Count Check: DBEventCount: ${orderCount}    ContractEventCount: ${contractOrderCount}`);
-                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                //     `pasar assist sync service sync failed!\nDbEventCount: ${orderCount}   ContractEventCount: ${contractOrderCount}`,
-                //     recipients.join());
+                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                    `pasar assist sync service sync failed!\nDbEventCount: ${orderCount}   ContractEventCount: ${contractOrderCount}`,
+                    recipients.join());
             }
 
             pasarOrderEventCheckBlockNumber = toBlock + 1;
@@ -667,9 +706,9 @@ module.exports = {
             if(stickerEventCountDB !== stickerEventCount) {
                 logger.info(`Sticker Event Count Check: StartBlock: ${fromBlock}    EndBlock: ${toBlock}`);
                 logger.info(`Sticker Event Count Check: DBEventCount: ${stickerEventCountDB}    ContractEventCount: ${stickerEventCount}`);
-                // await sendMail(`Pasar Order Sync [${config.serviceName}]`,
-                //     `pasar assist sync service sync failed!\nDbEventCount: ${stickerEventCountDB}   ContractEventCount: ${stickerEventCount}`,
-                //     recipients.join());
+                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
+                    `pasar assist sync service sync failed!\nDbEventCount: ${stickerEventCountDB}   ContractEventCount: ${stickerEventCount}`,
+                    recipients.join());
             }
 
             stickerEventCheckBlockNumber = toBlock + 1;
