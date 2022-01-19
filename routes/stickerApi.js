@@ -310,4 +310,19 @@ router.get('/getLatestBids', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+router.get('/getDetailedCollectibles', function(req, res) {
+    let status = req.query.status;
+    let minPrice = req.query.minPrice;
+    let maxPrice = req.query.maxPrice;
+    let collectionType = req.query.collectiionType;
+    let itemType = req.query.itemType;
+    let adult = req.query.adult;
+    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
 module.exports = router;

@@ -730,7 +730,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.find({"tokenId": tokenId}).forEach( function (x) {
+            await collection.find({"tokenId": tokenId, orderState: 2}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
                 x.price = parseInt(x.price);
                 mongoClient.db(config.dbName).collection('token_temp').save(x);
@@ -743,7 +743,8 @@ module.exports = {
             { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
             { $sort: {onlyDate: 1} }
             ]).toArray();
-            await collection.drop();
+            if(result.length > 0)
+                await collection.drop();
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -1072,7 +1073,7 @@ module.exports = {
             }
             return { code: 200, message: 'success', data: result };
         } catch (err) {
-            logger.err(err)
+            logger.error(err)
         } finally {
             await mongoClient.close();
         }
@@ -1092,7 +1093,44 @@ module.exports = {
             ]).toArray();
             return {code: 200, message: 'success', data: result};
         } catch (err) {
-            logger.err(err);
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_order');
+            let status_condition;
+            if(status == 'All')
+                status_condition = {$or: [{orderType: '1'}, {orderType: '2'}]}
+            else if(status == 'Listed')
+                status_condition = {$or: [{orderType: '1'}]}
+            else status_condition = {$or: [{orderType: '2'}]}
+            let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
+            let availableOrders = await collection.aggregate([
+                { $match: {$or: [status_condition, price_condition, {orderState: 1}]} },
+                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber"} },
+                { $sort: {tokenId: 1} }
+            ]).toArray();
+            let result = [];
+            collection = mongoClient.db(config.dbName).collection('pasar_token');
+            for (let i = 0; i < availableOrders.length; i++) {
+                const element = availableOrders[i];
+                let record = await collection.aggregate([
+                    { $match: {$or: [{type: itemType}, {adult: adult}]} },
+                    { $project: {'_id': 0, name: 1, description: 1, quantity: 1} }
+                ]).toArray();
+                if(record.length == 0)
+                    continue;
+                result.push({...element, ...record[0]});
+            }
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
         } finally {
             await mongoClient.close();
         }
