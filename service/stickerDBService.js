@@ -1141,8 +1141,7 @@ module.exports = {
             for (let i = 0; i < availableOrders.length; i++) {
                 const element = availableOrders[i];
                 let record = await collection.aggregate([
-                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}]} },
-                    { $project: {'_id': 0, name: 1, description: 1, quantity: 1} }
+                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}]} }
                 ]).toArray();
                 if(record.length == 0)
                     continue;
