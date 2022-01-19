@@ -411,7 +411,7 @@ module.exports = {
                 match['token.type'] = { "$in": types };
             }
 
-            if(types !== undefined && types[0] === 'feeds-chanel') {
+            if(types !== undefined && types[0] === 'feeds-channel') {
                 result = await collection.aggregate([
                     { $sort: {tokenId: 1, blockNumber: -1}},
                     { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},

@@ -92,7 +92,11 @@ module.exports = {
 
         async function dealWithNewToken(blockNumber,tokenId) {
             try {
-                let result = await stickerContract.methods.tokenInfo(tokenId).call();
+                let [result, extraInfo] = await jobService.makeBatchRequest([
+                    {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
+                    {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
+                ], web3Rpc);
+
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                     createTime: result.createTime, updateTime: result.updateTime}
@@ -105,13 +109,10 @@ module.exports = {
                 token.name = data.name;
                 token.description = data.description;
 
-                if(blockNumber > config.upgradeBlock) {
-                    let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
+                if(extraInfo.didUri !== '') {
                     token.didUri = extraInfo.didUri;
-                    if(extraInfo.didUri !== '') {
-                        token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                        await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                    }
+                    token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
+                    await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                 }
 
                 if(token.type === 'feeds-channel') {
@@ -134,28 +135,6 @@ module.exports = {
                 token.adult = data.adult ? data.adult : false;
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                 await stickerDBService.replaceToken(token);
-            } catch (e) {
-                logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
-                logger.info(e);
-            }
-        }
-
-        async function updateToken(blockNumber,tokenId,to) {
-            try {
-                let result = await stickerContract.methods.tokenInfo(tokenId).call();
-                let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
-                    holder: to, updateTime: result.updateTime}
-
-                if(blockNumber > config.upgradeBlock) {
-                    let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
-                    token.didUri = extraInfo.didUri;
-                    if(extraInfo.didUri !== '') {
-                        token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                        await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                    }
-                }
-
-                await stickerDBService.updateToken()
             } catch (e) {
                 logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
@@ -659,11 +638,14 @@ module.exports = {
          */
         schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '*/2 * * * *'}, async () => {
             let stickerCount = await stickerDBService.stickerCount();
+            let stickerGalleriaCount = await stickerDBService.stickerGalleriaCount();
             let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
-            logger.info(`[Token Count Check] DbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`)
-            if(stickerCountContract !== stickerCount) {
+
+            let totalDbCount = stickerCount + stickerGalleriaCount;
+            logger.info(`[Token Count Check] DbCount: ${totalDbCount}   ContractCount: ${stickerCountContract}`)
+            if(stickerCountContract !== totalDbCount) {
                 await sendMail(`Sticker Sync [${config.serviceName}]`,
-                    `pasar assist sync service sync failed!\nDbCount: ${stickerCount}   ContractCount: ${stickerCountContract}`,
+                    `pasar assist sync service sync failed!\nDbCount: ${totalDbCount}   ContractCount: ${stickerCountContract}`,
                     recipients.join());
             }
         });

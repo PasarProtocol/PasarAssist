@@ -269,7 +269,11 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     // await stickerDBService.burnToken(tokenId);
                 } else if(from === burnAddress) {
                     try {
-                        let result = await stickerContract.methods.tokenInfo(tokenId).call();
+                        let [result, extraInfo] = await jobService.makeBatchRequest([
+                            {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
+                            {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
+                        ], web3Rpc);
+
                         let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                             royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                             createTime: result.createTime, updateTime: result.updateTime}
@@ -282,25 +286,22 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         token.name = data.name;
                         token.description = data.description;
 
-                        if(blockNumber > config.upgradeBlock) {
-                            let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
+                        if(extraInfo.didUri !== '') {
                             token.didUri = extraInfo.didUri;
-                            if(extraInfo.didUri !== '') {
-                                token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                                await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                            }
+                            token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
+                            await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                         }
 
                         if(token.type === 'feeds-channel') {
                             token.tippingAddress = data.tippingAddress;
                             token.entry = data.entry;
                             token.avatar = data.avatar;
-                            console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                            logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                             await stickerDBService.replaceGalleriaToken(token);
                             return;
                         }
 
-                        if(token.type === 'feeds-video' || data.version === "2") {
+                        if(token.type === 'video' || data.version === "2") {
                             token.data = data.data;
                         } else {
                             token.thumbnail = data.thumbnail;
@@ -309,7 +310,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             token.size = data.size;
                         }
                         token.adult = data.adult ? data.adult : false;
-                        console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                        logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                         await stickerDBService.replaceToken(token);
                     } catch (e) {
                         console.log(`[TokenInfo] Sync error at ${event.blockNumber} ${tokenId}`);

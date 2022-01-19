@@ -30,7 +30,7 @@ async function checkTokenHolder() {
         console.log(`Pasar token: ${tokens.size}   Pasar token event: ${tokenEvents.size}`);
         let i = 0;
         tokenEvents.forEach((value, key) => {
-            if(value !== tokens.get(key)) {
+            if(tokens.get(key) && value !== tokens.get(key)) {
                 console.log(`${key}:  ${tokens.get(key)} <==> ${value}`)
                 i++;
             }
