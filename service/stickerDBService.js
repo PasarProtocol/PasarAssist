@@ -922,19 +922,28 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
 
-            let tokens_burned = await mongoClient.db(config.dbName).collection('pasar_token_event').find({$and: [{to: burnAddress}, {from: walletAddr}]}).project({"_id": 0, tokenId: 1}).toArray();
+            let tokens_burned = await mongoClient.db(config.dbName).collection('pasar_token_event').aggregate([
+                { $match: {$and: [{to: burnAddress}, {from: walletAddr}]} },
+                { $project: {"_id": 0, tokenId: 1} }
+            ]).toArray();
             let burn_tokens = [];
             tokens_burned.forEach(ele => {
                 burn_tokens.push(ele['tokenId']);
             });
 
             let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let mint_collectibles = await collection.find({$and: [{from: burnAddress}, {to: walletAddr}, {tokenId: {$nin: burn_tokens}}]}).toArray();
+            let mint_collectibles = await collection.aggregate([
+                { $match: {$and: [{from: burnAddress}, {to: walletAddr}, {tokenId: {$nin: burn_tokens}}]} }
+            ]).toArray();
 
-            collection = mongoClient.db(config.dbName).collection('pasar_order');
-            let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
-            let count_purchased = await collection.find({buyerAddr: walletAddr, orderState: '2'}).count();
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let count_sold = await collection.aggregate([
+                { $match: {$and: [{sellerAddr: walletAddr}, {event: 'OrderFilled'}]} }
+            ]).toArray();
+            let count_purchased = await collection.aggregate([
+                { $match: {$and: [{buyerAddr: walletAddr}, {event: 'OrderFilled'}]} }
+            ]).toArray();
+            // collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             // let count_transactions = await collection.aggregate([
             //     { $project: {"_id": 0, orderId: 1} },
             //     { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
@@ -945,7 +954,7 @@ module.exports = {
             let count_transactions = await collection.aggregate([
                 { $match: {$or: [{sellerAddr: walletAddr}, {buyerAddr: walletAddr}]} }
             ]).toArray();
-            result = {assets: mint_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: mint_collectibles.length, sold: count_sold.length, purchased: count_purchased.length, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
