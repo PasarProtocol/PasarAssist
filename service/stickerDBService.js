@@ -5,6 +5,7 @@ const {MongoClient} = require("mongodb");
 const config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
+const BigNumber = require("bignumber.js");
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -1112,7 +1113,7 @@ module.exports = {
             else status_condition = {$or: [{orderType: '2'}]}
             let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
             let availableOrders = await collection.aggregate([
-                { $match: {$or: [status_condition, price_condition, {orderState: 1}]} },
+                { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
                 { $project: {"_id": 0, tokenId: 1, price: "$priceNumber"} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
@@ -1121,7 +1122,7 @@ module.exports = {
             for (let i = 0; i < availableOrders.length; i++) {
                 const element = availableOrders[i];
                 let record = await collection.aggregate([
-                    { $match: {$or: [{type: itemType}, {adult: adult}]} },
+                    { $match: {$and: [{type: itemType}, {adult: adult == "true"}]} },
                     { $project: {'_id': 0, name: 1, description: 1, quantity: 1} }
                 ]).toArray();
                 if(record.length == 0)

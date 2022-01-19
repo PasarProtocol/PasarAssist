@@ -318,7 +318,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let collectionType = req.query.collectiionType;
     let itemType = req.query.itemType;
     let adult = req.query.adult;
-    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult).then(result => {
+    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
