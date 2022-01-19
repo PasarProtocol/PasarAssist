@@ -165,7 +165,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -201,7 +201,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
@@ -240,7 +240,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -277,7 +277,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -340,7 +340,7 @@ module.exports = {
                     {method: web3Rpc.eth.getBlock, params: event.blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
                 await stickerDBService.addAprovalForAllEvent(event, gasFee, timestamp);
@@ -383,7 +383,7 @@ module.exports = {
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
@@ -431,7 +431,7 @@ module.exports = {
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee};
@@ -469,7 +469,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -508,7 +508,7 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -545,7 +545,7 @@ module.exports = {
                     let txIndex = event.transactionIndex;
 
                     let txInfo = await web3Rpc.eth.getTransaction(event.transactionHash)
-                    let gasFee = txInfo.gas * txInfo.gasPrice;
+                    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
                     let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, tokenId, amount, fee, didUri, gasFee}
 
@@ -576,7 +576,7 @@ module.exports = {
                     let txIndex = event.transactionIndex;
 
                     let txInfo = await web3Rpc.eth.getTransaction(event.transactionHash)
-                    let gasFee = txInfo.gas * txInfo.gasPrice;
+                    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
                     let panelEvent = {panelId, user, event: event.event, blockNumber, txHash, txIndex, gasFee}
 

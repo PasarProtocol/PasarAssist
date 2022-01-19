@@ -93,7 +93,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -131,7 +131,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
@@ -170,7 +170,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -207,7 +207,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
@@ -259,7 +259,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee}
@@ -366,7 +366,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                     {method: web3Rpc.eth.getBlock, params: blockNumber},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice;
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, memo, gasFee}
