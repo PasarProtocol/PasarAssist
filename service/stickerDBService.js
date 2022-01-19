@@ -1105,12 +1105,31 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_order');
-            let status_condition;
-            if(status == 'All')
-                status_condition = {$or: [{orderType: '1'}, {orderType: '2'}]}
-            else if(status == 'Listed')
-                status_condition = {$or: [{orderType: '1'}]}
-            else status_condition = {$or: [{orderType: '2'}]}
+            let status_condition = [];
+            let statusArr = status.split(',');
+            for (let i = 0; i < statusArr.length; i++) {
+                const ele = statusArr[i];
+                if(ele == 'All') {
+                    status_condition.push({orderType: '1'});
+                    status_condition.push({orderType: '2'});
+                }
+                else if(ele == 'Listed')
+                    status_condition.push({orderType: '1'})
+                else status_condition.push({orderType: '2'})
+            }
+            status_condition = {$or: status_condition};
+
+            let itemType_condition = [];
+            let itemTypeArr = itemType.split(',');
+            for (let i = 0; i < itemTypeArr.length; i++) {
+                const ele = itemTypeArr[i];
+                if(ele == 'General')
+                    ele = 'image';
+                if(ele == 'All')
+                    itemType_condition.push({type: new RegExp('')});
+                else itemType_condition.push({type: ele});
+            }
+            itemType_condition = {$or: itemType_condition};
             let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
             let availableOrders = await collection.aggregate([
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
@@ -1122,7 +1141,7 @@ module.exports = {
             for (let i = 0; i < availableOrders.length; i++) {
                 const element = availableOrders[i];
                 let record = await collection.aggregate([
-                    { $match: {$and: [{type: itemType}, {adult: adult == "true"}]} },
+                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}]} },
                     { $project: {'_id': 0, name: 1, description: 1, quantity: 1} }
                 ]).toArray();
                 if(record.length == 0)
