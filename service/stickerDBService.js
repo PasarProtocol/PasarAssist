@@ -917,18 +917,19 @@ module.exports = {
 
     getStastisDataByWalletAddr: async function(walletAddr) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let burnAddress = '0x0000000000000000000000000000000000000000';
         try {
             await mongoClient.connect();
             let result = {};
-            let tokens_created = await mongoClient.db(config.dbName).collection('pasar_token').find({royaltyOwner: walletAddr}).project({"_id": 0, tokenId: 1}).toArray();
-            let tokens = [];
-            tokens_created.forEach(ele => {
-                tokens.push(ele['tokenId']);
-            });
-            let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let mint_collectibles = await collection.find({$and: [{from: '0x0000000000000000000000000000000000000000'}, {to: walletAddr}]}).toArray();
 
-            let burn_collectibles = await collection.find({$and: [{to: '0x0000000000000000000000000000000000000000'}, {from: walletAddr}, {tokenId: {$in: tokens}}]}).toArray();
+            let tokens_burned = await mongoClient.db(config.dbName).collection('pasar_token_event').find({$and: [{to: burnAddress}, {from: walletAddr}]}).project({"_id": 0, tokenId: 1}).toArray();
+            let burn_tokens = [];
+            tokens_burned.forEach(ele => {
+                burn_tokens.push(ele['tokenId']);
+            });
+
+            let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let mint_collectibles = await collection.find({$and: [{from: burnAddress}, {to: walletAddr}, {tokenId: {$nin: burn_tokens}}]}).toArray();
 
             collection = mongoClient.db(config.dbName).collection('pasar_order');
             let count_sold = await collection.find({sellerAddr: walletAddr, orderState: '2'}).count();
@@ -944,7 +945,7 @@ module.exports = {
             let count_transactions = await collection.aggregate([
                 { $match: {$or: [{sellerAddr: walletAddr}, {buyerAddr: walletAddr}]} }
             ]).toArray();
-            result = {assets: mint_collectibles.length - burn_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
+            result = {assets: mint_collectibles.length, sold: count_sold, purchased: count_purchased, transactions: count_transactions.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
