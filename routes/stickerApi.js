@@ -365,4 +365,16 @@ router.get('/getOwnCollectiblesByAddress', function (req, res) {
         res.json({code: 500, message: 'server error'});
     })
 })
+
+router.get('/getCreatedCollectiblesByAddress', function(req, res) {
+    let address = req.query.address;
+    let orderType = req.query.order;
+    stickerDBService.getCreatedCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 module.exports = router;

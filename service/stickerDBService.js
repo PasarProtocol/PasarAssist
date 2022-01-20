@@ -1294,5 +1294,55 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    getCreatedCollectiblesByAddress: async function(address, order) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+            let tokens = await collection.aggregate([
+                { $match: {royaltyOwner: address} }
+            ]).toArray();
+            const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_token_event');
+            for (let i = 0; i < tokens.length; i++) {
+                let record = await collection_orderEvent.aggregate([
+                    { $match: {tokenId: tokens[i].tokenId} },
+                    { $sort: {timestamp: -1} },
+                    { $limit: 1 }
+                ]).toArray();
+                if(record.length > 0)
+                    tokens[i].price = record[0].price;
+                else tokens[i].price = 0;
+            }
+            const collection_temp = await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(tokens);
+            let result = await collection_temp.aggregate([
+                { $sort: sort }
+            ])
+            if(result.length > 0)
+                await collection_temp.drop();
+            return {code: 200, message: 'sucess', data: result};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await MongoClient.close();
+        }
     }
 }
