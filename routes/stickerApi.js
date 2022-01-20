@@ -328,7 +328,8 @@ router.get('/getDetailedCollectibles', function(req, res) {
 
 router.get('/getListedCollectiblesByAddress', function(req, res) {
     let address = req.query.address;
-    stickerDBService.getListedCollectiblesByAddress(address).then(result => {
+    let orderType = req.query.order;
+    stickerDBService.getListedCollectiblesByAddress(address, orderType).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

@@ -1165,15 +1165,33 @@ module.exports = {
         }
     },
 
-    getListedCollectiblesByAddress: async function(address) {
+    getListedCollectiblesByAddress: async function(address, orderType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
             const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
             let open_orders = await collection.aggregate([
                 { $match: {$and: [{sellerAddr: address}, {orderState: '1'}]} },
-                { $project: {'_id': 0, tokenId: 1, price: 1} }
+                { $project: {'_id': 0, tokenId: 1, price: 1} },
+                { $sort: sort }
             ]).toArray();
             let result = [];
             for (let i = 0; i < open_orders.length; i++) {
