@@ -1079,7 +1079,7 @@ module.exports = {
             ]).toArray();
             const collection_address = mongoClient.db(config.dbName).collection('pasar_address_did');
             for(var i = 0; i < result.length; i++) {
-                let rec = collection_address.findOne({address: result[i].buyerAddr});
+                let rec = await collection_address.findOne({address: result[i].buyerAddr});
                 result[i] = {...result[i], ...rec};
             }
             return { code: 200, message: 'success', data: result };
@@ -1098,7 +1098,7 @@ module.exports = {
             let result = await collection.findOne({tokenId}).toArray();
             let sellerAddr = result.holder;
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            result = collection.aggregate([
+            result = await collection.aggregate([
                 { $match: {$and: [{tokenId: tokenId}, {sellerAddr: sellerAddr}, {event: 'OrderForAuction'}]} },
                 { $sort: {blockNumber: 1} }
             ]).toArray();
@@ -1164,4 +1164,29 @@ module.exports = {
             await mongoClient.close();
         }
     },
+
+    getListedCollectiblesByAddress: async function(address) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_order');
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let open_orders = await collection.aggregate([
+                { $match: {$and: [{sellerAddr: address}, {orderState: '1'}]} },
+                { $project: {'_id': 0, tokenId: 1, price: 1} }
+            ]).toArray();
+            let result = [];
+            for (let i = 0; i < open_orders.length; i++) {
+                const ele = open_orders[i];
+                let record = await token_collection.findOne({tokenId: ele.tokenId});
+                record.price = ele.price;
+                result.push(record);
+            }
+            return { code: 200, message: 'sucess', data: result };
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    }
 }
