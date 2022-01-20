@@ -1116,7 +1116,7 @@ module.exports = {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_order');
             let sort = {};
-            switch (orderType) {
+            switch (order) {
                 case '0':
                     sort = {timestamp: -1};
                     break;
@@ -1184,14 +1184,17 @@ module.exports = {
                     continue;
                 result.push({...element, ...record[0]});
             }
+            let total = result.length;
             if(result.length > 0) {
                 await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(result);
                 result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
-                    { $sort: sort }
+                    { $sort: sort },
+                    { $skip: (pageNum - 1) * pageSize },
+                    { $limit: pageSize }
                 ]).toArray();
                 await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
             }
-            return {code: 200, message: 'success', data: result};
+            return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
         } finally {

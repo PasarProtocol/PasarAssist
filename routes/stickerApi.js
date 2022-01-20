@@ -319,7 +319,24 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let itemType = req.query.itemType;
     let adult = req.query.adult;
     let orderType = req.query.order;
-    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult, orderType).then(result => {
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+    let pageNum, pageSize;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+    }catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult, orderType, pageNum, pageSize).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
