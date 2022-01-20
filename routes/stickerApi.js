@@ -286,4 +286,65 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+
+router.get('/getAuctionOrdersByTokenId', function(req, res) {
+    let tokenId = res.query.tokenId;
+    stickerDBService.getAuctionOrdersByTokenId(tokenId.toString()).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+
+router.get('/getLatestBids', function(req, res) {
+    let tokenId = req.query.tokenId;
+    let ownerAddr = req.query.owner;
+    tokenId = tokenId ? tokenId : '';
+    stickerDBService.getLatestBids(tokenId, ownerAddr).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/getDetailedCollectibles', function(req, res) {
+    let status = req.query.status;
+    let minPrice = req.query.minPrice;
+    let maxPrice = req.query.maxPrice;
+    let collectionType = req.query.collectiionType;
+    let itemType = req.query.itemType;
+    let adult = req.query.adult;
+    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/getListedCollectiblesByAddress', function(req, res) {
+    let address = req.query.address;
+    let orderType = req.query.order;
+    stickerDBService.getListedCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/getOwnCollectiblesByAddress', function (req, res) {
+    let address = req.query.address;
+    let orderType = req.query.order;
+    stickerDBService.getOwnCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
 module.exports = router;

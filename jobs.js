@@ -356,7 +356,7 @@ module.exports = {
                 lastHeight += 1;
             }
             isGetTokenInfoJobRun = true;
-            logger.info(`[TokenInfo] Sync Starting ... from block ${lastHeight + 1}`)
+            logger.info(`[TokenInfo] Sync Starting ... from block ${lastHeight}`)
 
             stickerContractWs.events.TransferSingle({
                 fromBlock: lastHeight
@@ -409,7 +409,7 @@ module.exports = {
                 lastHeight += 1;
             }
             isGetTokenInfoWithMemoJobRun = true;
-            logger.info(`[TokenInfoWithMemo] Sync Starting ... from block ${lastHeight + 1}`)
+            logger.info(`[TokenInfoWithMemo] Sync Starting ... from block ${lastHeight}`)
 
             stickerContractWs.events.TransferSingleWithMemo({
                 fromBlock: lastHeight

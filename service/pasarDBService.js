@@ -11,7 +11,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.pasarContractDeploy - 1;
+                return config.pasarContractDeploy;
             }
         } catch (err) {
             logger.error(err);
