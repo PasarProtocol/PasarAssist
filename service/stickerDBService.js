@@ -1095,7 +1095,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await collection.findOne({tokenId}).toArray();
+            let result = await collection.findOne({tokenId});
             let sellerAddr = result.holder;
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             result = await collection.aggregate([
