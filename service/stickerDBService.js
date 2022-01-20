@@ -1206,5 +1206,56 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    getOwnCollectiblesByAddress: async function(address, orderType) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+            let tokens = await token_collection.aggregate([
+                { $match: {$and: [{holder: address}]} }
+            ]).toArray();
+            for (let i = 0; i < tokens.length; i++) {
+                let record = await collection.aggregate([
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {sellerAddr: address}]} },
+                    { $project: {'_id': 0, price: 1} }
+                ]);
+                if(!record)
+                    tokens[i].price = 0;
+                else tokens[i].price = record.price;
+            }
+            let result = [];
+            if(tokens.length > 0) {
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(tokens);
+                result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
+                    { $sort: sort }
+                ]).toArray();
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
+            }
+            return { code: 200, message: 'sucess', data: result };
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
     }
 }
