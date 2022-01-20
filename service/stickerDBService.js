@@ -1110,11 +1110,38 @@ module.exports = {
         }
     },
 
-    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult) {
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_order');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {timestamp: -1};
+                    break;
+                case '1':
+                    sort = {createTime: -1};
+                    break;
+                case '2':
+                    sort = {timestamp: 1};
+                    break;
+                case '3':
+                    sort = {createTime: 1};
+                    break;
+                case '4':
+                    sort = {price: -1};
+                    break;
+                case '5':
+                    sort = {price: 1};
+                    break;
+                case '6':
+                    sort = {endTime: -1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+
             let status_condition = [];
             let statusArr = status.split(',');
             for (let i = 0; i < statusArr.length; i++) {
@@ -1143,7 +1170,7 @@ module.exports = {
             let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
             let availableOrders = await collection.aggregate([
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber"} },
+                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
@@ -1156,6 +1183,13 @@ module.exports = {
                 if(record.length == 0)
                     continue;
                 result.push({...element, ...record[0]});
+            }
+            if(result.length > 0) {
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(result);
+                result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
+                    { $sort: sort }
+                ]).toArray();
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
             }
             return {code: 200, message: 'success', data: result};
         } catch (err) {
