@@ -1204,10 +1204,15 @@ module.exports = {
             itemType_condition = {$or: itemType_condition};
             minPrice = new BigNumber(minPrice, 10) / (10 ** 18);
             maxPrice = new BigNumber(maxPrice, 10) / (10 ** 18);
-            let price_condition = {$or: [{priceNumber: {$lte: parseInt(maxPrice)}}, {priceNumber: {$gte: maxPrice}}]};
+            let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
             let availableOrders = await collection.aggregate([
-                { $match: {$and: [status_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
+                {
+                    $addFields: {
+                       "priceCalculated": { $divide: [ "$priceNumber", 10 ** 18 ] }
+                    }
+                },
+                { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
+                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
@@ -1220,9 +1225,7 @@ module.exports = {
                 if(record.length == 0)
                     continue;
                 delete record[0]["_id"];
-                element.price = new BigNumber(element.price) / (10 ** 18);
-                if(element.price > minPrice && element.price < maxPrice);
-                    result.push({...element, ...record[0]});
+                result.push({...element, ...record[0]});
             }
             let total = result.length;
             if(result.length > 0) {
