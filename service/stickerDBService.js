@@ -1202,9 +1202,11 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
+            minPrice = new BigNumber(minPrice, 10) / (10 ** 18);
+            maxPrice = new BigNumber(maxPrice, 10) / (10 ** 18);
+            let price_condition = {$or: [{priceNumber: {$lte: parseInt(maxPrice)}}, {priceNumber: {$gte: maxPrice}}]};
             let availableOrders = await collection.aggregate([
-                { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
+                { $match: {$and: [status_condition, {orderState: '1'}]} },
                 { $project: {"_id": 0, tokenId: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
@@ -1218,7 +1220,9 @@ module.exports = {
                 if(record.length == 0)
                     continue;
                 delete record[0]["_id"];
-                result.push({...element, ...record[0]});
+                element.price = new BigNumber(element.price) / (10 ** 18);
+                if(element.price > minPrice && element.price < maxPrice);
+                    result.push({...element, ...record[0]});
             }
             let total = result.length;
             if(result.length > 0) {
@@ -1230,7 +1234,7 @@ module.exports = {
                 ]).toArray();
                 await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
             }
-            return {code: 200, message: 'success', data: {total, result}};
+            return {code: 200, message: 'success', condition: price_condition, data: {total, result}};
         } catch (err) {
             logger.error(err);
         } finally {
