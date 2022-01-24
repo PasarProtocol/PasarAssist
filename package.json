@@ -11,6 +11,7 @@
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",
+    "ioredis": "^4.28.3",
     "log4js": "^6.3.0",
     "mongodb": "^3.6.1",
     "node-fetch": "^2.0.0",

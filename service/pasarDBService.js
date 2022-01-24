@@ -1,5 +1,6 @@
 let config = require('../config');
 let MongoClient = require('mongodb').MongoClient;
+let redisService = require('../service/redisService');
 
 module.exports = {
     getLastPasarOrderSyncHeight: async function (event) {
@@ -46,7 +47,9 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
-            return await collection.updateOne({orderId}, {$set: rest}, {upsert: true});
+            await collection.updateOne({orderId}, {$set: rest}, {upsert: true});
+            await redisService.clearCache();
+            return true;
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -205,7 +208,32 @@ module.exports = {
         }
     },
 
+    getRedisKey: function (blockNumber, endBlockNumber, orderState, adult) {
+        let key = '';
+        if(blockNumber !== undefined) {
+            key += blockNumber;
+        }
+        if(endBlockNumber !== undefined) {
+            key += endBlockNumber;
+        }
+        if(orderState !== undefined) {
+            key += orderState;
+        }
+        if(adult !== undefined) {
+            key += adult;
+        }
+
+        return key;
+    },
+
     listPasarOrder: async function(pageNum=1, pageSize=10, blockNumber, endBlockNumber, orderState,sortType, sort, adult) {
+
+        let redisKey = 'listPasarOrder' + pageNum + pageSize + sortType + sort + this.getRedisKey(blockNumber, endBlockNumber, orderState,adult);
+        let cacheResult = await redisService.get(redisKey);
+        if(cacheResult) {
+            return JSON.parse(cacheResult);
+        }
+
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -264,8 +292,9 @@ module.exports = {
             pipeline.push({ $limit: pageSize });
 
             let result = await collection.aggregate(pipeline).toArray();
-
-            return {code: 200, message: 'success', data: {total,latestBlockNumber, result}};
+            let response = {code: 200, message: 'success', data: {total,latestBlockNumber, result}};
+            await redisService.set(redisKey, JSON.stringify(response));
+            return response;
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};

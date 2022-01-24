@@ -4,6 +4,9 @@ module.exports = {
     dbUser: '',
     dbPass: '',
 
+    redisPort: 6379,
+    redisHost: 'localhost',
+
     mailHost: '',
     mailPort: 465,
     mailUser: '',
