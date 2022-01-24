@@ -5,6 +5,7 @@ let indexRouter = require('./routes/index');
 let pasarApi = require('./routes/pasarApi');
 let stickerApi = require('./routes/stickerApi');
 let galleriaApi = require('./routes/galleriaApi');
+let authApi = require('./routes/authApi');
 let apiV2 = require('./routes/apiV2');
 let jobs = require('./jobs');
 let log4js = require('log4js');
@@ -34,6 +35,7 @@ app.use('/feeds/api/v1', indexRouter);
 app.use('/pasar/api/v1', pasarApi);
 app.use('/sticker/api/v1', stickerApi);
 app.use('/galleria/api/v1', galleriaApi);
+app.use('/auth/api/v1', authApi);
 app.use('/api/v2', apiV2);
 
 jobs.run()
