@@ -1126,13 +1126,15 @@ module.exports = {
                 {$limit: 1}
             ]).toArray();
             let result = {};
-            if(result0[0]['event'] == 'OrderForSale') {
-                result.event = 'OrderForSale';
-            }else if(result0[0]['event'] == 'OrderForAuction') {
-                result.event = 'OrderForAuction';
-                result.endTime = result0[0].endTime;
+            if(result0.length > 0) {
+                if(result0[0]['event'] == 'OrderForSale') {
+                    result.event = 'OrderForSale';
+                }else if(result0[0]['event'] == 'OrderForAuction') {
+                    result.event = 'OrderForAuction';
+                    result.endTime = result0[0].endTime;
+                }   
             }
-            if(result1[0]) {
+            if(result1.length > 0) {
                 result.price = result1[0].price;
             }
             return {code: 200, message: 'success', data: result};
