@@ -1110,6 +1110,39 @@ module.exports = {
         }
     },
 
+    getMarketStatusByTokenId: async function (tokenId, sellerAddr){
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let result0 = await collection.aggregate([
+                {$match: {$and: [{tokenId}, {sellerAddr}]}},
+                {$sort: {blockNumber: -1}},
+                {$limit: 1}
+            ]).toArray();
+            let result1 = await collection.aggregate([
+                {$match: {$and: [{tokenId}, {sellerAddr}]}},
+                {$sort: {blockNumber: 1}},
+                {$limit: 1}
+            ]).toArray();
+            let result = {};
+            if(result0[0]['event'] == 'OrderForSale') {
+                result.event = 'OrderForSale';
+            }else if(result0[0]['event'] == 'OrderForAuction') {
+                result.event = 'OrderForAuction';
+                result.endTime = result0[0].endTime;
+            }
+            if(result1[0]) {
+                result.price = result1[0].price;
+            }
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
