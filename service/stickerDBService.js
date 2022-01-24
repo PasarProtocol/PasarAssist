@@ -1110,7 +1110,7 @@ module.exports = {
         }
     },
 
-    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order) {
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -1182,6 +1182,7 @@ module.exports = {
                 ]).toArray();
                 if(record.length == 0)
                     continue;
+                delete record["_id"];
                 result.push({...element, ...record[0]});
             }
             let total = result.length;
@@ -1272,6 +1273,7 @@ module.exports = {
                 { $match: {$and: [{holder: address}]} }
             ]).toArray();
             for (let i = 0; i < tokens.length; i++) {
+                delete tokens[i]["_id"];
                 let record = await collection.aggregate([
                     { $match: {$and: [{tokenId: tokens[i].tokenId}, {sellerAddr: address}]} },
                     { $project: {'_id': 0, price: 1} }
@@ -1323,6 +1325,7 @@ module.exports = {
             ]).toArray();
             const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_token_event');
             for (let i = 0; i < tokens.length; i++) {
+                delete tokens[i]["_id"];
                 let record = await collection_orderEvent.aggregate([
                     { $match: {tokenId: tokens[i].tokenId} },
                     { $sort: {timestamp: -1} },
@@ -1332,7 +1335,9 @@ module.exports = {
                     tokens[i].price = record[0].price;
                 else tokens[i].price = 0;
             }
-            const collection_temp = await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(tokens);
+            const collection_temp = mongoClient.db(config.dbName).collection('pasar_token_temp');
+            if(tokens.length > 0)
+                await collection_temp.insertMany(tokens)
             let result = await collection_temp.aggregate([
                 { $sort: sort }
             ])
