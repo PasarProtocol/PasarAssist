@@ -1182,7 +1182,7 @@ module.exports = {
                 ]).toArray();
                 if(record.length == 0)
                     continue;
-                delete record["_id"];
+                delete record[0]["_id"];
                 result.push({...element, ...record[0]});
             }
             let total = result.length;
