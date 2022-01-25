@@ -853,9 +853,7 @@ module.exports = {
             let orderForMarketRecord = await collection.find(
                 {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {$or: [{event: 'OrderForSale'}, {event: 'OrderForAuction'}]}]}
             ).toArray();
-            let priceRecord = await collection.findOne(
-                {$and: [{tokenId: tokenId}]}
-            ).sort({'blockNumber': -1});
+            let priceRecord = await collection.find({$and: [{tokenId: tokenId}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
                 result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
@@ -863,8 +861,8 @@ module.exports = {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
             }
-            if(priceRecord) {
-                result['Price'] = priceRecord.price;
+            if(priceRecord.length > 0) {
+                result['Price'] = priceRecord[0].price;
             } else 
             result['Price'] = 0;
             if(result.type == 'image')
