@@ -24,6 +24,9 @@ module.exports = {
 
     serviceName: 'default',
     upgradeBlock: 9607086,
+    Auth: {
+        jwtSecret: 'pasar', // Used to encode JWT tokens
+    },
 
     cmcApiKeys: []
 }
