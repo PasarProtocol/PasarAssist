@@ -832,7 +832,7 @@ module.exports = {
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
         thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-        adult: "$token.adult"}
+        adult: "$token.adult", properties: "$token.properties"}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
@@ -850,16 +850,21 @@ module.exports = {
             ]).toArray();
             result = result[0];
             collection = client.db(config.dbName).collection('pasar_order_event');
-            let orderForSaleRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {event: 'OrderForSale'}]}
+            let orderForMarketRecord = await collection.find(
+                {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {$or: [{event: 'OrderForSale'}, {event: 'OrderForAuction'}]}]}
             ).toArray();
-            if(orderForSaleRecord.length > 0) {
-                result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
-                result['SaleType'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+            let priceRecord = await collection.find({$and: [{tokenId: tokenId}]}).sort({'blockNumber': -1}).toArray();
+            if(orderForMarketRecord.length > 0) {
+                result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
+                result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
             }
+            if(priceRecord.length > 0) {
+                result['Price'] = priceRecord[0].price;
+            } else 
+            result['Price'] = 0;
             if(result.type == 'image')
                 result.type = "General";
             return {code: 200, message: 'success', data: result};
@@ -1202,10 +1207,17 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
+            minPrice = new BigNumber(minPrice, 10) / (10 ** 18);
+            maxPrice = new BigNumber(maxPrice, 10) / (10 ** 18);
+            let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
             let availableOrders = await collection.aggregate([
+                {
+                    $addFields: {
+                       "priceCalculated": { $divide: [ "$priceNumber", 10 ** 18 ] }
+                    }
+                },
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
+                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
@@ -1230,7 +1242,7 @@ module.exports = {
                 ]).toArray();
                 await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
             }
-            return {code: 200, message: 'success', data: {total, result}};
+            return {code: 200, message: 'success', condition: price_condition, data: {total, result}};
         } catch (err) {
             logger.error(err);
         } finally {
