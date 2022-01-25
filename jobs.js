@@ -104,6 +104,9 @@ module.exports = {
                 token.type = data.type;
                 token.name = data.name;
                 token.description = data.description;
+                if(parseInt(token.tokenJsonVersion) > 1) {
+                    token.properties = data.properties;
+                }
 
                 if(blockNumber > config.upgradeBlock) {
                     let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
