@@ -11,7 +11,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_cmc_price');
             await collection.insertOne(record);
-            await redisService.clearCache();
+            await redisService.clearKey('price');
         } catch (err) {
             logger.error(err);
         } finally {

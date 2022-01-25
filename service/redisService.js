@@ -17,6 +17,10 @@ module.exports = {
         return await redis.flushall();
     },
 
+    clearKey: async function(key) {
+        return await redis.del(key);
+    },
+
     commands: async function() {
         return await redis.getBuiltinCommands();
     }
