@@ -228,13 +228,13 @@ module.exports = {
 
     listPasarOrder: async function(pageNum=1, pageSize=10, blockNumber, endBlockNumber, orderState,sortType, sort, adult) {
 
-        if(pageNum === 1) {
-            let key = 'listPasarOrder' + pageNum + pageSize + sortType + sort + this.getRedisKey(blockNumber, endBlockNumber, orderState,adult);
-            let cachedResponse = await redisService.get(key);
-            if(cachedResponse) {
-                return JSON.parse(cachedResponse);
-            }
-        }
+        // if(pageNum === 1) {
+        //     let key = 'listPasarOrder' + pageNum + pageSize + sortType + sort + this.getRedisKey(blockNumber, endBlockNumber, orderState,adult);
+        //     let cachedResponse = await redisService.get(key);
+        //     if(cachedResponse) {
+        //         return JSON.parse(cachedResponse);
+        //     }
+        // }
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -295,7 +295,7 @@ module.exports = {
 
             let result = await collection.aggregate(pipeline).toArray();
             let response = {code: 200, message: 'success', data: {total,latestBlockNumber, result}};
-            await redisService.set(key, JSON.stringify(response));
+            // await redisService.set(key, JSON.stringify(response));
             return response;
         } catch (err) {
             logger.error(err);
