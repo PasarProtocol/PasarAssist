@@ -80,7 +80,6 @@ module.exports = {
                         pasarOrder.platformAddr = extraInfo.platformAddr;
                         pasarOrder.platformFee = extraInfo.platformFee;
                         pasarOrder.sellerUri = extraInfo.sellerUri;
-                        console.log('updateordermethod', extraInfo.sellerUri);
                         pasarOrder.sellerDid = await jobService.getInfoByIpfsUri(extraInfo.sellerUri);
 
                         await pasarDBService.replaceDid({address: result.sellerAddr, did: pasarOrder.sellerDid});
@@ -101,9 +100,7 @@ module.exports = {
                     createTime: result.createTime, updateTime: result.updateTime}
 
                 token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
-                console.log('dealwithnewtoken', result.tokenUri);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
-                console.log(data, 'dealfdsfdsf');
                 token.tokenJsonVersion = data.version;
                 token.type = data.type;
                 token.name = data.name;
@@ -116,7 +113,6 @@ module.exports = {
                     let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
                     token.didUri = extraInfo.didUri;
                     if(extraInfo.didUri !== '') {
-                        console.log('deal2', extraInfo.didUri);
                         token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
                         await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
                     }
@@ -246,7 +242,6 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            console.log('orderfilled is here');
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
             if(isGetForOrderFilledJobRun == false) {
                 //initial state
