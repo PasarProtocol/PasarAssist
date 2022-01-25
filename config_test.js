@@ -24,6 +24,6 @@ module.exports = {
 
     serviceName: 'default',
     upgradeBlock: 9090468,
-
+    elastos_transation_api_url: 'https://esc-testnet.elastos.io/api?module=transaction&action=gettxinfo&txhash=',
     cmcApiKeys: []
 }

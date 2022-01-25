@@ -2,10 +2,12 @@ const fetch = require('node-fetch');
 const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
-const config = require("../config");
+let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
 const BigNumber = require("bignumber.js");
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -82,7 +84,7 @@ module.exports = {
         let transactionFee;
         try {
             const response = await fetch(
-                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + txHash
+                config.elastos_transation_api_url + txHash
             );
             if (!response.ok) {
                 throw new Error(response.statusText);
@@ -100,7 +102,7 @@ module.exports = {
         let timeStamp;
         try {
             const response = await fetch(
-                'https://esc.elastos.io/api?module=transaction&action=gettxinfo&txhash=' + txHash
+                config.elastos_transation_api_url + txHash
             );
             if (!response.ok) {
                 throw new Error(response.statusText);

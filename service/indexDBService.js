@@ -2,6 +2,8 @@ let MongoClient = require('mongodb').MongoClient;
 let config = require('../config');
 const Web3 = require("web3");
 const diaContractABI = require('../contractABI/diaTokenABI');
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     insertCoinsPrice: async function (record) {
