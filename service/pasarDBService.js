@@ -1,5 +1,7 @@
 let config = require('../config');
 let MongoClient = require('mongodb').MongoClient;
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     getLastPasarOrderSyncHeight: async function (event) {

@@ -1,6 +1,8 @@
 let {MongoClient} = require("mongodb");
-const config = require("../config");
+let config = require("../config");
 let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 module.exports = {
 
     findUserByDID: async function(did) {
