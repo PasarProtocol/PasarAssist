@@ -39,6 +39,8 @@ app.use('/sticker/api/v1', stickerApi);
 app.use('/galleria/api/v1', galleriaApi);
 app.use('/auth/api/v1', authApi);
 app.use('/api/v2', apiV2);
+
+let resolverUrl = "https://api.trinity-tech.cn/eid";
 DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 
 jobs.run()
