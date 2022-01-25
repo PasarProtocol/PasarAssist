@@ -832,7 +832,7 @@ module.exports = {
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
         thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-        adult: "$token.adult"}
+        adult: "$token.adult", properties: "$token.properties"}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
@@ -850,16 +850,23 @@ module.exports = {
             ]).toArray();
             result = result[0];
             collection = client.db(config.dbName).collection('pasar_order_event');
-            let orderForSaleRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {event: 'OrderForSale'}]}
+            let orderForMarketRecord = await collection.find(
+                {$and: [{tokenId: tokenId}, {buyerAddr: '0x0000000000000000000000000000000000000000'}, {sellerAddr: result.holder}, {$or: [{event: 'OrderForSale'}, {event: 'OrderForAuction'}]}]}
             ).toArray();
-            if(orderForSaleRecord.length > 0) {
-                result['DateOnMarket'] = orderForSaleRecord[0]['timestamp'];
-                result['SaleType'] = orderForSaleRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+            let priceRecord = await collection.findOne(
+                {$and: [{tokenId: tokenId}]}
+            ).sort({'blockNumber': -1});
+            if(orderForMarketRecord.length > 0) {
+                result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
+                result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
             }
+            if(priceRecord) {
+                result['Price'] = priceRecord.price;
+            } else 
+            result['Price'] = 0;
             if(result.type == 'image')
                 result.type = "General";
             return {code: 200, message: 'success', data: result};
