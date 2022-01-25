@@ -2,6 +2,7 @@ let MongoClient = require('mongodb').MongoClient;
 let config = require('../config');
 const Web3 = require("web3");
 const diaContractABI = require('../contractABI/diaTokenABI');
+let redisService = require('../service/redisService');
 
 module.exports = {
     insertCoinsPrice: async function (record) {
@@ -10,6 +11,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_cmc_price');
             await collection.insertOne(record);
+            await redisService.clearCache();
         } catch (err) {
             logger.error(err);
         } finally {
@@ -30,12 +32,20 @@ module.exports = {
         }
     },
 
-    getLatestPrice: async function (record) {
+    getLatestPrice: async function () {
+        const priceKey = 'price';
+        let price = await redisService.get(priceKey);
+        if(price) {
+            return JSON.parse(price);
+        }
+
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_cmc_price');
-            return await collection.findOne({},{sort:{timestamp: -1}});
+            let result = await collection.findOne({},{sort:{timestamp: -1}});
+            await redisService.set(priceKey, JSON.stringify(result));
+            return result;
         } catch (err) {
             logger.error(err);
         } finally {
