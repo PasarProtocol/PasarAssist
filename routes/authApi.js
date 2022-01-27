@@ -3,7 +3,6 @@ let express = require('express');
 let router = express.Router();
 let jwt = require('jsonwebtoken');
 const config = require("../config");
-let { dbService } = require('../service/authDBService');
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 router.post('/login', async (req, res) => {

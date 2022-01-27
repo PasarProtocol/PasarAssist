@@ -10,6 +10,8 @@ let apiV2 = require('./routes/apiV2');
 let jobs = require('./jobs');
 let log4js = require('log4js');
 let cors = require('cors');
+let { DefaultDIDAdapter } =  require('@elastosfoundation/did-js-sdk');
+let {DIDBackend} = require('@elastosfoundation/did-js-sdk');
 log4js.configure({
     appenders: {
         file: { type: 'dateFile', filename: 'logs/pasar.log', pattern: ".yyyy-MM-dd.log", compress: true, },
@@ -37,6 +39,9 @@ app.use('/sticker/api/v1', stickerApi);
 app.use('/galleria/api/v1', galleriaApi);
 app.use('/auth/api/v1', authApi);
 app.use('/api/v2', apiV2);
+
+let resolverUrl = "https://api.trinity-tech.cn/eid";
+DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 
 jobs.run()
 
