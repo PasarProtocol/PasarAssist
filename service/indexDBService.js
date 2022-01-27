@@ -11,7 +11,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_cmc_price');
             await collection.insertOne(record);
-            await redisService.clearKey('price');
+            //redisService.clearKey('price');
         } catch (err) {
             logger.error(err);
         } finally {
@@ -33,18 +33,18 @@ module.exports = {
     },
 
     getLatestPrice: async function () {
-        const key = 'price';
-        let cachedResult = await redisService.get(key);
-        if(cachedResult) {
-            return JSON.parse(cachedResult);
-        }
+        // const key = 'price';
+        // let cachedResult = await redisService.get(key);
+        // if(cachedResult) {
+        //     return JSON.parse(cachedResult);
+        // }
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_cmc_price');
             let result = await collection.findOne({},{sort:{timestamp: -1}});
-            await redisService.set(key, JSON.stringify(result));
+            // redisService.set(key, JSON.stringify(result));
             return result;
         } catch (err) {
             logger.error(err);

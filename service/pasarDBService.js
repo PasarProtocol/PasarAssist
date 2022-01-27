@@ -48,7 +48,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
             await collection.updateOne({orderId}, {$set: rest}, {upsert: true});
-            await redisService.clearCache();
+            // redisService.clearCache();
             return true;
         } catch (err) {
             logger.error(err);
@@ -228,11 +228,11 @@ module.exports = {
 
     listPasarOrder: async function(pageNum=1, pageSize=10, blockNumber, endBlockNumber, orderState,sortType, sort, adult) {
 
-        let key = 'orders' + pageNum + pageSize + sortType + sort + this.getRedisKey(blockNumber, endBlockNumber, orderState,adult);
-        let cachedResponse = await redisService.get(key);
-        if(cachedResponse) {
-            return JSON.parse(cachedResponse);
-        }
+        // let key = 'orders' + pageNum + pageSize + sortType + sort + this.getRedisKey(blockNumber, endBlockNumber, orderState,adult);
+        // let cachedResponse = await redisService.get(key);
+        // if(cachedResponse) {
+        //     return JSON.parse(cachedResponse);
+        // }
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -293,7 +293,7 @@ module.exports = {
 
             let result = await collection.aggregate(pipeline).toArray();
             let response = {code: 200, message: 'success', data: {total,latestBlockNumber, result}};
-            await redisService.set(key, JSON.stringify(response));
+            // redisService.set(key, JSON.stringify(response));
             return response;
         } catch (err) {
             logger.error(err);
@@ -331,19 +331,19 @@ module.exports = {
     },
 
     getWhitelist: async function(address) {
-        const key = 'whitelist';
-
-        let cachedResponse = await redisService.get(key);
-        if(cachedResponse) {
-            return {code: 200, message: 'success', data: JSON.parse(cachedResponse)};
-        }
+        // const key = 'whitelist';
+        //
+        // let cachedResponse = await redisService.get(key);
+        // if(cachedResponse) {
+        //     return {code: 200, message: 'success', data: JSON.parse(cachedResponse)};
+        // }
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_whitelist');
             let result =  await collection.find(address ? {address}: {}).project({"_id": 0}).toArray();
-            await redisService.set(key, JSON.stringify(result));
+            // redisService.set(key, JSON.stringify(result));
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
