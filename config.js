@@ -28,7 +28,7 @@ module.exports = {
     Auth: {
         jwtSecret: 'pasar', // Used to encode JWT tokens
     },
-
+    burnAddress: '0x0000000000000000000000000000000000000000',
     cmcApiKeys: [],
     curNetwork: 'testNet'
 }
