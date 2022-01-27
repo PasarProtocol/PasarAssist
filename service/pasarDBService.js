@@ -335,7 +335,7 @@ module.exports = {
 
         let cachedResponse = await redisService.get(key);
         if(cachedResponse) {
-            return JSON.parse(cachedResponse);
+            return {code: 200, message: 'success', data: JSON.parse(cachedResponse)};
         }
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
