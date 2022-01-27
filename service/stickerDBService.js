@@ -932,6 +932,7 @@ module.exports = {
                 { $match: {$and: [{to: config.burnAddress}, {from: walletAddr}]} },
                 { $project: {"_id": 0, tokenId: 1} }
             ]).toArray();
+            let burn_tokens = [];
             tokens_burned.forEach(ele => {
                 burn_tokens.push(ele['tokenId']);
             });
