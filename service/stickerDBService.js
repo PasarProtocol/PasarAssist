@@ -1155,22 +1155,22 @@ module.exports = {
             let sort = {};
             switch (order) {
                 case '0':
-                    sort = {timestamp: -1};
+                    sort = {marketTime: -1};
                     break;
                 case '1':
                     sort = {createTime: -1};
                     break;
                 case '2':
-                    sort = {timestamp: 1};
+                    sort = {marketTime: 1};
                     break;
                 case '3':
                     sort = {createTime: 1};
                     break;
                 case '4':
-                    sort = {price: -1};
+                    sort = {price: 1};
                     break;
                 case '5':
-                    sort = {price: 1};
+                    sort = {price: -1};
                     break;
                 case '6':
                     sort = {endTime: -1};
@@ -1214,7 +1214,7 @@ module.exports = {
                     }
                 },
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
+                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", marketTime: "$createTime", endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
