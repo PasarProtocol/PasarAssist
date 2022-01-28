@@ -1342,7 +1342,7 @@ module.exports = {
         }
     },
 
-    getCreatedCollectiblesByAddress: async function(address, order) {
+    getCreatedCollectiblesByAddress: async function(address, orderType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -1391,7 +1391,27 @@ module.exports = {
         } catch (err) {
             logger.error(err);
         } finally {
-            await MongoClient.close();
+            await mongoClient.close();
+        }
+    },
+
+    getLatestPurchasedToken: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
+            let latest_orderFilled = await order_collection.aggregate([
+                { $match: {$and: [{orderState: '2'}]} },
+                { $sort: {updateTime: -1} },
+                { $limit: 1 }
+            ]).toArray();
+            let result = await token_collection.findOne({tokenId: latest_orderFilled[0]['tokenId']});
+            return {code: 200, message: 'sucess', data: result};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
         }
     }
 }
