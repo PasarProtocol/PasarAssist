@@ -10,7 +10,6 @@ let stickerContractABI = require('./contractABI/stickerABI');
 let galleriaContractABI = require('./contractABI/galleriaABI');
 let jobService = require('./service/jobService');
 let sendMail = require('./send_mail');
-const BigNumber = require("bignumber.js");
 const config_test = require("./config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
