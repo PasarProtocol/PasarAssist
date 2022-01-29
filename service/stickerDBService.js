@@ -1147,7 +1147,7 @@ module.exports = {
         }
     },
 
-    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize) {
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -1222,7 +1222,7 @@ module.exports = {
             for (let i = 0; i < availableOrders.length; i++) {
                 const element = availableOrders[i];
                 let record = await collection.aggregate([
-                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}]} }
+                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}, {$or: [{tokenId: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} }
                 ]).toArray();
                 if(record.length == 0)
                     continue;
