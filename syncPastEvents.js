@@ -6,7 +6,6 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let jobService = require('./service/jobService');
-const BigNumber = require("bignumber.js");
 
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
@@ -258,7 +257,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                             createTime: result.createTime, updateTime: result.updateTime}
 
-                        token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
+                        token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
 
                         let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                         token.tokenJsonVersion = data.version;

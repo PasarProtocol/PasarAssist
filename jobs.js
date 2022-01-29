@@ -99,7 +99,7 @@ module.exports = {
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                     createTime: result.createTime, updateTime: result.updateTime}
 
-                token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
+                token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                 token.tokenJsonVersion = data.version;
                 token.type = data.type;

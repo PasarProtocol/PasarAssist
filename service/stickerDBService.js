@@ -5,7 +5,6 @@ const {MongoClient} = require("mongodb");
 let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
-const BigNumber = require("bignumber.js");
 const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
@@ -1204,8 +1203,8 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            minPrice = new BigNumber(minPrice, 10) / (10 ** 18);
-            maxPrice = new BigNumber(maxPrice, 10) / (10 ** 18);
+            minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
+            maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
             let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
             let availableOrders = await collection.aggregate([
                 {

@@ -1,7 +1,6 @@
 let express = require('express');
 let router = express.Router();
 let apiV2DBService = require('../service/apiV2DBService');
-const BigNumber = require('bignumber.js');
 
 router.get('/collectible/tokenId/:tokenId', function (req, res) {
     apiV2DBService.queryCollectibleByTokenId(req.params.tokenId).then(result => {res.json(result)})
@@ -172,7 +171,7 @@ router.get('/transactions/tokenId/:tokenId', function (req, res) {
     }
 
     if(tokenId.startsWith('0x') && tokenId.length > 42) {
-        tokenId = new BigNumber(tokenId).toFormat({prefix:""});
+        tokenId = BigInt(tokenId).toFormat({prefix:""});
     }
 
     apiV2DBService.queryTransactionsByTokenId(tokenId).then(result => {

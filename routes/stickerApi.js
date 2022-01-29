@@ -1,7 +1,6 @@
 let express = require('express');
 let router = express.Router();
 let stickerDBService = require('../service/stickerDBService');
-const BigNumber = require('bignumber.js');
 
 router.get('/listStickers', function(req, res) {
     let pageNumStr = req.query.pageNum;
@@ -40,7 +39,7 @@ router.get('/search', function(req, res) {
     }
 
     if(keyword.startsWith('0x') && keyword.length > 42) {
-        keyword = new BigNumber(keyword).toFormat({prefix:""});
+        keyword = BigInt(keyword).toFormat({prefix:""});
     }
 
     stickerDBService.search(keyword).then(result => {
@@ -96,7 +95,7 @@ router.get('/tokenTrans', function(req, res) {
     }
 
     if(tokenId.startsWith('0x') && tokenId.length > 42) {
-        tokenId = new BigNumber(tokenId).toFormat({prefix:""});
+        tokenId = BigInt(tokenId).toFormat({prefix:""});
     }
 
     stickerDBService.tokenTrans(tokenId).then(result => {
@@ -328,7 +327,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
         minPrice = minPrice ? minPrice : 0;
-        maxPrice = maxPrice ? maxPrice : 1000000000000000000000000000;
+        maxPrice = maxPrice ? maxPrice : 10000000000000000000000000000000000000000000000000000000000;
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
