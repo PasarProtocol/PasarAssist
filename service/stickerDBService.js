@@ -1319,11 +1319,20 @@ module.exports = {
                 delete tokens[i]["_id"];
                 let record = await collection.aggregate([
                     { $match: {$and: [{tokenId: tokens[i].tokenId}, {sellerAddr: address}]} },
-                    { $project: {'_id': 0, price: 1} }
+                    { $project: {'_id': 0, price: 1} },
+                    { $sort: {blockNumber: -1} }
                 ]);
                 if(!record)
                     tokens[i].price = 0;
-                else tokens[i].price = record.price;
+                else tokens[i].price = record[0].price;
+                record = await collection.aggregate([
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {event: 'OrderFilled'}]} }
+                ]);
+                if(record.length > 0) {
+                    tokens[i].saleType = 'Secondary Sale';
+                }else {
+                    tokens[i].saleType = 'Primary Sale';
+                }
             }
             let result = [];
             if(tokens.length > 0) {
