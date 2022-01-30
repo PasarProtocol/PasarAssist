@@ -370,7 +370,7 @@ router.get('/getOwnCollectiblesByAddress', function (req, res) {
 
 router.get('/getCreatedCollectiblesByAddress', function(req, res) {
     let address = req.query.address;
-    let orderType = req.query.order;
+    let orderType = req.query.orderType;
     stickerDBService.getCreatedCollectiblesByAddress(address, orderType).then(result => {
         res.json(result);
     }).catch(error => {

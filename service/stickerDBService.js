@@ -1394,9 +1394,10 @@ module.exports = {
                 await collection_temp.insertMany(tokens)
             let result = await collection_temp.aggregate([
                 { $sort: sort }
-            ])
+            ]).toArray()
             if(result.length > 0)
                 await collection_temp.drop();
+            console.log(result)
             return {code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
