@@ -1272,7 +1272,7 @@ module.exports = {
             }
             let open_orders = await collection.aggregate([
                 { $match: {$and: [{sellerAddr: address}, {orderState: '1'}]} },
-                { $project: {'_id': 0, tokenId: 1, price: 1} },
+                { $project: {'_id': 0, orderId: 1, tokenId: 1, price: 1} },
                 { $sort: sort }
             ]).toArray();
             let result = [];
