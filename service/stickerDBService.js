@@ -1280,6 +1280,7 @@ module.exports = {
                 const ele = open_orders[i];
                 let record = await token_collection.findOne({tokenId: ele.tokenId});
                 record.price = ele.price;
+                record.orderId = ele.orderId;
                 result.push(record);
             }
             return { code: 200, message: 'sucess', data: result };
