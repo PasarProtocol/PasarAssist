@@ -858,6 +858,7 @@ module.exports = {
             if(orderForMarketRecord.length > 0) {
                 result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
+                result['OrderId'] = orderForMarketRecord[0]['orderId'];
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
