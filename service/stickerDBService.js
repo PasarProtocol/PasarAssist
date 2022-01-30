@@ -1318,16 +1318,16 @@ module.exports = {
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
                 let record = await collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {sellerAddr: address}]} },
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}]} },
                     { $project: {'_id': 0, price: 1} },
                     { $sort: {blockNumber: -1} }
-                ]);
-                if(!record)
+                ]).toArray();
+                if(record.length == 0)
                     tokens[i].price = 0;
                 else tokens[i].price = record[0].price;
                 record = await collection.aggregate([
                     { $match: {$and: [{tokenId: tokens[i].tokenId}, {event: 'OrderFilled'}]} }
-                ]);
+                ]).toArray();
                 if(record.length > 0) {
                     tokens[i].saleType = 'Secondary Sale';
                 }else {
