@@ -286,7 +286,6 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             await collection.updateOne({tokenId}, {$set: {
-                    royaltyOwner: config.burnAddress,
                     holder: config.burnAddress
                 }});
         } catch (err) {
@@ -1420,6 +1419,28 @@ module.exports = {
             let result = await token_collection.findOne({tokenId: latest_orderFilled[0]['tokenId']});
             return {code: 200, message: 'sucess', data: result};
         } catch (err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateBurnTokens: async function(){
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_event_collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let burn_tokens = await token_event_collection.aggregate([
+                { $match: {to: config.burnAddress} }
+            ]).toArray();
+            for(var i = 0; i < burn_tokens.length; i++) {
+                await token_collection.updateOne({tokenId: burn_tokens[i]['tokenId']}, {$set: {
+                    holder: config.burnAddress
+                }})
+            }
+            return {code: 200, message: 'sucess'};
+        } catch(err) {
             logger.error(err);
         } finally {
             await mongoClient.close();

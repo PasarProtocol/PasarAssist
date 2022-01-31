@@ -398,7 +398,7 @@ module.exports = {
                 await stickerDBService.replaceEvent(transferEvent);
 
                 if(to === burnAddress) {
-                    // await stickerDBService.burnToken(tokenId);
+                    await stickerDBService.burnToken(tokenId);
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {

@@ -390,6 +390,15 @@ router.get('/getMarketStatusByTokenId', function(req, res) {
     })
 })
 
+router.get('/updateBurnTokens', function(req, res) {
+    stickerDBService.updateBurnTokens().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/getLatestPurchasedToken', function(req, res) {
     stickerDBService.getLatestPurchasedToken().then(result => {
         res.json(result);
