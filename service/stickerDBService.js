@@ -1376,7 +1376,7 @@ module.exports = {
             let tokens = await collection.aggregate([
                 { $match: {royaltyOwner: address} }
             ]).toArray();
-            const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_token_event');
+            const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_order_event');
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
                 let record = await collection_orderEvent.aggregate([
