@@ -1213,7 +1213,7 @@ module.exports = {
                     }
                 },
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", marketTime: "$createTime", endTime: 1} },
+                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", marketTime: "$createTime", endTime: 1, orderId: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
@@ -1238,7 +1238,7 @@ module.exports = {
                 ]).toArray();
                 await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
             }
-            return {code: 200, message: 'success', condition: price_condition, data: {total, result}};
+            return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -1396,7 +1396,6 @@ module.exports = {
             ]).toArray()
             if(result.length > 0)
                 await collection_temp.drop();
-            console.log(result)
             return {code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
