@@ -1328,12 +1328,18 @@ module.exports = {
                     tokens[i].price = 0;
                 else tokens[i].price = record[0].price;
                 record = await collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {event: 'OrderFilled'}]} }
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {event: 'OrderFilled'}]} },
+                    { $sort: {blockNumber: -1} }
                 ]).toArray();
-                if(record.length > 0) {
+                if(record.length > 1) {
                     tokens[i].saleType = 'Secondary Sale';
-                }else {
+                    tokens[i].orderId = record[0].orderId;
+                }else if(record.length == 1){
                     tokens[i].saleType = 'Primary Sale';
+                    tokens[i].orderId = record[0].orderId;
+                }else {
+                    tokens[i].saleType = 'Not on sale';
+                    tokens[i].orderId = null;
                 }
             }
             let result = [];
