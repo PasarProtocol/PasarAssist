@@ -1294,7 +1294,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
             const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             let sort = {};
             switch (orderType) {
@@ -1318,28 +1318,24 @@ module.exports = {
             ]).toArray();
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
-                let record = await collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}]} },
-                    { $project: {'_id': 0, price: 1, blockNumber: 1} },
+                let record = await order_collection.aggregate([
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {orderState: {$ne: '3'}}]} },
+                    { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
                 console.log(record);
-                if(record.length == 0)
-                    tokens[i].price = 0;
-                else tokens[i].price = record[0].price;
-                record = await collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {event: 'OrderFilled'}]} },
-                    { $sort: {blockNumber: -1} }
-                ]).toArray();
                 if(record.length > 1) {
                     tokens[i].saleType = 'Secondary Sale';
                     tokens[i].orderId = record[0].orderId;
+                    tokens[i].price = record[0].price;
                 }else if(record.length == 1){
                     tokens[i].saleType = 'Primary Sale';
                     tokens[i].orderId = record[0].orderId;
+                    tokens[i].price = record[0].price;
                 }else {
                     tokens[i].saleType = 'Not on sale';
                     tokens[i].orderId = null;
+                    tokens[i].price = 0;
                 }
             }
             let result = [];
@@ -1382,7 +1378,7 @@ module.exports = {
                     sort = {createTime: -1}
             }
             let tokens = await collection.aggregate([
-                { $match: {$and: [{royaltyOwner: address}, {holder: {$not: config.burnAddress}}]} }
+                { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}]} }
             ]).toArray();
             const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_order_event');
             for (let i = 0; i < tokens.length; i++) {
