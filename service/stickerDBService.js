@@ -1106,7 +1106,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await collection.findOne({tokenId}).toArray();
+            let result = await collection.findOne({tokenId});
             let sellerAddr = result.holder;
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             result = await collection.aggregate([
@@ -1121,11 +1121,38 @@ module.exports = {
         }
     },
 
-    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult) {
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_order');
+            let sort = {};
+            switch (order) {
+                case '0':
+                    sort = {timestamp: -1};
+                    break;
+                case '1':
+                    sort = {createTime: -1};
+                    break;
+                case '2':
+                    sort = {timestamp: 1};
+                    break;
+                case '3':
+                    sort = {createTime: 1};
+                    break;
+                case '4':
+                    sort = {price: -1};
+                    break;
+                case '5':
+                    sort = {price: 1};
+                    break;
+                case '6':
+                    sort = {endTime: -1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+
             let status_condition = [];
             let statusArr = status.split(',');
             for (let i = 0; i < statusArr.length; i++) {
@@ -1154,7 +1181,7 @@ module.exports = {
             let price_condition = {$or: [{priceNumber: {$lte: minPrice}}, {priceNumber: {$gte: maxPrice}}]};
             let availableOrders = await collection.aggregate([
                 { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber"} },
+                { $project: {"_id": 0, tokenId: 1, price: "$priceNumber", timestamp: 1, endTime: 1} },
                 { $sort: {tokenId: 1} }
             ]).toArray();
             let result = [];
@@ -1168,7 +1195,17 @@ module.exports = {
                     continue;
                 result.push({...element, ...record[0]});
             }
-            return {code: 200, message: 'success', data: result};
+            let total = result.length;
+            if(result.length > 0) {
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(result);
+                result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
+                    { $sort: sort },
+                    { $skip: (pageNum - 1) * pageSize },
+                    { $limit: pageSize }
+                ]).toArray();
+                await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
+            }
+            return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
         } finally {
@@ -1267,6 +1304,56 @@ module.exports = {
             logger.error(err);
         } finally {
             await mongoClient.close();
+        }
+    },
+
+    getCreatedCollectiblesByAddress: async function(address, order) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+            let tokens = await collection.aggregate([
+                { $match: {royaltyOwner: address} }
+            ]).toArray();
+            const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_token_event');
+            for (let i = 0; i < tokens.length; i++) {
+                let record = await collection_orderEvent.aggregate([
+                    { $match: {tokenId: tokens[i].tokenId} },
+                    { $sort: {timestamp: -1} },
+                    { $limit: 1 }
+                ]).toArray();
+                if(record.length > 0)
+                    tokens[i].price = record[0].price;
+                else tokens[i].price = 0;
+            }
+            const collection_temp = await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(tokens);
+            let result = await collection_temp.aggregate([
+                { $sort: sort }
+            ])
+            if(result.length > 0)
+                await collection_temp.drop();
+            return {code: 200, message: 'sucess', data: result};
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await MongoClient.close();
         }
     }
 }

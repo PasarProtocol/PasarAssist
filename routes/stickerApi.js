@@ -318,7 +318,25 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let collectionType = req.query.collectiionType;
     let itemType = req.query.itemType;
     let adult = req.query.adult;
-    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult).then(result => {
+    let orderType = req.query.order;
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+    let pageNum, pageSize;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+    }catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult, orderType, pageNum, pageSize).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -347,4 +365,16 @@ router.get('/getOwnCollectiblesByAddress', function (req, res) {
         res.json({code: 500, message: 'server error'});
     })
 })
+
+router.get('/getCreatedCollectiblesByAddress', function(req, res) {
+    let address = req.query.address;
+    let orderType = req.query.order;
+    stickerDBService.getCreatedCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 module.exports = router;
