@@ -1375,7 +1375,7 @@ module.exports = {
                     sort = {createTime: -1}
             }
             let tokens = await collection.aggregate([
-                { $match: {royaltyOwner: address} }
+                { $match: {$and: [{royaltyOwner: address}, {holder: {$not: config.burnAddress}}]} }
             ]).toArray();
             const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_order_event');
             for (let i = 0; i < tokens.length; i++) {
@@ -1389,7 +1389,7 @@ module.exports = {
                     tokens[i].price = record[0].price;
                 else tokens[i].price = 0;
             }
-            const collection_temp = mongoClient.db(config.dbName).collection('pasar_token_temp');
+            const collection_temp = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
             if(tokens.length > 0)
                 await collection_temp.insertMany(tokens)
             let result = await collection_temp.aggregate([
@@ -1438,6 +1438,33 @@ module.exports = {
                 await token_collection.updateOne({tokenId: burn_tokens[i]['tokenId']}, {$set: {
                     holder: config.burnAddress
                 }})
+            }
+            return {code: 200, message: 'sucess'};
+        } catch(err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateTokenHolders: async function(){
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_event_collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let tokens = await token_collection.aggregate([
+                { $match: {$expr:{$ne:["$royaltyOwner", "$holder"]}} }
+            ]).toArray();
+            
+            for(var i = 0; i < tokens.length; i++) {
+                let tokenId = tokens[i].tokenId;
+                let result = await token_event_collection.aggregate([
+                    { $match: {$and: [{tokenId}, {to: {$ne: config.pasarContract}}] } },
+                    { $sort: {tokenId: 1, blockNumber: -1} },
+                    { $limit: 1 }
+                ]).toArray();
+                await token_collection.updateOne({tokenId}, {$set: {holder: result[0]['to']}});
             }
             return {code: 200, message: 'sucess'};
         } catch(err) {
