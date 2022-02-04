@@ -1,7 +1,6 @@
 let express = require('express');
 let router = express.Router();
 let stickerDBService = require('../service/stickerDBService');
-const BigNumber = require('bignumber.js');
 
 router.get('/listStickers', function(req, res) {
     let pageNumStr = req.query.pageNum;
@@ -40,7 +39,7 @@ router.get('/search', function(req, res) {
     }
 
     if(keyword.startsWith('0x') && keyword.length > 42) {
-        keyword = new BigNumber(keyword).toFormat({prefix:""});
+        keyword = BigInt(keyword).toFormat({prefix:""});
     }
 
     stickerDBService.search(keyword).then(result => {
@@ -96,7 +95,7 @@ router.get('/tokenTrans', function(req, res) {
     }
 
     if(tokenId.startsWith('0x') && tokenId.length > 42) {
-        tokenId = new BigNumber(tokenId).toFormat({prefix:""});
+        tokenId = BigInt(tokenId).toFormat({prefix:""});
     }
 
     stickerDBService.tokenTrans(tokenId).then(result => {
@@ -289,7 +288,7 @@ router.get('/getTranDetailsByWalletAddr', function(req, res) {
 
 
 router.get('/getAuctionOrdersByTokenId', function(req, res) {
-    let tokenId = res.query.tokenId;
+    let tokenId = req.query.tokenId;
     stickerDBService.getAuctionOrdersByTokenId(tokenId.toString()).then(result => {
         res.json(result);
     }).catch(error => {
@@ -321,11 +320,14 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let orderType = req.query.order;
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
+    let keyword = req.query.keyword;
     let pageNum, pageSize;
 
     try {
         pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
         pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+        minPrice = minPrice ? minPrice : 0;
+        maxPrice = maxPrice ? maxPrice : 10000000000000000000000000000000000000000000000000000000000;
         if(pageNum < 1 || pageSize < 1) {
             res.json({code: 400, message: 'bad request'})
             return;
@@ -336,7 +338,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
         return;
     }
 
-    stickerDBService.getDetailedCollectibles(status, parseInt(minPrice), parseInt(maxPrice), collectionType, itemType, adult, orderType, pageNum, pageSize).then(result => {
+    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -368,8 +370,37 @@ router.get('/getOwnCollectiblesByAddress', function (req, res) {
 
 router.get('/getCreatedCollectiblesByAddress', function(req, res) {
     let address = req.query.address;
-    let orderType = req.query.order;
+    let orderType = req.query.orderType;
     stickerDBService.getCreatedCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/getMarketStatusByTokenId', function(req, res) {
+    let sellerAddr = req.query.sellerAddr;
+    let tokenId = req.query.tokenId;
+    stickerDBService.getMarketStatusByTokenId(tokenId, sellerAddr).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/updateBurnTokens', function(req, res) {
+    stickerDBService.updateBurnTokens().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/getLatestPurchasedToken', function(req, res) {
+    stickerDBService.getLatestPurchasedToken().then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

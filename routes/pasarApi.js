@@ -2,7 +2,6 @@ let express = require('express');
 let router = express.Router();
 let indexDBService = require('../service/indexDBService');
 let pasarDBService = require('../service/pasarDBService');
-const BigNumber = require("bignumber.js");
 
 router.post('/register', function(req, res) {
     let nftToken = req.body;
@@ -178,7 +177,7 @@ router.get('/searchSaleOrders', function (req, res) {
     }
 
     if(key.startsWith('0x') && key.length > 42) {
-        key = new BigNumber(key).toFormat({prefix:""});
+        key = BigInt(key).toFormat({prefix:""});
     }
 
     if(!['tokenId', 'royaltyAddress', 'ownerAddress', 'name', 'description'].includes(searchType)) {

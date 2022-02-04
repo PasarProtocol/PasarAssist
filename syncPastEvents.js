@@ -6,7 +6,6 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let jobService = require('./service/jobService');
-const BigNumber = require("bignumber.js");
 
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
@@ -70,7 +69,9 @@ let orderForSaleJobCurrent = config.pasarContractDeploy,
     orderCanceledJobCurrent = config.pasarContractDeploy,
     orderPriceChangedJobCurrent = config.pasarContractDeploy,
     tokenInfoSyncJobCurrent = config.stickerContractDeploy,
-    tokenInfoMemoSyncJobCurrent = config.stickerContractDeploy;
+    tokenInfoMemoSyncJobCurrent = config.stickerContractDeploy,
+    orderForAuctionJobCurrent = config.pasarContractDeploy,
+    orderBidJobCurrent = config.pasarContractDeploy;
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
@@ -278,7 +279,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                             royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                             createTime: result.createTime, updateTime: result.updateTime}
 
-                        token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
+                        token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
 
                         let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                         token.tokenJsonVersion = data.version;
@@ -379,4 +380,73 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
             console.log("[TokenInfo] Sync Ending ...");
         })
     })
+
+    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(orderForAuctionJobCurrent > currentHeight) {
+            console.log(`[OrderForAcution] Sync ${orderForAuctionJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderForAuctionJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderForAuction] Sync ${orderForAuctionJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderForAuction', {
+            fromBlock: orderForAuctionJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
+                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee};
+
+                console.log(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber);
+            })
+            orderForAuctionJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderForAuction] Sync Ending ...");
+        })
+    });
+
+
+    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(orderBidJobCurrent > currentHeight) {
+            console.log(`[OrderBid] Sync ${orderBidJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderBidJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderBid] Sync ${orderBidJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderBid', {
+            fromBlock: orderBidJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let result = await pasarContract.methods.getOrderById(orderInfo._orderId).call();
+                let gasFee = await stickerDBService.getGasFee(event.transactionHash);
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee: gasFee};
+
+                console.log(`[OrderBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await updateOrder(result, event.blockNumber);
+            })
+            orderBidJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderBid] Sync Ending ...");
+        })
+    });
 })

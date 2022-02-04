@@ -1,5 +1,7 @@
 let MongoClient = require('mongodb').MongoClient;
 let config = require('../config');
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     getLastPanelEventSyncHeight: async function (event) {

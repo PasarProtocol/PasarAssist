@@ -27,6 +27,10 @@ module.exports = {
 
     serviceName: 'default',
     upgradeBlock: 9090468,
-
+    elastos_transation_api_url: 'https://esc-testnet.elastos.io/api?module=transaction&action=gettxinfo&txhash=',
+    Auth: {
+        jwtSecret: 'pasar', // Used to encode JWT tokens
+    },
+    burnAddress: '0x0000000000000000000000000000000000000000',
     cmcApiKeys: []
 }

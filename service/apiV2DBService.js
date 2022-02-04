@@ -1,5 +1,7 @@
 const {MongoClient} = require("mongodb");
-const config = require("../config");
+let config = require("../config");
+const config_test = require("../config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     projectionToken: {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",

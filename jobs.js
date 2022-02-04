@@ -10,7 +10,8 @@ let stickerContractABI = require('./contractABI/stickerABI');
 let galleriaContractABI = require('./contractABI/galleriaABI');
 let jobService = require('./service/jobService');
 let sendMail = require('./send_mail');
-const BigNumber = require("bignumber.js");
+const config_test = require("./config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     run: function() {
@@ -101,13 +102,15 @@ module.exports = {
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                     createTime: result.createTime, updateTime: result.updateTime}
 
-                token.tokenIdHex = '0x' + new BigNumber(tokenId).toString(16);
-
+                token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                 token.tokenJsonVersion = data.version;
                 token.type = data.type;
                 token.name = data.name;
                 token.description = data.description;
+                if(parseInt(token.tokenJsonVersion) > 1) {
+                    token.properties = data.properties;
+                }
 
                 if(extraInfo.didUri !== '') {
                     token.didUri = extraInfo.didUri;
@@ -127,10 +130,18 @@ module.exports = {
                 if(token.type === 'video' || data.version === "2") {
                     token.data = data.data;
                 } else {
-                    token.thumbnail = data.thumbnail;
-                    token.asset = data.image;
-                    token.kind = data.kind;
-                    token.size = data.size;
+                    if(parseInt(token.tokenJsonVersion) == 1) {
+                        token.thumbnail = data.thumbnail;
+                        token.asset = data.image;
+                        token.kind = data.kind;
+                        token.size = data.size;
+                    }else {
+                        token.thumbnail = data.data.thumbnail;
+                        token.asset = data.data.image;
+                        token.kind = data.data.kind;
+                        token.size = data.data.size;
+                    }
+                    
                 }
                 token.adult = data.adult ? data.adult : false;
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
@@ -215,7 +226,6 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            console.log('orderfilled is here');
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
@@ -391,7 +401,7 @@ module.exports = {
                 await stickerDBService.replaceEvent(transferEvent);
 
                 if(to === burnAddress) {
-                    // await stickerDBService.burnToken(tokenId);
+                    await stickerDBService.burnToken(tokenId);
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
