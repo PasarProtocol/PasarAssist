@@ -1316,7 +1316,6 @@ module.exports = {
             let tokens = await token_collection.aggregate([
                 { $match: {$and: [{holder: address}]} }
             ]).toArray();
-            var now = Date.now();
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
                 let record = await collection.aggregate([
@@ -1324,7 +1323,6 @@ module.exports = {
                     { $project: {'_id': 0, price: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
-                tokens[i].now = now;
                 if(record.length == 0)
                     tokens[i].price = 0;
                 else tokens[i].price = record[0].price;
@@ -1339,12 +1337,12 @@ module.exports = {
             }
             let result = [];
             if(tokens.length > 0) {
-                await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(tokens);
-                result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
-                    { $match: {now: now} },
+                let collection_name = 'pasar_token_temp' + Date.now().toString();
+                await mongoClient.db(config.dbName).collection(collection_name).insertMany(tokens);
+                result = await mongoClient.db(config.dbName).collection(collection_name).aggregate([
                     { $sort: sort }
                 ]).toArray();
-                await mongoClient.db(config.dbName).collection('pasar_token_temp').deleteMany({now: now});
+                await mongoClient.db(config.dbName).collection(collection_name).drop();
             }
             return { code: 200, message: 'sucess', data: result };
         } catch (err) {
