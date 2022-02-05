@@ -567,8 +567,9 @@ module.exports = {
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
             ]).toArray();
+            let temp_collection = 'token_temp_' + Date.now().toString();
             if(rows.length > 0)
-                await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
+                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(rows);
 
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             rows = await collection.aggregate([
@@ -577,8 +578,8 @@ module.exports = {
                 timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
             ]).toArray();
             if(rows.length > 0)
-                await mongoClient.db(config.dbName).collection('token_temp').insertMany(rows);
-            collection =  mongoClient.db(config.dbName).collection('token_temp');
+                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(rows);
+            collection =  mongoClient.db(config.dbName).collection(temp_collection);
             let result = await collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
             await collection.drop();
             let results = [];
@@ -651,36 +652,6 @@ module.exports = {
         }
     },
 
-    // owneraddressnum: async function() {
-    //     let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-    //     try {
-    //         await mongoClient.connect();
-    //         let collection  = mongoClient.db(config.dbName).collection('pasar_token');
-    //         let tokens = await collection.find({}).toArray();
-    //         collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-    //         let owners = [];
-    //         for (let i = 0; i < tokens.length; i++) {
-    //             const tokenId = tokens[i]['tokenId'];
-    //             let result = await collection.aggregate([
-    //                 { $match: {$and: [ {tokenId: tokenId}, {to: {$ne: config.pasarContract}} ]}},
-    //                 { $project: {_id: 0, to: 1, blockNumber: 1, tokenId: 1} },
-    //                 { $sort: {tokenId: 1, blockNumber: -1}},
-    //                 { $limit: 1},
-    //                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
-    //                 { $replaceRoot: { newRoot: "$doc"}}
-    //             ]).toArray();
-    //             const owner = result[0]['to'];
-    //             if(owners.indexOf(owner) == -1 && owner != config.burnAddress)
-    //                 owners.push(owner);
-    //         }
-    //         return {code: 200, message: 'success', data: owners.length};
-    //     } catch (err) {
-    //         logger.error(err);
-    //     } finally {
-    //         await mongoClient.close();
-    //     }
-    // },
-
     owneraddressnum: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -731,18 +702,19 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order');
+            let temp_collection = 'token_temp' + Date.now().toString();
             await collection.find({"tokenId": tokenId, orderState: 2}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
                 x.price = parseInt(x.price);
-                mongoClient.db(config.dbName).collection('token_temp').save(x);
+                mongoClient.db(config.dbName).collection(temp_collection).save(x);
             });
-            collection =  mongoClient.db(config.dbName).collection('token_temp');
+            collection =  mongoClient.db(config.dbName).collection(temp_collection);
             let result = await collection.aggregate([
-            { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
-            { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
-            { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-            { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
-            { $sort: {onlyDate: 1} }
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
+                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
+                { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
+                { $sort: {onlyDate: 1} }
             ]).toArray();
             if(result.length > 0)
                 await collection.drop();
@@ -901,10 +873,11 @@ module.exports = {
                 x.value = type == 1 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(x.royaltyFee)) : parseInt(x.price) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
             });
+            let now  = Date.now().toString();
             if(rows.length > 0) {
-                await client.db(config.dbName).collection('token_temp').insertMany(rows);
+                await client.db(config.dbName).collection('token_temp_' + now).insertMany(rows);
             }
-            collection =  client.db(config.dbName).collection('token_temp');
+            collection =  client.db(config.dbName).collection('token_temp' + now);
             result = await collection.aggregate([
                 { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
                 { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
@@ -1230,13 +1203,14 @@ module.exports = {
             }
             let total = result.length;
             if(result.length > 0) {
-                await mongoClient.db(config.dbName).collection('pasar_token_temp').insertMany(result);
-                result = await mongoClient.db(config.dbName).collection('pasar_token_temp').aggregate([
+                let temp_collection = 'pasar_token_temp' + Date.now().toString();
+                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(result);
+                result = await mongoClient.db(config.dbName).collection(temp_collection).aggregate([
                     { $sort: sort },
                     { $skip: (pageNum - 1) * pageSize },
                     { $limit: pageSize }
                 ]).toArray();
-                await mongoClient.db(config.dbName).collection('pasar_token_temp').drop();
+                await mongoClient.db(config.dbName).collection(temp_collection).drop();
             }
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
