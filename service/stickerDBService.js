@@ -1294,7 +1294,7 @@ module.exports = {
                 delete tokens[i]["_id"];
                 let record = await order_collection.aggregate([
                     { $match: {$and: [{tokenId: tokens[i].tokenId}, {orderState: {$ne: '3'}}]} },
-                    { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1} },
+                    { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1, sellerAddr: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
                 console.log(record);
