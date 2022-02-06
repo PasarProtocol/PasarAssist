@@ -6,7 +6,8 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let jobService = require('./service/jobService');
-
+const config_test = require("./config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
@@ -249,7 +250,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 await stickerDBService.addEvent(transferEvent);
 
                 if(to === burnAddress) {
-                    // await stickerDBService.burnToken(tokenId);
+                    await stickerDBService.burnToken(tokenId);
                 } else if(from === burnAddress) {
                     try {
                         let result = await stickerContract.methods.tokenInfo(tokenId).call();
@@ -286,10 +287,18 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         if(token.type === 'feeds-video') {
                             token.video = data.video;
                         } else {
-                            token.thumbnail = data.thumbnail;
-                            token.asset = data.image;
-                            token.kind = data.kind;
-                            token.size = data.size;
+                            if(parseInt(token.tokenJsonVersion) == 1) {
+                                token.thumbnail = data.thumbnail;
+                                token.asset = data.image;
+                                token.kind = data.kind;
+                                token.size = data.size;
+                            }else {
+                                token.thumbnail = data.data.thumbnail;
+                                token.asset = data.data.image;
+                                token.kind = data.data.kind;
+                                token.size = data.data.size;
+                            }
+                            
                         }
                         token.adult = data.adult ? data.adult : false;
                         console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
