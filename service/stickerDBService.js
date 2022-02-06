@@ -1325,12 +1325,22 @@ module.exports = {
                 ]).toArray();
                 console.log(record);
                 if(record.length > 1) {
-                    tokens[i].saleType = 'Secondary Sale';
-                    tokens[i].orderId = record[0].orderId;
+                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                        tokens[i].saleType = 'Secondary Sale';
+                        tokens[i].orderId = record[0].orderId;
+                    }else {
+                        tokens[i].saleType = 'Not on sale';
+                        tokens[i].orderId = null;
+                    }
                     tokens[i].price = record[0].price;
                 }else if(record.length == 1){
-                    tokens[i].saleType = 'Primary Sale';
-                    tokens[i].orderId = record[0].orderId;
+                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                        tokens[i].saleType = 'Primary Sale';
+                        tokens[i].orderId = record[0].orderId;
+                    }else {
+                        tokens[i].saleType = 'Not on sale';
+                        tokens[i].orderId = null;
+                    }
                     tokens[i].price = record[0].price;
                 }else {
                     tokens[i].saleType = 'Not on sale';
