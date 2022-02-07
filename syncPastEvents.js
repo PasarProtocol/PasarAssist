@@ -73,6 +73,7 @@ let orderForSaleJobCurrent = config.pasarContractDeploy,
     tokenInfoMemoSyncJobCurrent = config.stickerContractDeploy,
     orderForAuctionJobCurrent = config.pasarContractDeploy,
     orderBidJobCurrent = config.pasarContractDeploy;
+    approvalJobCurrent = config.stickerContract;
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
@@ -365,7 +366,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     })
 
-    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderForAuctionJobCurrent > currentHeight) {
             console.log(`[OrderForAcution] Sync ${orderForAuctionJobCurrent} finished`)
             return;
@@ -400,7 +401,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
     });
 
 
-    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 7 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderBidJobCurrent > currentHeight) {
             console.log(`[OrderBid] Sync ${orderBidJobCurrent} finished`)
             return;
@@ -431,6 +432,30 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).catch( error => {
             console.log(error);
             console.log("[OrderBid] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 8 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(approvalJobCurrent > currentHeight) {
+            console.log(`[ApprovalForAll] Sync ${approvalJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = approvalJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[ApprovalForAll] Sync ${approvalJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('ApprovalForAll', {
+            fromBlock: approvalJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                await stickerDBService.addAprovalForAllEvent(event);
+            })
+            approvalJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[ApprovalForAll] Sync Ending ...");
         })
     });
 })
