@@ -74,6 +74,7 @@ let orderForSaleJobCurrent = config.pasarContractDeploy,
     orderForAuctionJobCurrent = config.pasarContractDeploy,
     orderBidJobCurrent = config.pasarContractDeploy;
     approvalJobCurrent = config.stickerContract;
+    orderPlatformFeeJobCurrent = config.pasarContractDeploy;
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
@@ -456,6 +457,33 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).catch( error => {
             console.log(error);
             console.log("[ApprovalForAll] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 9 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(orderPlatformFeeJobCurrent > currentHeight) {
+            console.log(`[OrderPlatformFee] Sync ${orderPlatformFeeJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderPlatformFeeJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderPlatformFee] Sync ${orderPlatformFeeJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderPlatformFee', {
+            fromBlock: orderPlatformFeeJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let orderEventDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
+                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
+                await pasarDBService.insertOrderPlatformFeeEvent(orderEventDetail);
+            })
+            orderPlatformFeeJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderPlatformFee] Sync Ending ...");
         })
     });
 })
