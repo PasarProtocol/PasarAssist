@@ -1307,13 +1307,13 @@ module.exports = {
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
                 let record = await order_collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {orderState: {$ne: '3'}}]} },
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {orderState: {$ne: '3'}}, {$expr:{$ne:["$sellerAddr", "$buyerAddr"]}}]} },
                     { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1, sellerAddr: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
                 console.log(record);
                 if(record.length > 1) {
-                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                    if(record[0]['sellerAddr'] == address) {
                         tokens[i].saleType = 'Secondary Sale';
                         tokens[i].orderId = record[0].orderId;
                     }else {
@@ -1322,7 +1322,7 @@ module.exports = {
                     }
                     tokens[i].price = record[0].price;
                 }else if(record.length == 1){
-                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                    if(record[0]['sellerAddr'] == address) {
                         tokens[i].saleType = 'Primary Sale';
                         tokens[i].orderId = record[0].orderId;
                     }else {
