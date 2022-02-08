@@ -127,13 +127,21 @@ module.exports = {
                     return;
                 }
 
-                if(token.type === 'video' || data.version === "2") {
+                if(token.type === 'feeds-video') {
                     token.data = data.data;
                 } else {
-                    token.thumbnail = data.thumbnail;
-                    token.asset = data.image;
-                    token.kind = data.kind;
-                    token.size = data.size;
+                    if(parseInt(token.tokenJsonVersion) == 1) {
+                        token.thumbnail = data.thumbnail;
+                        token.asset = data.image;
+                        token.kind = data.kind;
+                        token.size = data.size;
+                    }else {
+                        token.thumbnail = data.data.thumbnail;
+                        token.asset = data.data.image;
+                        token.kind = data.data.kind;
+                        token.size = data.data.size;
+                    }
+
                 }
                 token.adult = data.adult ? data.adult : false;
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
