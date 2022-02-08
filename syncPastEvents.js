@@ -240,9 +240,9 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let from = event.returnValues._from;
                 let to = event.returnValues._to;
 
-                if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
-                    return;
-                }
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                //     return;
+                // }
 
                 let tokenId = event.returnValues._id;
                 let value = event.returnValues._value;
