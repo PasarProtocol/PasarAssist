@@ -33,5 +33,5 @@ module.exports = {
     },
     burnAddress: '0x0000000000000000000000000000000000000000',
     cmcApiKeys: [],
-    curNetwork: 'testNet'
+    curNetwork: 'mainNet'
 }

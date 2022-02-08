@@ -6,7 +6,8 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let jobService = require('./service/jobService');
-
+const config_test = require("./config_test");
+config = config.curNetwork == 'testNet'? config_test : config;
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
@@ -72,6 +73,8 @@ let orderForSaleJobCurrent = config.pasarContractDeploy,
     tokenInfoMemoSyncJobCurrent = config.stickerContractDeploy,
     orderForAuctionJobCurrent = config.pasarContractDeploy,
     orderBidJobCurrent = config.pasarContractDeploy;
+    approvalJobCurrent = config.stickerContract;
+    orderPlatformFeeJobCurrent = config.pasarContractDeploy;
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
@@ -267,7 +270,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 await stickerDBService.addEvent(transferEvent);
 
                 if(to === burnAddress) {
-                    // await stickerDBService.burnToken(tokenId);
+                    await stickerDBService.burnToken(tokenId);
                 } else if(from === burnAddress) {
                     try {
                         let [result, extraInfo] = await jobService.makeBatchRequest([
@@ -305,10 +308,18 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         if(token.type === 'video' || data.version === "2") {
                             token.data = data.data;
                         } else {
-                            token.thumbnail = data.thumbnail;
-                            token.asset = data.image;
-                            token.kind = data.kind;
-                            token.size = data.size;
+                            if(parseInt(token.tokenJsonVersion) == 1) {
+                                token.thumbnail = data.thumbnail;
+                                token.asset = data.image;
+                                token.kind = data.kind;
+                                token.size = data.size;
+                            }else {
+                                token.thumbnail = data.data.thumbnail;
+                                token.asset = data.data.image;
+                                token.kind = data.data.kind;
+                                token.size = data.data.size;
+                            }
+                            
                         }
                         token.adult = data.adult ? data.adult : false;
                         console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
@@ -381,7 +392,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     })
 
-    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderForAuctionJobCurrent > currentHeight) {
             console.log(`[OrderForAcution] Sync ${orderForAuctionJobCurrent} finished`)
             return;
@@ -416,7 +427,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
     });
 
 
-    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 7 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderBidJobCurrent > currentHeight) {
             console.log(`[OrderBid] Sync ${orderBidJobCurrent} finished`)
             return;
@@ -447,6 +458,57 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).catch( error => {
             console.log(error);
             console.log("[OrderBid] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 8 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(approvalJobCurrent > currentHeight) {
+            console.log(`[ApprovalForAll] Sync ${approvalJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = approvalJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[ApprovalForAll] Sync ${approvalJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('ApprovalForAll', {
+            fromBlock: approvalJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                await stickerDBService.addAprovalForAllEvent(event);
+            })
+            approvalJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[ApprovalForAll] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 9 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(orderPlatformFeeJobCurrent > currentHeight) {
+            console.log(`[OrderPlatformFee] Sync ${orderPlatformFeeJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderPlatformFeeJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderPlatformFee] Sync ${orderPlatformFeeJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderPlatformFee', {
+            fromBlock: orderPlatformFeeJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let orderEventDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
+                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
+                await pasarDBService.insertOrderPlatformFeeEvent(orderEventDetail);
+            })
+            orderPlatformFeeJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderPlatformFee] Sync Ending ...");
         })
     });
 })
