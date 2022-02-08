@@ -299,8 +299,9 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                                 token.asset = data.data.image;
                                 token.kind = data.data.kind;
                                 token.size = data.data.size;
-                            }
-                            
+                                if(data.properties !== undefined)
+                                    token.properties = data.properties;
+                            }  
                         }
                         token.adult = data.adult ? data.adult : false;
                         console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)

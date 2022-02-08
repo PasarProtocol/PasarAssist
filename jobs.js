@@ -104,9 +104,6 @@ module.exports = {
                 token.type = data.type;
                 token.name = data.name;
                 token.description = data.description;
-                if(parseInt(token.tokenJsonVersion) > 1) {
-                    token.properties = data.properties;
-                }
 
                 if(blockNumber > config.upgradeBlock) {
                     let extraInfo = await stickerContract.methods.tokenExtraInfo(tokenId).call();
@@ -139,8 +136,9 @@ module.exports = {
                         token.asset = data.data.image;
                         token.kind = data.data.kind;
                         token.size = data.data.size;
+                        if(data.properties !== undefined)
+                            token.properties = data.properties;
                     }
-                    
                 }
                 token.adult = data.adult ? data.adult : false;
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
