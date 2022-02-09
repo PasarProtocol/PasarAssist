@@ -596,6 +596,9 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                    result[i]['thumbnail'] = res['thumbnail'];
+                    result[i]['data'] = {...result[i]['data'], ...res['data']};
+                    result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                 }
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
