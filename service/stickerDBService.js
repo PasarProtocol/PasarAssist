@@ -607,6 +607,9 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                    result[i]['thumbnail'] = res['thumbnail'];
+                    result[i]['data'] = {...result[i]['data'], ...res['data']};
+                    result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                 }
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
@@ -823,7 +826,7 @@ module.exports = {
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
         thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
-        adult: "$token.adult", properties: "$token.properties"}
+        adult: "$token.adult", properties: "$token.properties", data: "$token.data", tokenJsonVersion: "$token.tokenJsonVersion"}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
@@ -840,13 +843,13 @@ module.exports = {
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
-            collection = client.db(config.dbName).collection('pasar_order_event');
+            collection = client.db(config.dbName).collection('pasar_order');
             let orderForMarketRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {$or: [{event: 'OrderForSale'}, {event: 'OrderForAuction'}]}]}
-            ).toArray();
+                {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
+            ).sort({'blockNumber': -1}).toArray();
             let priceRecord = await collection.find({$and: [{tokenId: tokenId}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
-                result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
+                result['DateOnMarket'] = orderForMarketRecord[0]['createTime'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
                 result['OrderId'] = orderForMarketRecord[0]['orderId'];
             } else {
@@ -1324,7 +1327,7 @@ module.exports = {
                 ]).toArray();
                 console.log(record);
                 if(record.length > 1) {
-                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                    if(record[0]['sellerAddr'] == address && record[0]['orderState'] == '1') {
                         tokens[i].saleType = 'Secondary Sale';
                         tokens[i].orderId = record[0].orderId;
                     }else {
@@ -1333,7 +1336,7 @@ module.exports = {
                     }
                     tokens[i].price = record[0].price;
                 }else if(record.length == 1){
-                    if(record[0]['sellerAddr'] == tokens[i]['holder']) {
+                    if(record[0]['sellerAddr'] == address && record[0]['orderState'] == '1') {
                         tokens[i].saleType = 'Primary Sale';
                         tokens[i].orderId = record[0].orderId;
                     }else {
