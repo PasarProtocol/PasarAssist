@@ -289,6 +289,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         token.type = data.type;
                         token.name = data.name;
                         token.description = data.description;
+                        token.properties = data.properties;
 
                         if(extraInfo.didUri !== '') {
                             token.didUri = extraInfo.didUri;

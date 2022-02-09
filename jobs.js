@@ -108,9 +108,7 @@ module.exports = {
                 token.type = data.type;
                 token.name = data.name;
                 token.description = data.description;
-                if(parseInt(token.tokenJsonVersion) > 1) {
-                    token.properties = data.properties;
-                }
+                token.properties = data.properties;
 
                 if(extraInfo.didUri !== '') {
                     token.didUri = extraInfo.didUri;
