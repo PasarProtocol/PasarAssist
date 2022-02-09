@@ -308,19 +308,12 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         if(token.type === 'video' || data.version === "2") {
                             token.data = data.data;
                         } else {
-                            if(parseInt(token.tokenJsonVersion) == 1) {
-                                token.thumbnail = data.thumbnail;
-                                token.asset = data.image;
-                                token.kind = data.kind;
-                                token.size = data.size;
-                            }else {
-                                token.thumbnail = data.data.thumbnail;
-                                token.asset = data.data.image;
-                                token.kind = data.data.kind;
-                                token.size = data.data.size;
-                            }
-                            
+                            token.thumbnail = data.thumbnail;
+                            token.asset = data.image;
+                            token.kind = data.kind;
+                            token.size = data.size;
                         }
+
                         token.adult = data.adult ? data.adult : false;
                         console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                         await stickerDBService.replaceToken(token);
