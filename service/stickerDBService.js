@@ -829,13 +829,13 @@ module.exports = {
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
-            collection = client.db(config.dbName).collection('pasar_order_event');
+            collection = client.db(config.dbName).collection('pasar_order');
             let orderForMarketRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {$or: [{event: 'OrderFilled'}]}]}
-            ).toArray();
+                {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
+            ).sort({'blockNumber': -1}).toArray();
             let priceRecord = await collection.find({$and: [{tokenId: tokenId}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
-                result['DateOnMarket'] = orderForMarketRecord[0]['timestamp'];
+                result['DateOnMarket'] = orderForMarketRecord[0]['createTime'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
                 result['OrderId'] = orderForMarketRecord[0]['orderId'];
             } else {
