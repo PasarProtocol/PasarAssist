@@ -683,41 +683,41 @@ module.exports = {
             stickerEventCheckBlockNumber = toBlock + 1;
         });
 
-        /**
-         *  Get ELA price from CoinMarketCap
-         */
-        let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890};
-        let coins2 = {"FSN": 2530, "ELA": 2492, "TLOS": 4660}
-        if(config.cmcApiKeys.length > 0) {
-            schedule.scheduleJob('*/4 * * * *', async () => {
-                let x = Math.floor(Math.random() * config.cmcApiKeys.length);
-                let headers = {'Content-Type': 'application/json', 'X-CMC_PRO_API_KEY': config.cmcApiKeys[x]}
-                let res = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100', {method: 'get', headers})
-                let result = await res.json();
+        // /**
+        //  *  Get ELA price from CoinMarketCap
+        //  */
+        // let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890};
+        // let coins2 = {"FSN": 2530, "ELA": 2492, "TLOS": 4660}
+        // if(config.cmcApiKeys.length > 0) {
+        //     schedule.scheduleJob('*/4 * * * *', async () => {
+        //         let x = Math.floor(Math.random() * config.cmcApiKeys.length);
+        //         let headers = {'Content-Type': 'application/json', 'X-CMC_PRO_API_KEY': config.cmcApiKeys[x]}
+        //         let res = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100', {method: 'get', headers})
+        //         let result = await res.json();
 
-                let record = {timestamp: Date.parse(result.status.timestamp)}
-                result.data.forEach(item => {
-                    if(coins[item.symbol] === item.id) {
-                        record[item.symbol] = item.quote.USD.price;
-                    }
-                })
+        //         let record = {timestamp: Date.parse(result.status.timestamp)}
+        //         result.data.forEach(item => {
+        //             if(coins[item.symbol] === item.id) {
+        //                 record[item.symbol] = item.quote.USD.price;
+        //             }
+        //         })
 
-                for(let i in coins2) {
-                    let resOther = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=1&convert_id=${coins2[i]}`, {method: 'get', headers})
-                    let resultOther = await resOther.json();
+        //         for(let i in coins2) {
+        //             let resOther = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=1&convert_id=${coins2[i]}`, {method: 'get', headers})
+        //             let resultOther = await resOther.json();
 
-                    if(resultOther.data[0].id === 1) {
-                        let priceAtBTC = resultOther.data[0].quote[coins2[i]].price;
-                        record[i] = record['BTC'] / priceAtBTC;
-                    } else {
-                        logger.error(`[Get CMC PRICE] the base coin changed`);
-                    }
-                }
+        //             if(resultOther.data[0].id === 1) {
+        //                 let priceAtBTC = resultOther.data[0].quote[coins2[i]].price;
+        //                 record[i] = record['BTC'] / priceAtBTC;
+        //             } else {
+        //                 logger.error(`[Get CMC PRICE] the base coin changed`);
+        //             }
+        //         }
 
-                logger.info(`[Get CMC PRICE] Price: ${JSON.stringify(record)}`);
-                await indexDBService.insertCoinsPrice(record);
-                await indexDBService.removeOldPriceRecords(record.timestamp - 30 * 24 * 60 * 60 * 1000)
-            })
-        }
+        //         logger.info(`[Get CMC PRICE] Price: ${JSON.stringify(record)}`);
+        //         await indexDBService.insertCoinsPrice(record);
+        //         await indexDBService.removeOldPriceRecords(record.timestamp - 30 * 24 * 60 * 60 * 1000)
+        //     })
+        // }
     }
 }
