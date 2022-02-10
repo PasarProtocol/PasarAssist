@@ -20,7 +20,7 @@ module.exports = {
     stickerContractDeploy: 7744408,
     galleriaContractDeploy: 0,
 
-    ipfsNodeUrl: 'https://ipfs.trinity-feeds.app/ipfs/',
+    ipfsNodeUrl:  "http://ipfs.pasarprotocol.io",
 
     serviceName: 'default',
     upgradeBlock: 9607086,
