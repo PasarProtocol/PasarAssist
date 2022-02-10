@@ -896,17 +896,18 @@ module.exports = {
                 rows.push(x);
             });
             let now  = Date.now().toString();
-            if(rows.length > 0) {
-                await client.db(config.dbName).collection('token_temp_' + now).insertMany(rows);
-            }
             collection =  client.db(config.dbName).collection('token_temp' + now);
-            result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
-                { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
-                { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
-                { $sort: {onlyDate: 1} },
-            ]).toArray();
-            await collection.drop();
+            result = [];
+            if(rows.length > 0) {
+                await collection.insertMany(rows);
+                result = await collection.aggregate([
+                    { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
+                    { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
+                    { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
+                    { $sort: {onlyDate: 1} },
+                ]).toArray();
+                await collection.drop();
+            }
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -1256,7 +1257,6 @@ module.exports = {
                 }
                 return {code: 200, message: 'success', data: {total, result}};
             }
-            
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
