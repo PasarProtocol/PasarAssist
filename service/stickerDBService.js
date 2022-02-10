@@ -144,6 +144,17 @@ module.exports = {
         }
         return result;
     },
+
+    paginateRows: function(rows, pageNum, pageSize) {
+        let result = [];
+        for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++) {
+            if(i >= rows.length)
+                break;
+            result.push(rows[i]);
+        }
+        return result;
+    },
+
     composeMethodCondition: function(methodStr, requestType, data) {
         let methods = methodStr.split(",");
         let conditions_order_event = [];
@@ -1136,98 +1147,116 @@ module.exports = {
 
     getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let sort = {};
+        switch (order) {
+            case '0':
+                sort = {marketTime: -1};
+                break;
+            case '1':
+                sort = {createTime: -1};
+                break;
+            case '2':
+                sort = {marketTime: 1};
+                break;
+            case '3':
+                sort = {createTime: 1};
+                break;
+            case '4':
+                sort = {price: 1};
+                break;
+            case '5':
+                sort = {price: -1};
+                break;
+            case '6':
+                sort = {endTime: -1};
+                break;
+            default:
+                sort = {marketTime: -1}
+        }
         try {
             await mongoClient.connect();
-            let collection  = mongoClient.db(config.dbName).collection('pasar_order');
-            let sort = {};
-            switch (order) {
-                case '0':
-                    sort = {marketTime: -1};
-                    break;
-                case '1':
-                    sort = {createTime: -1};
-                    break;
-                case '2':
-                    sort = {marketTime: 1};
-                    break;
-                case '3':
-                    sort = {createTime: 1};
-                    break;
-                case '4':
-                    sort = {price: 1};
-                    break;
-                case '5':
-                    sort = {price: -1};
-                    break;
-                case '6':
-                    sort = {endTime: -1};
-                    break;
-                default:
-                    sort = {createTime: -1}
-            }
-
-            let status_condition = [];
-            let statusArr = status.split(',');
-            for (let i = 0; i < statusArr.length; i++) {
-                const ele = statusArr[i];
-                if(ele == 'All') {
-                    status_condition.push({orderType: '1'});
-                    status_condition.push({orderType: '2'});
-                }
-                else if(ele == 'Listed')
-                    status_condition.push({orderType: '1'})
-                else status_condition.push({orderType: '2'})
-            }
-            status_condition = {$or: status_condition};
-
-            let itemType_condition = [];
-            let itemTypeArr = itemType.split(',');
-            for (let i = 0; i < itemTypeArr.length; i++) {
-                const ele = itemTypeArr[i];
-                if(ele == 'General')
-                    ele = 'image';
-                if(ele == 'All')
-                    itemType_condition.push({type: new RegExp('')});
-                else itemType_condition.push({type: ele});
-            }
-            itemType_condition = {$or: itemType_condition};
-            minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
-            maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
-            let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
-            let availableOrders = await collection.aggregate([
-                {
-                    $addFields: {
-                       "priceCalculated": { $divide: [ "$priceNumber", 10 ** 18 ] }
+            if(Object.keys(sort).indexOf('createTime') == -1) {
+                let collection  = mongoClient.db(config.dbName).collection('pasar_order');   
+                let status_condition = [];
+                let statusArr = status.split(',');
+                for (let i = 0; i < statusArr.length; i++) {
+                    const ele = statusArr[i];
+                    if(ele == 'All') {
+                        status_condition.push({orderType: '1'});
+                        status_condition.push({orderType: '2'});
                     }
-                },
-                { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
-                { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", marketTime: "$createTime", endTime: 1, orderId: 1} },
-                { $sort: {tokenId: 1} }
-            ]).toArray();
-            let result = [];
-            collection = mongoClient.db(config.dbName).collection('pasar_token');
-            for (let i = 0; i < availableOrders.length; i++) {
-                const element = availableOrders[i];
-                let record = await collection.aggregate([
-                    { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}, {$or: [{tokenId: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} }
+                    else if(ele == 'Listed')
+                        status_condition.push({orderType: '1'})
+                    else status_condition.push({orderType: '2'})
+                }
+                status_condition = {$or: status_condition};
+
+                let itemType_condition = [];
+                let itemTypeArr = itemType.split(',');
+                for (let i = 0; i < itemTypeArr.length; i++) {
+                    const ele = itemTypeArr[i];
+                    if(ele == 'General')
+                        ele = 'image';
+                    if(ele == 'All')
+                        itemType_condition.push({type: new RegExp('')});
+                    else itemType_condition.push({type: ele});
+                }
+                itemType_condition = {$or: itemType_condition};
+                minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
+                maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
+                let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
+                let availableOrders = await collection.aggregate([
+                    {
+                        $addFields: {
+                            "priceCalculated": { $divide: [ "$priceNumber", 10 ** 18 ] }
+                        }
+                    },
+                    { $match: {$and: [status_condition, price_condition, {orderState: '1'}]} },
+                    { $project: {"_id": 0, tokenId: 1, priceCalculated: 1, price: "$priceNumber", marketTime: "$createTime", endTime: 1, orderId: 1} },
+                    { $sort: sort }
                 ]).toArray();
-                if(record.length == 0)
-                    continue;
-                delete record[0]["_id"];
-                result.push({...element, ...record[0]});
+                let total = availableOrders.length;
+                availableOrders = this.paginateRows(availableOrders, pageNum, pageSize);
+                let result = [];
+                collection = mongoClient.db(config.dbName).collection('pasar_token');
+                for (let i = 0; i < availableOrders.length; i++) {
+                    const element = availableOrders[i];
+                    let record = await collection.aggregate([
+                        { $match: {$and: [itemType_condition, {adult: adult == "true"}, {tokenId: element.tokenId}, {$or: [{tokenId: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} }
+                    ]).toArray();
+                    if(record.length == 0)
+                        continue;
+                    delete record[0]["_id"];
+                    result.push({...element, ...record[0]});
+                }
+                return {code: 200, message: 'success', data: {total, result}};
+            }else {
+                let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
+                let collection_order = mongoClient.db(config.dbName).collection('pasar_order');
+                let availableOrders = await collection_order.find({orderState: '1'}).toArray();
+                let tokenIds = [];
+                let orders = {};
+                availableOrders.forEach(element => {
+                    tokenIds.push(element['tokenId']);
+                    orders[element['tokenId']] = element;
+                });
+                let tokens = await collection_token.find({tokenId: {$in: tokenIds}}).sort(sort).toArray();
+                let total = availableOrders.length;
+                let result = [];
+                for(var i = 0; i < tokens.length; i++) {
+                    if(i < (pageNum - 1) * pageSize)
+                        continue;
+                    let availableOrder = orders[tokens[i]['tokenId']];
+                    tokens[i]['marketTime'] = availableOrder['createTime'];
+                    tokens[i]['endTime'] = availableOrder['endTime'];
+                    tokens[i]['price'] = availableOrder['price'];
+                    tokens[i]['priceCalculated'] = availableOrder['priceCalculated'];
+                    tokens[i]['orderId'] = availableOrder['orderId'];
+                    result.push(tokens[i]);
+                }
+                return {code: 200, message: 'success', data: {total, result}};
             }
-            let total = result.length;
-            if(result.length > 0) {
-                let temp_collection = 'pasar_token_temp' + Date.now().toString();
-                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(result);
-                result = await mongoClient.db(config.dbName).collection(temp_collection).aggregate([
-                    { $sort: sort },
-                    { $skip: (pageNum - 1) * pageSize },
-                    { $limit: pageSize }
-                ]).toArray();
-                await mongoClient.db(config.dbName).collection(temp_collection).drop();
-            }
-            return {code: 200, message: 'success', data: {total, result}};
+            
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
