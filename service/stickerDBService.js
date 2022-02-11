@@ -342,7 +342,22 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, blockNumber, updateTime: timestamp}});
+            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, updateTime: timestamp, blockNumber}});
+        } catch (err) {
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status) {
+        console.log(tokenId, orderId, 'dddd');
+        price = parseInt(price);
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection.updateOne({ tokenId }, {$set: {price, orderId, status, marketTime, endTime}});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -538,6 +553,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
+
     updateAllEventCollectionForGasFee: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -1168,6 +1184,91 @@ module.exports = {
             case '5':
                 sort = {price: -1};
                 break;
+            default:
+                sort = {marketTime: -1}
+        }
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let status_condition = [];
+            let statusArr = status.split(',');
+            for (let i = 0; i < statusArr.length; i++) {
+                const ele = statusArr[i];
+                if(ele == 'All') {
+                    status_condition.push({status: 'MarketAuction'});
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'MarketPriceChanged'});
+                }
+                else if(ele == 'Listed'){
+                    status_condition.push({status: 'MarketAuction'});
+                    status_condition.push({status: 'MarketBid'});
+                }
+                else {
+                    status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'MarketPriceChanged'});
+                }
+            }
+            status_condition = {$or: status_condition};
+
+            let itemType_condition = [];
+            let itemTypeArr = itemType.split(',');
+            for (let i = 0; i < itemTypeArr.length; i++) {
+                const ele = itemTypeArr[i];
+                if(ele == 'General')
+                    ele = 'image';
+                if(ele == 'All')
+                    itemType_condition.push({type: new RegExp('')});
+                else itemType_condition.push({type: ele});
+            }
+            itemType_condition = {$or: itemType_condition};
+            minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
+            maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
+            let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
+            let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+            let marketTokens = await collection.aggregate([
+                {
+                    $addFields: {
+                        "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
+                    }
+                },
+                { $match: {$and: [market_condition, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $project: {"_id": 0} },
+                { $sort: sort }
+            ]).toArray();
+            let total = marketTokens.length;
+            let result = this.paginateRows(marketTokens, pageNum, pageSize);
+            return {code: 200, message: 'success', match: {$and: [market_condition, status_condition, price_condition, {orderState: '1'}, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]}, data: {total, result}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getDetailedCollectibles1: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let sort = {};
+        switch (order) {
+            case '0':
+                sort = {marketTime: -1};
+                break;
+            case '1':
+                sort = {createTime: -1};
+                break;
+            case '2':
+                sort = {marketTime: 1};
+                break;
+            case '3':
+                sort = {createTime: 1};
+                break;
+            case '4':
+                sort = {price: 1};
+                break;
+            case '5':
+                sort = {price: -1};
+                break;
             case '6':
                 sort = {endTime: -1};
                 break;
@@ -1204,7 +1305,7 @@ module.exports = {
                 }
                 itemType_condition = {$or: itemType_condition};
                 minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
-                maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
+                maxPrice = BigInt(maxPrice, 10) / c;
                 let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
                 let availableOrders = await collection.aggregate([
                     {
@@ -1269,7 +1370,43 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_order');
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+            let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+            let result = await collection.aggregate([
+                { $match: {$and: [{holder: address}, market_condition]} },
+                { $project: {'_id': 0, orderId: 1, tokenId: 1, price: 1, createTime: 1} },
+                { $sort: sort }
+            ]).toArray();
+            return { code: 200, message: 'sucess', data: result };
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getOwnCollectiblesByAddress: async function(address, orderType) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             let sort = {};
             switch (orderType) {
@@ -1288,20 +1425,25 @@ module.exports = {
                 default:
                     sort = {createTime: -1}
             }
-            let open_orders = await collection.aggregate([
-                { $match: {$and: [{sellerAddr: address}, {orderState: '1'}]} },
-                { $project: {'_id': 0, orderId: 1, tokenId: 1, price: 1, createTime: 1} },
+            let tokens = await token_collection.aggregate([
+                { $match: {$and: [{holder: address}]} },
                 { $sort: sort }
             ]).toArray();
-            let result = [];
-            for (let i = 0; i < open_orders.length; i++) {
-                const ele = open_orders[i];
-                let record = await token_collection.findOne({tokenId: ele.tokenId});
-                record.price = ele.price;
-                record.orderId = ele.orderId;
-                result.push(record);
+            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+            for (let i = 0; i < tokens.length; i++) {
+                if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
+                    if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
+                        tokens[i].saleType = 'Primary Sale';
+                    } else {
+                        tokens[i].saleType = 'Secondary Sale';
+                    }
+                }else {
+                    tokens[i].saleType = 'Not on sale';
+                }
+                tokens[i].orderId = null;
+                tokens[i].price = 0;
             }
-            return { code: 200, message: 'sucess', data: result };
+            return { code: 200, message: 'sucess', data: tokens };
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -1310,7 +1452,7 @@ module.exports = {
         }
     },
 
-    getOwnCollectiblesByAddress: async function(address, orderType) {
+    getOwnCollectiblesByAddress1: async function(address, orderType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -1409,29 +1551,10 @@ module.exports = {
                     sort = {createTime: -1}
             }
             let tokens = await collection.aggregate([
-                { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}]} }
-            ]).toArray();
-            const collection_orderEvent = mongoClient.db(config.dbName).collection('pasar_order_event');
-            for (let i = 0; i < tokens.length; i++) {
-                delete tokens[i]["_id"];
-                let record = await collection_orderEvent.aggregate([
-                    { $match: {tokenId: tokens[i].tokenId} },
-                    { $sort: {timestamp: -1} },
-                    { $limit: 1 }
-                ]).toArray();
-                if(record.length > 0)
-                    tokens[i].price = record[0].price;
-                else tokens[i].price = 0;
-            }
-            const collection_temp = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
-            if(tokens.length > 0)
-                await collection_temp.insertMany(tokens)
-            let result = await collection_temp.aggregate([
+                { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}]} },
                 { $sort: sort }
-            ]).toArray()
-            if(result.length > 0)
-                await collection_temp.drop();
-            return {code: 200, message: 'sucess', data: result};
+            ]).toArray();
+            return {code: 200, message: 'sucess', data: tokens};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
