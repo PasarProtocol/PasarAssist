@@ -81,7 +81,6 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             await collection.insertOne(orderEventDetail);
         } catch (err) {
-            logger.error(err);
             throw new Error();
         } finally {
            await mongoClient.close();

@@ -6,6 +6,17 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let jobService = require('./service/jobService');
+let log4js = require('log4js');
+log4js.configure({
+    appenders: {
+        file: { type: 'dateFile', filename: 'logs/pasar.log', pattern: ".yyyy-MM-dd.log", compress: true, },
+        console: { type: 'stdout'}
+    },
+    categories: { default: { appenders: ['file', 'console'], level: 'info' } },
+    pm2: true,
+    pm2InstanceVar: 'INSTANCE_ID'
+});
+global.logger = log4js.getLogger('default');
 const config_test = require("./config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
@@ -78,7 +89,7 @@ let orderForSaleJobCurrent = config.pasarContractDeploy,
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
-    schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '0 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '0 * * * * *'}, async () => {
         if(orderForSaleJobCurrent > currentHeight) {
             console.log(`[OrderForSale] Sync ${orderForSaleJobCurrent} finished`)
             return;
@@ -106,6 +117,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale');
             })
             orderForSaleJobCurrent = toBlock + 1;
         }).catch(error => {
@@ -115,7 +127,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
     });
 
 
-    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '10 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 4 * 60 * 1000), rule: '10 * * * * *'}, async () => {
         if(orderPriceChangedJobCurrent > currentHeight) {
             console.log(`[OrderPriceChanged] Sync ${orderPriceChangedJobCurrent} finished`)
             return;
@@ -145,6 +157,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged');
             })
 
             orderPriceChangedJobCurrent = toBlock + 1;
@@ -154,7 +167,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '20 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '20 * * * * *'}, async () => {
         if(orderFilledJobCurrent > currentHeight) {
             console.log(`[OrderFilled] Sync ${orderFilledJobCurrent} finished`)
             return;
@@ -183,6 +196,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
             })
             orderFilledJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -191,7 +205,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 4 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderCanceledJobCurrent > currentHeight) {
             console.log(`[OrderCanceled] Sync ${orderCanceledJobCurrent} finished`)
             return;
@@ -220,6 +234,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
             })
             orderCanceledJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -316,6 +331,11 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                         }
 
                         token.adult = data.adult ? data.adult : false;
+                        token.price = 0;
+                        token.marketTime = null;
+                        token.status = "Not on sale";
+                        token.endTime = null;
+                        token.orderId = null;
                         console.log(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                         await stickerDBService.replaceToken(token);
                     } catch (e) {
@@ -336,7 +356,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
     /**
      * transferSingleWithMemo event
      */
-    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '50 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '50 * * * * *'}, async () => {
         if(tokenInfoMemoSyncJobCurrent <= config.upgradeBlock && tokenInfoMemoSyncJobCurrent <= currentHeight) {
             const tempBlockNumber = tokenInfoMemoSyncJobCurrent + step
             const toBlock = Math.min(tempBlockNumber, currentHeight, config.upgradeBlock);
@@ -412,6 +432,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketAuction');
             })
             orderForAuctionJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -447,6 +468,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 console.log(`[OrderBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await updateOrder(result, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid');
             })
             orderBidJobCurrent = toBlock + 1;
         }).catch( error => {
