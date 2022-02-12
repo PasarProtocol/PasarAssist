@@ -148,7 +148,7 @@ module.exports = {
             }
         }
 
-        let orderForSaleJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+        let orderForSaleJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale');
             // if(isGetForSaleOrderJobRun == false) {
             //     //initial state
@@ -185,7 +185,7 @@ module.exports = {
             })
         });
 
-        let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 20 * 1000), async () => {
+        let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
@@ -223,7 +223,7 @@ module.exports = {
             })
         });
 
-        let orderFilledJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+        let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
@@ -262,7 +262,7 @@ module.exports = {
             })
         });
 
-        let orderCanceledJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
+        let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled');
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
@@ -299,7 +299,7 @@ module.exports = {
             })
         });
 
-        let orderPlatformFeeId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
+        let orderPlatformFeeId = schedule.scheduleJob(new Date(now + 120 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastOrderPlatformFeeSyncHeight();
             // if(isGetForPlatformFeeJobRun == false) {
             //     //initial state
