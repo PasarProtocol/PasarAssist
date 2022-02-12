@@ -1063,6 +1063,9 @@ module.exports = {
                     result[i]['royalties'] = res['royalties'];
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                    result[i]['thumbnail'] = res['thumbnail'];
+                    result[i]['data'] = {...result[i]['data'], ...res['data']};
+                    result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
                 tempResult.push(result[i]);
             };
@@ -1402,7 +1405,6 @@ module.exports = {
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let result = await collection.aggregate([
                 { $match: {$and: [{holder: address}, market_condition]} },
-                { $project: {'_id': 0, orderId: 1, tokenId: 1, price: 1, createTime: 1} },
                 { $sort: sort }
             ]).toArray();
             return { code: 200, message: 'sucess', data: result };
@@ -1451,8 +1453,6 @@ module.exports = {
                 }else {
                     tokens[i].saleType = 'Not on sale';
                 }
-                tokens[i].orderId = null;
-                tokens[i].price = 0;
             }
             return { code: 200, message: 'sucess', data: tokens };
         } catch (err) {
