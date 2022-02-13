@@ -357,7 +357,7 @@ module.exports = {
             });
         });
 
-        let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 90 * 1000), async () => {
+        let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
             // if(isGetTokenInfoJobRun == false) {
             //     //initial state
@@ -410,7 +410,7 @@ module.exports = {
             })
         });
 
-        let tokenInfoWithMemoSyncJobId = schedule.scheduleJob(new Date(now + 90 * 1000), async () => {
+        let tokenInfoWithMemoSyncJobId = schedule.scheduleJob(new Date(now + 20 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
             // if(isGetTokenInfoWithMemoJobRun == false) {
             //     //initial state

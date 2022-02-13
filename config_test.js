@@ -19,7 +19,7 @@ module.exports = {
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     galleriaContract: '0x8b3c7Fc42d0501e0367d29426421D950f45F5041',
-    pasarContractDeploy: 7377673,
+    pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
     galleriaContractDeploy: 10242686,
 
