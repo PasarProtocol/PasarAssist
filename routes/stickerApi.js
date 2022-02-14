@@ -417,4 +417,14 @@ router.get('/getLatestPurchasedToken', function(req, res) {
     })
 })
 
+
+router.get('/updateTokens', function(req, res) {
+    stickerDBService.updateTokens().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 module.exports = router;

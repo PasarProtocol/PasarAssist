@@ -342,7 +342,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, blockNumber: {"$lt": blockNumber}}, {$set: {holder, updateTime: timestamp, blockNumber}});
+            await collection.updateOne({tokenId}, {$set: {holder, updateTime: timestamp, blockNumber}});
         } catch (err) {
             throw new Error();
         } finally {
@@ -351,7 +351,6 @@ module.exports = {
     },
 
     updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status) {
-        console.log(tokenId, orderId, 'dddd');
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -1638,6 +1637,64 @@ module.exports = {
                 await token_collection.updateOne({tokenId}, {$set: {holder: result[0]['to']}});
             }
             return {code: 200, message: 'sucess'};
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateTokens: async function(){
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_event_collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            const order_event_collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let tokens = await token_collection.find({}).toArray();
+            console.log(tokens.length);
+            for(var i = 0; i < tokens.length; i++) {
+                let token = tokens[i];
+                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
+                let holder, price = 0, orderId = null, marketTime = null, endTime = null, status = "Not on sale";
+                if(token_event.length > 0)
+                    holder = token_event[0]['to'];
+                else holder = token.royaltyOwner;
+                let order_event = await order_event_collection.find({tokenId: token['tokenId']}).sort({blockNumber: -1}).limit(1).toArray();
+                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale');
+                if(order_event.length > 0) {
+                    order_event = order_event[0];
+                    price = order_event['price'];
+                    orderId = order_event['orderId'];
+                    marketTime = order_event['createTime'];
+                    endTime = order_event['endTime'];
+                    switch(order_event['event'])
+                    {
+                        case 'OrderForSale':
+                            status = 'MarketSale';
+                            break;
+                        case 'OrderPriceChanged':
+                            status = 'MarketPriceChanged';
+                            break;
+                        case 'OrderFilled':
+                            status = 'Not on sale';
+                            break;
+                        case 'OrderCanceled':
+                            status = 'Not on sale';
+                            break;
+                        case 'OrderForAuction':
+                            status = 'MarketAuction';
+                            break;
+                        case 'OrderBid':
+                            status = 'MarketBid';
+                            break;
+                    }   
+                }
+                await token_collection.updateOne({ tokenId: token['tokenId']}, {$set: {holder, price, orderId, status, marketTime, endTime}});
+            }
+            console.log('successull done');
+            return {code: 200, message: 'sucess'}; 
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
