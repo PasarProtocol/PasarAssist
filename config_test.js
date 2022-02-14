@@ -23,7 +23,7 @@ module.exports = {
     stickerContractDeploy: 7377671,
     galleriaContractDeploy: 10242686,
 
-    ipfsNodeUrl: 'http://ipfs-test.pasarprotocol.io/ipfs/',
+    ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
     serviceName: 'default',
     upgradeBlock: 9090468,
