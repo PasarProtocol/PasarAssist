@@ -410,7 +410,7 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token');
-            let result = await collection.find({$or: [{tokenId: keyword}, {royaltyOwner: keyword}, {name: {$regex: keyword}}, {description: {$regex: keyword}}]}).project({"_id": 0}).toArray();
+            let result = await collection.find({$or: [{tokenId: keyword}, {tokenIdHex: keyword}, {royaltyOwner: keyword}, {name: {$regex: keyword}}, {description: {$regex: keyword}}]}).project({"_id": 0}).toArray();
             return {code: 200, message: 'success', data: {result}};
         } catch (err) {
             logger.error(err);
