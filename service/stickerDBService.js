@@ -1652,6 +1652,7 @@ module.exports = {
             const token_event_collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             const order_event_collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
             let tokens = await token_collection.find({}).toArray();
             console.log(tokens.length);
             for(var i = 0; i < tokens.length; i++) {
@@ -1667,8 +1668,11 @@ module.exports = {
                     order_event = order_event[0];
                     price = parseInt(order_event['price']);
                     orderId = order_event['orderId'];
-                    marketTime = order_event['createTime'];
-                    endTime = order_event['endTime'];
+                    let order = await order_collection.findOne({orderId});
+                    if(order) {
+                        marketTime = order['createTime'];
+                        endTime = order['endTime'];
+                    }
                     switch(order_event['event'])
                     {
                         case 'OrderForSale':
