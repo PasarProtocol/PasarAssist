@@ -1665,7 +1665,7 @@ module.exports = {
                 // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale');
                 if(order_event.length > 0) {
                     order_event = order_event[0];
-                    price = order_event['price'];
+                    price = parseInt(order_event['price']);
                     orderId = order_event['orderId'];
                     marketTime = order_event['createTime'];
                     endTime = order_event['endTime'];
