@@ -22,7 +22,7 @@ module.exports = {
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
     galleriaContractDeploy: 10242686,
-
+  
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
     serviceName: 'default',
