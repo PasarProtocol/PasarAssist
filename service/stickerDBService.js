@@ -664,15 +664,8 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await collection.aggregate([
-                {
-                    $group: {
-                        _id  : "$status",
-                        value: {$sum: 1 }
-                    }
-                }
-            ]).toArray();
-            return {code: 200, message: 'success', data: (result.length == 0 ? 0 : result[0]['value'])};
+            let result = await collection.find({ holder: {$ne: config.burnAddress} }).count()
+            return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
