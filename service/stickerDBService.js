@@ -157,8 +157,8 @@ module.exports = {
 
     composeMethodCondition: function(methodStr, requestType, data) {
         let methods = methodStr.split(",");
-        let conditions_order_event = [];
-        let conditions_token_event = [];
+        let conditions_order_event = [{1: 1}];
+        let conditions_token_event = [{1: 1}];
         for(var i = 0; i < methods.length; i++) {
             var method = methods[i];
             let methodCondition_order = [], methodCondition_token = [];
@@ -192,7 +192,7 @@ module.exports = {
                         methodCondition_token.push({'to': {$ne: "0x0000000000000000000000000000000000000000"}});
                     }
                     methodCondition_order.push({'event': 'notSetYet'});
-                    methodCondition_token.push({'memo': {$ne: ''}});
+                    methodCondition_token.push({'memo': {$ne: null}});
                     break;
                 case 'Burn':
                     methodCondition_token.push({'to': "0x0000000000000000000000000000000000000000"});
@@ -597,18 +597,25 @@ module.exports = {
         let methodCondition = this.composeMethodCondition(method, "null", "null");
         let methodCondition_order = methodCondition['order'];
         let methodCondition_token = methodCondition['token'];
+        let methodCondition_approval = (method == 'All' || method.indexOf('SetApprovalForAll') != -1) ? {event: 'SetApprovalForAll'}: {event: 'notSetApprovalForAll'}
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let temp_collection =  mongoClient.db(config.dbName).collection('token_temp_' + Date.now().toString());
+            let results = [];
+            let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
+
+            // fetch order evetns
             let rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_order] }},
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
                 timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
             ]).toArray();
-            let temp_collection = 'token_temp_' + Date.now().toString();
             if(rows.length > 0)
-                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(rows);
+                await temp_collection.insertMany(rows);
 
+            // fetch token_transfer_events
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_token] } },
@@ -616,17 +623,28 @@ module.exports = {
                 timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
             ]).toArray();
             if(rows.length > 0)
-                await mongoClient.db(config.dbName).collection(temp_collection).insertMany(rows);
-            collection =  mongoClient.db(config.dbName).collection(temp_collection);
-            let result = await collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
-            await collection.drop();
-            let results = [];
-            let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
-            let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
+                await temp_collection.insertMany(rows);
+
+            // fetch approval_events
+            collection =  mongoClient.db(config.dbName).collection('pasar_approval_event');
+            rows = await collection.aggregate([
+                { $project: {'_id': 0, blockNumber: 1, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
+                { $match: methodCondition_approval }
+            ]).toArray();
+            if(rows.length > 0)
+                await temp_collection.insertMany(rows);
+            
+            // fetch results from temporary collection
+            let result = await temp_collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
+            await temp_collection.drop();
             for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
             {
                 if(i >= result.length)
                     break;
+                if(result[i]['event'] == 'SetApprovalForAll') {
+                    results.push(result[i]);
+                    continue;
+                }
                 let res  = await collection_token.findOne({tokenId: result[i]['tokenId']});
                 if(res != null) {
                     result[i]['name'] = res['name'];
