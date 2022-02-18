@@ -1329,7 +1329,7 @@ module.exports = {
                 }
                 itemType_condition = {$or: itemType_condition};
                 minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
-                maxPrice = BigInt(maxPrice, 10) / c;
+                maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
                 let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
                 let availableOrders = await collection.aggregate([
                     {
