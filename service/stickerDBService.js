@@ -1605,6 +1605,32 @@ module.exports = {
         }
     },
 
+    updateOrder: async function(result, blockNumber, orderId) {
+        try {
+            // let result = await pasarContract.methods.getOrderById(orderId).call();
+            let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
+                tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), endTime: result.endTime,
+                sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                createTime: result.createTime, updateTime: result.updateTime, blockNumber}
+
+            if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
+                let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
+                if(extraInfo.sellerUri !== '') {
+                    pasarOrder.platformAddr = extraInfo.platformAddr;
+                    pasarOrder.platformFee = extraInfo.platformFee;
+                    pasarOrder.sellerUri = extraInfo.sellerUri;
+                    pasarOrder.sellerDid = await jobService.getInfoByIpfsUri(extraInfo.sellerUri);
+
+                    await pasarDBService.replaceDid({address: result.sellerAddr, did: pasarOrder.sellerDid});
+                }
+            }
+            await pasarDBService.updateOrInsert(pasarOrder);
+        } catch(error) {
+            console.log(error);
+            console.log(`[OrderForSale] Sync - getOrderById(${orderId}) at ${blockNumber} call error`);
+        }
+    },
     updateBurnTokens: async function(){
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

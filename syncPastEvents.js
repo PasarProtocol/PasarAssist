@@ -48,34 +48,6 @@ let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.sticke
 let now = Date.now();
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let updateOrder = async function(result, blockNumber) {
-    try {
-        let orderId = result.orderId;
-        let pasarOrder = {orderId: result.orderId, orderType: result.orderType, orderState: result.orderState,
-            tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), endTime: result.endTime,
-            sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
-            lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-            createTime: result.createTime, updateTime: result.updateTime, blockNumber}
-
-        if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
-            let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
-            if(extraInfo.sellerUri !== '') {
-                pasarOrder.platformAddr = extraInfo.platformAddr;
-                pasarOrder.platformFee = extraInfo.platformFee;
-                pasarOrder.sellerUri = extraInfo.sellerUri;
-                pasarOrder.sellerDid = await jobService.getInfoByIpfsUri(extraInfo.sellerUri);
-
-                await pasarDBService.replaceDid({address: result.sellerAddr, did: pasarOrder.sellerDid});
-            }
-        }
-
-        await pasarDBService.updateOrInsert(pasarOrder);
-    } catch(error) {
-        console.log(error);
-        console.log(`[OrderForSale] Sync - getOrderById(${orderId}) at ${blockNumber} call error`);
-    }
-}
-
 let orderForSaleJobCurrent = config.pasarContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy,
     orderCanceledJobCurrent = config.pasarContractDeploy,
@@ -116,8 +88,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
             orderForSaleJobCurrent = toBlock + 1;
         }).catch(error => {
@@ -156,8 +127,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
 
             orderPriceChangedJobCurrent = toBlock + 1;
@@ -195,8 +165,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
             orderFilledJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -233,8 +202,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
             orderCanceledJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -431,8 +399,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketAuction');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
             orderForAuctionJobCurrent = toBlock + 1;
         }).catch( error => {
@@ -467,8 +434,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
 
                 console.log(`[OrderBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await updateOrder(result, event.blockNumber);
-                // await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid');
+                await stickerDBService.updateOrder(result, event.blockNumber, result.orderId);
             })
             orderBidJobCurrent = toBlock + 1;
         }).catch( error => {

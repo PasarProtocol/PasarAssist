@@ -33,7 +33,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.upgradeBlock - 1;
+                return config.upgradeBlock;
             }
         } catch (err) {
             logger.error(err);
