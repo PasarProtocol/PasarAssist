@@ -13,7 +13,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.galleriaContractDeploy - 1;
+                return config.galleriaContractDeploy;
             }
         } catch (err) {
             logger.error(err);
