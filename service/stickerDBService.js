@@ -7,6 +7,7 @@ const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
 const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
+let jobService = require('./jobService');
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
