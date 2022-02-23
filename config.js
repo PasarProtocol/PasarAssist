@@ -32,6 +32,14 @@ module.exports = {
         jwtSecret: 'pasar', // Used to encode JWT tokens
     },
     burnAddress: '0x0000000000000000000000000000000000000000',
-    cmcApiKeys: [],
+    cmcApiKeys: [
+        "521e2027-4f7e-4fa3-8a13-37ba061023f4",
+        "4fa7c6d7-5725-4342-a189-7d0cef2b906b",
+        "1b6a40f4-8c0f-4605-8502-6d3385da0db1",
+        "355418f4-6912-45f1-8ea6-b16a235b3859",
+        "2192fabc-19cc-4f97-8bc8-67cdbe6f1cc2",
+        "2ea8215e-022d-4d65-b8d8-48dee70daa9e",
+        "c6d2dedb-c75c-4bbe-8e59-80dcd49145e6"
+    ],
     curNetwork: 'testNet'
 }
