@@ -427,4 +427,13 @@ router.get('/updateTokens', function(req, res) {
     })
 })
 
+router.get('/getLatestElaPrice', function(req, res) {
+    stickerDBService.getLatestElaPrice().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 module.exports = router;
