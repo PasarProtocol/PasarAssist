@@ -6,6 +6,7 @@ let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
 const config_test = require("../config_test");
+let Web3 = require('web3');
 let pasarContractABI = require('../contractABI/pasarABI');
 config = config.curNetwork == 'testNet'? config_test : config;
 let jobService = require('./jobService');

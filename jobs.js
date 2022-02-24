@@ -9,6 +9,7 @@ let pasarContractABI = require('./contractABI/pasarABI');
 let stickerContractABI = require('./contractABI/stickerABI');
 let galleriaContractABI = require('./contractABI/galleriaABI');
 let jobService = require('./service/jobService');
+let authService  = require('./service/authService')
 let sendMail = require('./send_mail');
 const config_test = require("./config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
@@ -86,6 +87,9 @@ module.exports = {
                     token.didUri = extraInfo.didUri;
                     token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
                     await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
+                    if(token.did.KYCedProof != undefined) {
+                        await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
+                    }
                 }
 
                 if(token.type === 'feeds-channel') {
