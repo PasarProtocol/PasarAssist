@@ -6,6 +6,7 @@ let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
 const config_test = require("../config_test");
+let pasarContractABI = require('../contractABI/pasarABI');
 config = config.curNetwork == 'testNet'? config_test : config;
 let jobService = require('./jobService');
 
@@ -117,7 +118,7 @@ module.exports = {
         }
     },
     getLatestElaPrice: async function () {
-        let latest_price;
+        let latest_price = 0;
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
@@ -369,13 +370,16 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status) {
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber) {
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({ tokenId }, {$set: {price, orderId, status, marketTime, endTime}});
+            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status, price, orderId, marketTime, endTime, blockNumber}});
+            if(holder != config.stickerContract && holder != null) {
+                await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
+            }
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -1625,6 +1629,8 @@ module.exports = {
     },
 
     updateOrder: async function(result, blockNumber, orderId) {
+        let web3Rpc = new Web3(config.escRpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
         try {
             // let result = await pasarContract.methods.getOrderById(orderId).call();
             let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
