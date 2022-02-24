@@ -153,7 +153,7 @@ module.exports = {
                 logger.info(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber);
             })
         });
 
@@ -191,7 +191,7 @@ module.exports = {
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged', result.sellerAddr, event.blockNumber);
             })
         });
 
@@ -230,7 +230,7 @@ module.exports = {
                 logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale', result.buyerAddr, event.blockNumber);
             })
         });
 
@@ -267,7 +267,7 @@ module.exports = {
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, null, null, 'Not on sale', result.sellerAddr, event.blockNumber);
             })
         });
 
@@ -377,7 +377,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                    // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
             })
         });
@@ -419,7 +419,7 @@ module.exports = {
                 let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee};
                 logger.info(`[TokenInfoWithMemo] transferToken: ${JSON.stringify(transferEvent)}`)
                 await stickerDBService.addEvent(transferEvent);
-                await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
         });
 
@@ -461,7 +461,7 @@ module.exports = {
                 logger.info(`[OrderForAuction] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketAuction');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketAuction', result.sellerAddr, event.blockNumber);
             })
         });
 
@@ -501,7 +501,7 @@ module.exports = {
                 logger.info(`[OrderForBid] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid');
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid', result.sellerAddr, event.blockNumber);
             })
         });
 
