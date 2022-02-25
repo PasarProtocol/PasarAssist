@@ -431,18 +431,18 @@ module.exports = {
 
         let orderForAuctionJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction');
-            if(isGetOrderForAuctionJobRun == false) {
-                //initial state
-                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForAuction');
-            } else {
-                lastHeight += 1;
-            }
+            // if(isGetOrderForAuctionJobRun == false) {
+            //     //initial state
+            //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForAuction');
+            // } else {
+            //     lastHeight += 1;
+            // }
             isGetOrderForAuctionJobRun = true;
 
-            logger.info(`[OrderForAuction] Sync start from height: ${lastHeight}`);
+            logger.info(`[OrderForAuction] Sync start from height: ${lastHeight + 1}`);
 
             pasarContractWs.events.OrderForAuction({
-                fromBlock: lastHeight
+                fromBlock: lastHeight + 1
             }).on("error", function (error) {
                 logger.info(error);
                 logger.info("[OrderForAuction] Sync Ending ...")
@@ -471,18 +471,18 @@ module.exports = {
 
         let orderBidJobId = schedule.scheduleJob(new Date(now + 110 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid');
-            if(isGetOrderBidJobRun == false) {
-                //initial state
-                stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderBid');
-            } else {
-                lastHeight += 1;
-            }
+            // if(isGetOrderBidJobRun == false) {
+            //     //initial state
+            //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderBid');
+            // } else {
+            //     lastHeight += 1;
+            // }
             isGetOrderBidJobRun = true;
 
-            logger.info(`[OrderBid] Sync start from height: ${lastHeight}`);
+            logger.info(`[OrderBid] Sync start from height: ${lastHeight + 1}`);
 
             pasarContractWs.events.OrderBid({
-                fromBlock: lastHeight
+                fromBlock: lastHeight + 1
             }).on("error", function (error) {
                 logger.info(error);
                 logger.info("[OrderBid] Sync Ending ...")
