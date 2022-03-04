@@ -45,7 +45,6 @@ module.exports = {
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerContract);
         let galleriaContractWs = new web3Ws.eth.Contract(galleriaContractABI, config.galleriaContract);
 
-
         let web3Rpc = new Web3(config.escRpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
         let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);

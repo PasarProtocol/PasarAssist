@@ -94,6 +94,7 @@ module.exports = {
                         entry: "$token.entry", avatar: "$token.avatar", tokenDid: "$token.did", version: '$token.tokenJsonVersion'}},
 
             ]).toArray();
+            console.log(result);
             return {code: 200, message: 'success', data: result[0]};
         } catch (err) {
             logger.error(err);
