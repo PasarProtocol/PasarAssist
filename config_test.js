@@ -19,8 +19,12 @@ module.exports = {
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     galleriaContract: '0x8b3c7Fc42d0501e0367d29426421D950f45F5041',
+    pasarV2Contract: '0xcc30e6c72b42A9D9d77E8C87Cbd3b76E567796D5',
+    stickerV2Contract: '0xcB13f1a8f68f17A7BCF91A946746930685ad233e',
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
+    pasarV2ContractDeploy: 10968238,
+    stickerV2ContractDeploy: 10968230,
     galleriaContractDeploy: 10242686,
   
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
