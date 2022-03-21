@@ -9,6 +9,7 @@ let authApi = require('./routes/authApi');
 let apiV2 = require('./routes/apiV2');
 let routeV2 = require('./routes/v2/route');
 let jobs = require('./jobs');
+let jobsV2 = require('./jobsV2');
 let log4js = require('log4js');
 let cors = require('cors');
 let { DefaultDIDAdapter } =  require('@elastosfoundation/did-js-sdk');
@@ -45,5 +46,6 @@ let resolverUrl = "https://api.trinity-tech.cn/eid";
 DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 
 jobs.run()
+jobsV2.run()
 
 module.exports = app;

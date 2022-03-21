@@ -371,13 +371,20 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber) {
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null) {
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status, price, orderId, marketTime, endTime, blockNumber}});
+            let updateData = {status, price, orderId, marketTime, endTime, blockNumber, quoteToken};
+            if(!quoteToken) {
+                updateData.quoteToken = quoteToken;
+            }
+            if(!baseToken) {
+                updateData.baseToken = baseToken;
+            }
+            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
             if(holder != config.stickerContract && holder != null) {
                 await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
             }
