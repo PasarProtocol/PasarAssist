@@ -55,15 +55,15 @@ module.exports = {
         let isGetApprovalRun = false;
         let isGetOrderForAuctionJobRun = false;
         let isGetOrderBidJobRun = false;
+        let isOrderDidURIJobRun = false;
         let now = Date.now();
 
         let recipients = [];
         recipients.push('lifayi2008@163.com');
         async function dealWithNewToken(blockNumber,tokenId) {
             try {
-                let [result, extraInfo] = await jobService.makeBatchRequest([
+                let [result] = await jobService.makeBatchRequest([
                     {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
-                    {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
                 ], web3Rpc);
 
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
@@ -77,15 +77,6 @@ module.exports = {
                 token.name = data.name;
                 token.description = data.description;
                 token.properties = data.properties;
-
-                if(extraInfo.didUri !== '') {
-                    token.didUri = extraInfo.didUri;
-                    token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                    await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                    if(token.did.KYCedProof != undefined) {
-                        await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
-                    }
-                }
 
                 if(token.type === 'feeds-channel') {
                     token.tippingAddress = data.tippingAddress;
@@ -118,6 +109,32 @@ module.exports = {
                 logger.info(e);
             }
         }
+
+        let orderDidURIJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+
+            isOrderDidURIJobRun = true;
+
+            logger.info(`[OrderDidURI2] Sync start from height: ${lastHeight + 1}`);
+
+            pasarContractWs.events.OrderDIDURI({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[OrderDidURI2] Sync Ending ...")
+                isOrderDidURIJobRun = false;
+                
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                let token = {orderId: orderInfo._orderId}
+                token.didUri = orderInfo._sellerUri;
+                token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
+                await pasarDBService.replaceDid({address: orderInfo._seller, did: orderInfo._sellerUri});
+                if(token.did.KYCedProof != undefined) {
+                    await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
+                }
+                await stickerDBService.replaceToken(token);
+            })
+        });
 
         let orderForSaleJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale');
@@ -540,6 +557,8 @@ module.exports = {
                 orderForAuctionJobId.reschedule(new Date(now + 100 * 1000))
             if(!isGetOrderBidJobRun)
                 orderBidJobId.reschedule(new Date(now + 110 * 1000))
+            if(!isOrderDidURIJobRun)
+                orderDidURIJobId.reschedule(new Date(now + 110 * 1000))
         });
 
         /**

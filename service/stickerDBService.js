@@ -342,6 +342,20 @@ module.exports = {
         }
     },
 
+    updateDidTokenByDid: async function (token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection.replaceOne({orderId: token.orderId}, token, {upsert: true});
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     replaceGalleriaToken: async function (token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
