@@ -934,6 +934,11 @@ module.exports = {
                 result['DateOnMarket'] = orderForMarketRecord[0]['createTime'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
                 result['OrderId'] = orderForMarketRecord[0]['orderId'];
+                result['baseToken'] = orderForMarketRecord[0]['baseToken'] ? orderForMarketRecord[0]['baseToken'] : null;
+                result['amount'] = orderForMarketRecord[0]['amount'] ? orderForMarketRecord[0]['amount'] : null;
+                result['quoteToken'] = orderForMarketRecord[0]['quoteToken'] ? orderForMarketRecord[0]['quoteToken'] : null;
+                result['buyoutPrice'] = orderForMarketRecord[0]['buyoutPrice'] ? orderForMarketRecord[0]['buyoutPrice'] : null;
+                result['minPrice'] = orderForMarketRecord[0]['minPrice'] ? orderForMarketRecord[0]['minPrice'] : null;
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
@@ -1302,15 +1307,26 @@ module.exports = {
             let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let marketTokens = await collection.aggregate([
+                { $lookup: {from: "pasar_order", localField: "tokenId", foreignField: "tokenId", as: "tokenOrder"} },
+                { $lookup: {from: "pasar_order_event",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
+                    as: "currentBid"}},
                 {
                     $addFields: {
                         "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
                     }
                 },
-                { $match: {$and: [market_condition, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
-                { $project: {"_id": 0} },
+                { $unwind: "$tokenOrder"},
+                { $match: {$and: [market_condition, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
+                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
+                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                baseToken: "$tokenOrder.baseToken", currentBid: 1, thumbnail: 1, kind: 1 },},
                 { $sort: sort }
             ]).toArray();
+            
             let total = marketTokens.length;
             let result = this.paginateRows(marketTokens, pageNum, pageSize);
             return {code: 200, message: 'success', match: {$and: [market_condition, status_condition, price_condition, {orderState: '1'}, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]}, data: {total, result}};
@@ -1662,10 +1678,11 @@ module.exports = {
         try {
             // let result = await pasarContract.methods.getOrderById(orderId).call();
             let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
-                tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), endTime: result.endTime,
+                tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
                 sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                 lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-                createTime: result.createTime, updateTime: result.updateTime, blockNumber}
+                baseToken: result.baseToken, amount: result.amount, quoteToken: result.quoteToken, buyoutPrice: result.buyoutPrice,
+                minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, blockNumber}
 
             if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
                 let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
