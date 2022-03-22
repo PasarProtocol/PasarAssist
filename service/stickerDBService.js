@@ -1245,6 +1245,7 @@ module.exports = {
     getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};
+        let rateEndTime = {};
         switch (order) {
             case '0':
                 sort = {marketTime: -1};
@@ -1264,6 +1265,12 @@ module.exports = {
             case '5':
                 sort = {price: -1};
                 break;
+            case '6':
+                sort = {createTime: -1}
+                let current = Date.now();
+                let endTime = Math.floor((current + (24 * 60 * 60 * 1000))/1000).toString();
+                current = Math.floor(current/1000).toString();
+                rateEndTime = {$and: [{endTime: {$gte: current}}, {endTime: {$lte: endTime}}]};
             default:
                 sort = {marketTime: -1}
         }

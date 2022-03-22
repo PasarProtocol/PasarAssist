@@ -111,6 +111,7 @@ module.exports = {
         }
 
         let orderDidURIJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderDIDURI');
 
             isOrderDidURIJobRun = true;
 
