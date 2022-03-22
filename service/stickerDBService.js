@@ -940,10 +940,16 @@ module.exports = {
             }
             if(priceRecord.length > 0) {
                 result['Price'] = priceRecord[0].price;
+                result['orderType'] = priceRecord[0].orderType;
+                result['createTime'] = priceRecord[0].createTime;
+                result['endTime'] = priceRecord[0].endTime;
             } else 
             result['Price'] = 0;
             if(result.type == 'image')
                 result.type = "General";
+            collection = client.db(config.dbName).collection('pasar_order_event');
+            let listBid = await collection.find({tokenId: tokenId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
+            result.listBid = listBid;
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
