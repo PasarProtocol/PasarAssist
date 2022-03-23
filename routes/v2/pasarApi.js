@@ -235,7 +235,7 @@ router.post('/collection', function(req, res) {
         medium: req.body.medium,
         ownerAddress: req.body.ownerAddress,
         ownerName: req.body.ownerName,
-        tokenId: [],
+        tokenIds: [],
         soldTokenIds: [],
         like: 0,
         unlike: 0,
@@ -256,6 +256,17 @@ router.get('/collectionlists', function(req, res) {
     let sortType = req.query.sortType;
 
     pasarDBService.getCollectionList(address, sortType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/collection', function(req, res) {
+    let id = req.query.id;
+
+    pasarDBService.getCollectionList(id).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

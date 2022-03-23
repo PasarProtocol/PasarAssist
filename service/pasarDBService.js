@@ -1,5 +1,6 @@
 let config = require('../config');
 let MongoClient = require('mongodb').MongoClient;
+var ObjectID = require('mongodb').ObjectID;
 let redisService = require('../service/redisService');
 const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
@@ -387,6 +388,21 @@ module.exports = {
         }
     },
 
+    getTokenBatch: async function(listId) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let listToken = await collection.find({tokenId: {$in: listId}}).toArray();
+            return listToken;
+        } catch (err) {
+            logger.error(err);
+            return [];
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     createCollection: async function(data) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -415,8 +431,26 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_collection');
-            let list = await collection.find({ownerAddress: address}).toArray();
+            let list = await collection.find({ownerAddress: address}).sort(sort).toArray();
             return {code: 200, message: 'success', data: list};
+
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getCollection: async function(id) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection');
+            let data = await collection.findOne({_id: ObjectID(id)});
+            data.tokens = await this.getTokenBatch(collection.tokenIds);
+            return {code: 200, message: 'success', data: data};
 
         } catch (err) {
             logger.error(err);
