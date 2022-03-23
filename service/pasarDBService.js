@@ -385,5 +385,44 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
-    }
+    },
+
+    createCollection: async function(data) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection');
+            await collection.insertOne(data);
+            return {code: 200, message: 'success'};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getCollectionList: async function(address, sortType) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let sort = {};
+        switch(sortType) {
+            case 'latest': 
+                sort = {createdTime: -1}
+                break;
+            default:
+                break;
+        }
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection');
+            let list = await collection.find({ownerAddress: address}).toArray();
+            return {code: 200, message: 'success', data: list};
+
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }

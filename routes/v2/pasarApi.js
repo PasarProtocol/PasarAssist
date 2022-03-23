@@ -215,4 +215,52 @@ router.get('/getDidByAddress', function(req, res) {
     })
 })
 
+router.post('/collection', function(req, res) {
+    let now = (new Date()/1000).toFixed();
+
+    let data = {
+        address: req.body.address,
+        name: req.body.name,
+        symbol: req.body.symbol,
+        tokenJsonVersion: req.body.tokenJsonVersion,
+        avatar: req.body.avatar,
+        coverImg: req.body.coverImg,
+        description: req.body.description,
+        feeAddress: req.body.feeAddress,
+        royalty: req.body.royalty,
+        website: req.body.website,
+        twitter: req.body.twitter,
+        discord: req.body.discord,
+        telegram: req.body.telegram,
+        medium: req.body.medium,
+        ownerAddress: req.body.ownerAddress,
+        ownerName: req.body.ownerName,
+        tokenId: [],
+        soldTokenIds: [],
+        like: 0,
+        unlike: 0,
+        createdTime: now,
+        updatedTime: now,
+    }
+
+    pasarDBService.createCollection(data).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+router.get('/collectionlists', function(req, res) {
+    let address = req.query.address;
+    let sortType = req.query.sortType;
+
+    pasarDBService.getCollectionList(address, sortType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 module.exports = router;
