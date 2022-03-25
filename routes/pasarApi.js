@@ -170,6 +170,8 @@ router.get('/searchSaleOrders', function (req, res) {
     let searchType = req.query.searchType;
     let key = req.query.key;
     let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
+    let sortType = req.query.sortType === 'price' ? 'price' : 'createTime';
+    let sort = req.query.sort === "asc" ? 1 : -1;
 
     if(!key) {
         res.json({code: 400, message: 'bad request'});
@@ -184,7 +186,7 @@ router.get('/searchSaleOrders', function (req, res) {
         searchType = undefined;
     }
 
-    pasarDBService.searchSaleOrders(searchType, key, adult).then(result => {
+    pasarDBService.searchSaleOrders(searchType, key, adult, sortType, sort).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

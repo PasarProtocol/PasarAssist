@@ -156,7 +156,7 @@ module.exports = {
         }
     },
 
-    searchSaleOrders: async function(searchType, key, adult) {
+    searchSaleOrders: async function(searchType, key, adult, sortType, sort) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -196,7 +196,8 @@ module.exports = {
                 pipeline.push({$match: match})
             }
             pipeline.push({$project: this.resultProject})
-            pipeline.push({$sort: {blockNumber: -1}})
+            // pipeline.push({$sort: {blockNumber: -1}})
+            pipeline.push({$sort: {[sortType]: sort}})
 
             let result = await collection.aggregate(pipeline).toArray();
 

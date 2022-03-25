@@ -29,7 +29,16 @@ router.get('/ip', function (req, res) {
 })
 
 router.get('/price', function (req, res) {
-    dbService.getLatestPrice().then(result => {res.json(result)});
+    dbService.getLatestPrice().then(result => {
+        if(req.query.coin) {
+            let coin = req.query.coin.toUpperCase();
+            if(result[coin]) {
+                res.json(result[coin]);
+                return;
+            }
+        }
+        res.json(result)
+    });
 })
 
 router.post('/diaBalance', function (req, res) {
