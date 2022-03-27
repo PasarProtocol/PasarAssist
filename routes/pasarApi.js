@@ -170,7 +170,7 @@ router.get('/searchSaleOrders', function (req, res) {
     let searchType = req.query.searchType;
     let key = req.query.key;
     let adult = req.query.adult === undefined ? undefined : req.query.adult === 'true';
-    let sortType = req.query.sortType === 'price' ? 'price' : 'createTime';
+    let sortType = req.query.sortType === 'price' ? 'priceNumber' : 'blockNumber';
     let sort = req.query.sort === "asc" ? 1 : -1;
 
     if(!key) {
