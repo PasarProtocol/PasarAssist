@@ -56,6 +56,7 @@ module.exports = {
         let isGetOrderForAuctionJobRun = false;
         let isGetOrderBidJobRun = false;
         let isOrderDidURIJobRun = false;
+        let isTokenTransferBatchJobRun = false;
         let now = Date.now();
 
         let recipients = [];
@@ -106,6 +107,59 @@ module.exports = {
                 await stickerDBService.replaceToken(token);
             } catch (e) {
                 logger.info(`[TokenInfo2] Sync error at ${blockNumber} ${tokenId}`);
+                logger.info(e);
+            }
+        }
+
+        async function dealWithNewTokenBatch(blockNumber,tokenIds) {
+            try {
+                let [results] = await jobService.tokenInfoBatch([
+                    {method: stickerContract.methods.tokenInfoBatch(tokenIds).call, params: {}},
+                ], web3Rpc);
+
+                let tokens = [];
+                results.map(async result => {
+                    let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
+                        royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
+                        createTime: result.createTime, updateTime: result.updateTime}
+                    token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
+                    let data = await jobService.getInfoByIpfsUri(result.tokenUri);
+                    token.tokenJsonVersion = data.version;
+                    token.type = data.type;
+                    token.name = data.name;
+                    token.description = data.description;
+                    token.properties = data.properties;
+    
+                    if(token.type === 'feeds-channel') {
+                        token.tippingAddress = data.tippingAddress;
+                        token.entry = data.entry;
+                        token.avatar = data.avatar;
+                        logger.info(`[TokenInfo2] New token info: ${JSON.stringify(token)}`)
+                        await stickerDBService.replaceGalleriaToken(token);
+                        return;
+                    }
+    
+                    if(token.type === 'video' || data.version === "2") {
+                        token.data = data.data;
+                    } else {
+                        token.thumbnail = data.thumbnail;
+                        token.asset = data.image;
+                        token.kind = data.kind;
+                        token.size = data.size;
+                    }
+    
+                    token.adult = data.adult ? data.adult : false;
+                    token.price = 0;
+                    token.marketTime = null;
+                    token.status = "Not on sale";
+                    token.endTime = null;
+                    token.orderId = null;
+                    tokens.push(token);
+                    logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                    await stickerDBService.replaceToken(tokens);
+                })
+            } catch (e) {
+                logger.info(`[TokenInfo2] Sync error at ${blockNumber} ${tokenIds}`);
                 logger.info(e);
             }
         }
@@ -393,6 +447,58 @@ module.exports = {
             })
         });
 
+        let tokenTransferBatchSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+            isTokenTransferBatchJobRun = true;
+            logger.info(`[TransferBatch] Sync Starting ... from block ${lastHeight + 1}`)
+
+            stickerContractWs.events.TransferBatch({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[TransferBatch] Sync Ending ...");
+                isTokenTransferBatchJobRun = false
+            }).on("data", async function (event) {
+                let blockNumber = event.blockNumber;
+                let txHash = event.transactionHash;
+                let txIndex = event.transactionIndex;
+                let from = event.returnValues._from;
+                let to = event.returnValues._to;
+
+                //After contract upgrade, this job just deal Mint and Burn event
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                //     return;
+                // }
+
+                let tokenIds = event.returnValues._ids;
+                let values = event.returnValues._values;
+
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+                    {method: web3Rpc.eth.getBlock, params: blockNumber},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+                let timestamp = blockInfo.timestamp;
+
+                for(var i = 0; i < tokenIds.length; i++) {
+                    let tokenId = tokenIds[i];
+                    let value = values[i];
+                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
+                    logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
+                    await stickerDBService.replaceEvent(transferEvent);
+                }
+                
+
+                if(to === burnAddress) {
+                    await stickerDBService.burnTokenBatch(tokenIds);
+                } else if(from === burnAddress) {
+                    await dealWithNewTokenBatch(blockNumber, tokenIds)
+                } else {
+                    // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                }
+            })
+        });
+
         let tokenInfoWithMemoSyncJobId = schedule.scheduleJob(new Date(now + 20 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
             // if(isGetTokenInfoWithMemoJobRun == false) {
@@ -560,6 +666,8 @@ module.exports = {
                 orderBidJobId.reschedule(new Date(now + 110 * 1000))
             if(!isOrderDidURIJobRun)
                 orderDidURIJobId.reschedule(new Date(now + 110 * 1000))
+            if(!isTokenTransferBatchJobRun)
+                tokenTransferBatchSyncJobId.reschedule(new Date(now + 60 * 1000))
         });
 
         /**

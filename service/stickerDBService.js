@@ -328,6 +328,22 @@ module.exports = {
         }
     },
 
+    burnTokenBatch: async function (tokenIds) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection.update({tokenId: {$in: tokenIds}}, {$set: {
+                    holder: config.burnAddress
+            }});
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     replaceToken: async function (token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
