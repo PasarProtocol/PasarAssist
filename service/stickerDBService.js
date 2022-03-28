@@ -1523,7 +1523,14 @@ module.exports = {
                     sort = {createTime: -1}
             }
             let tokens = await token_collection.aggregate([
+                { $lookup: {from: "pasar_order", localField: "tokenId", foreignField: "tokenId", as: "tokenOrder"} },
                 { $match: {$and: [{holder: address}]} },
+                { $unwind: "$tokenOrder"},
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
+                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
+                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                baseToken: "$tokenOrder.baseToken", currentBid: 1, thumbnail: 1, kind: 1 },},
                 { $sort: sort }
             ]).toArray();
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
