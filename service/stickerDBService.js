@@ -298,6 +298,19 @@ module.exports = {
         }
     },
 
+    addEvents: async function(transferEvents) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            const collection = client.db(config.dbName).collection('pasar_token_event');
+            await collection.insert(transferEvents);
+        } catch (err) {
+            logger.error(err);
+        } finally {
+            await client.close();
+        }
+    },
+
     replaceEvent: async function(transferEvent) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let {tokenId, blockNumber} = transferEvent
