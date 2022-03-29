@@ -78,12 +78,96 @@ module.exports = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_didUri",
+        "type": "string"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_swapPath",
+        "type": "address[]"
+      }
+    ],
+    "name": "buySplittableOrderWithETH",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_didUri",
+        "type": "string"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_swapPath",
+        "type": "address[]"
+      }
+    ],
+    "name": "buySplittableOrderWithToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getCodeAddress",
     "outputs": [
       {
         "internalType": "address",
         "name": "_codeAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getConfig",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "_pasarV2",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_splittableMarket",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_uniswapV2",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_weth",
         "type": "address"
       }
     ],
@@ -102,6 +186,11 @@ module.exports = [
       {
         "internalType": "address",
         "name": "_pasarV2",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_splittableMarket",
         "type": "address"
       },
       {

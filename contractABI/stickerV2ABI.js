@@ -110,6 +110,44 @@ module.exports = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "RoyaltyFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "RoyaltyOwner",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "_operator",
@@ -566,6 +604,11 @@ module.exports = [
         "internalType": "string",
         "name": "_uri",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_royaltyFee",
+        "type": "uint256"
       }
     ],
     "name": "mint",
@@ -589,6 +632,11 @@ module.exports = [
         "internalType": "string[]",
         "name": "_uris",
         "type": "string[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_royaltyFees",
+        "type": "uint256[]"
       }
     ],
     "name": "mintBatch",
@@ -799,6 +847,11 @@ module.exports = [
         "type": "string"
       },
       {
+        "internalType": "uint256",
+        "name": "_royaltyFee",
+        "type": "uint256"
+      },
+      {
         "internalType": "bytes",
         "name": "_data",
         "type": "bytes"
@@ -825,6 +878,11 @@ module.exports = [
         "internalType": "string[]",
         "name": "_uris",
         "type": "string[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_royaltyFees",
+        "type": "uint256[]"
       },
       {
         "internalType": "bytes[]",
@@ -1265,6 +1323,16 @@ module.exports = [
           },
           {
             "internalType": "address",
+            "name": "royaltyOwner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "royaltyFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
             "name": "tokenMinter",
             "type": "address"
           },
@@ -1279,7 +1347,7 @@ module.exports = [
             "type": "uint256"
           }
         ],
-        "internalType": "struct IToken1155Info.TokenInfo",
+        "internalType": "struct ITokenGeneralInfo.TokenInfo",
         "name": "",
         "type": "tuple"
       }
@@ -1321,6 +1389,16 @@ module.exports = [
           },
           {
             "internalType": "address",
+            "name": "royaltyOwner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "royaltyFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
             "name": "tokenMinter",
             "type": "address"
           },
@@ -1335,9 +1413,85 @@ module.exports = [
             "type": "uint256"
           }
         ],
-        "internalType": "struct IToken1155Info.TokenInfo[]",
+        "internalType": "struct ITokenGeneralInfo.TokenInfo[]",
         "name": "",
         "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenRoyaltyFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "tokenRoyaltyFeeBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenRoyaltyOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "tokenRoyaltyOwnerBatch",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
