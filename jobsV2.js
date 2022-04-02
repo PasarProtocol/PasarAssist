@@ -622,7 +622,7 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
                     quoteToken:orderInfo._quoteToken, minPrice:orderInfo._minPrice, reservePrice: orderInfo._reservePrice,
-                    buyoutPrice: orderInfo_buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: result.price, timestamp: result.updateTime, gasFee}
+                    buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: result.price, timestamp: result.updateTime, gasFee}
                 
                 result.sellerAddr = orderInfo._seller;
                 result.baseToken = orderInfo._baseToken;
