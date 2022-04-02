@@ -634,7 +634,7 @@ module.exports = {
                 result.buyoutPrice = orderInfo._buyoutPrice;
                 result.createTime = orderInfo._startTime;
                 result.endTime = orderInfo._endTime;
-
+                
                 logger.info(`[OrderForAuction2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);

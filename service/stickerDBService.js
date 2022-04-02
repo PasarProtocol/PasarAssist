@@ -932,7 +932,7 @@ module.exports = {
     },
 
     getCollectibleByTokenId: async function(tokenId) {
-        let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$to",
+        let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$token.holder",
         tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
@@ -967,6 +967,7 @@ module.exports = {
                 result['amount'] = orderForMarketRecord[0]['amount'] ? orderForMarketRecord[0]['amount'] : null;
                 result['quoteToken'] = orderForMarketRecord[0]['quoteToken'] ? orderForMarketRecord[0]['quoteToken'] : null;
                 result['buyoutPrice'] = orderForMarketRecord[0]['buyoutPrice'] ? orderForMarketRecord[0]['buyoutPrice'] : null;
+                result['reservePrice'] = orderForMarketRecord[0]['reservePrice'] ? orderForMarketRecord[0]['reservePrice'] : null;
                 result['minPrice'] = orderForMarketRecord[0]['minPrice'] ? orderForMarketRecord[0]['minPrice'] : null;
             } else {
                 result['DateOnMarket'] = "Not on sale";
@@ -1724,7 +1725,7 @@ module.exports = {
                 tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
                 sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                 lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-                baseToken: result.baseToken, amount: result.amount, quoteToken: result.quoteToken, buyoutPrice: result.buyoutPrice,
+                baseToken: result.baseToken, amount: result.amount, quoteToken: result.quoteToken, buyoutPrice: result.buyoutPrice, reservePrice: result.reservePrice,
                 minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, blockNumber}
 
             if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
