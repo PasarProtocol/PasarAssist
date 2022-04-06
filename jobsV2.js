@@ -226,12 +226,17 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
+
                 result.sellerAddr = orderInfo._seller;
                 result.tokenId = orderInfo._tokenId;
                 result.amount = orderInfo._amount;
                 result.price = orderInfo._price;
                 result.quoteToken = orderInfo._quoteToken;
                 result.baseToken = orderInfo._baseToken;
+                result.reservePrice = 0;
+                result.buyoutPrice = 0;
+                result.createTime = orderInfo._startTime;
+                result.endTime = 0;
 
                 logger.info(`[OrderForSale2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -268,13 +273,20 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
+                    price: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, reservePrice: {oldPrice: orderInfo._oldReservePrice, _newReservePrice: orderInfo._newPrice}, 
+                    buyoutPrice: {oldPrice: orderInfo._oldBuyoutPrice, newPrice: orderInfo._newBuyoutPrice}, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, timestamp: result.updateTime, gasFee}
+                
+                result.price = orderInfo._newPrice;
+                result.reservePrice = orderInfo._newReservePrice;
+                result.buyoutPrice = orderInfo._newBuyoutPrice;
+                result.price = orderInfo._newPrice;
+                result.quoteToken = orderInfo._newQuoteToken;
 
                 logger.info(`[OrderPriceChanged2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged', result.sellerAddr, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged', result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken);
             })
         });
 
@@ -309,7 +321,7 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
                     royaltyFee: orderInfo._royaltyFee, royaltyOwner:orderInfo._royaltyOwner, tokenId: result.tokenId, quoteToken:orderInfo._quoteToken,
-                    baseToken: orderInfo.baseToken, price: result.price, timestamp: result.updateTime, gasFee}
+                    baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
 
                 let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
                     txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
@@ -625,15 +637,15 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
-                    quoteToken:orderInfo._quoteToken, minPrice:orderInfo._minPrice, reservePrice: orderInfo._reservePrice,
-                    buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: result.price, timestamp: result.updateTime, gasFee}
+                    quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice,
+                    buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
                 
                 result.sellerAddr = orderInfo._seller;
                 result.baseToken = orderInfo._baseToken;
                 result.tokenId = orderInfo._tokenId;
                 result.amount = orderInfo._amount;
                 result.quoteToken = orderInfo._quoteToken;
-                result.minPrice = orderInfo._minPrice;
+                result.price = orderInfo._minPrice;
                 result.reservePrice = orderInfo._reservePrice;
                 result.buyoutPrice = orderInfo._buyoutPrice;
                 result.createTime = orderInfo._startTime;
