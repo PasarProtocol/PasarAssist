@@ -1943,7 +1943,20 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let result = await token_collection.find({token: token}).toArray();
+            let result = await token_collection.findOne({token: token});
+            return {code: 200, message: 'success', data: result};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getCollectionByOwner: async function(owner) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let result = await token_collection.find({owner: owner}).toArray();
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};

@@ -447,8 +447,17 @@ router.get('/getCollection', function(req, res) {
 
 router.get('/getCollection/:token', function(req, res) {
     let token = req.params.token;
-    console.log(token);
     stickerDBService.getCollectionByToken(token).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/getCollectionByOwner/:owner', function(req, res) {
+    let owner = req.params.owner;
+    stickerDBService.getCollectionByOwner(owner).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
