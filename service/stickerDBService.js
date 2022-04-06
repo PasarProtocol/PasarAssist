@@ -1856,5 +1856,99 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
-    }
+    },
+    collectionEvent: async function(orderEventDetail) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection_event');
+            await collection.insertOne(orderEventDetail);
+        } catch (err) {
+            throw new Error();
+        } finally {
+           await mongoClient.close();
+        }
+    },
+    getLastCollectionEventSyncHeight: async function (event) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection_event');
+            let doc = await collection.findOne({event}, {sort:{blockNumber:-1}})
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                return config.pasarRegisterContractDeploy;
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    registerCollection: async function(token, owner, name, uri) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
+
+            let data = {
+                token: token,
+                owner: owner,
+                name: name,
+                uri: uri,
+                createdTime: (new Date()/1000).toFixed()
+            }
+            await token_collection.insertOne(data);
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    changeCollectionRoyalty: async function(token, royaltyOwners, royaltyRates) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection_royalty');
+            let data = {
+                token: token,
+                royaltyOwner: royaltyOwners,
+                royaltyRates: royaltyRates
+            }
+            
+            await collection.insertOne(data);
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getCollections: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let result = await token_collection.find({}).toArray();
+            return {code: 200, message: 'success', data: result};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getCollectionByToken: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let result = await token_collection.find({token: token}).toArray();
+            return {code: 200, message: 'success', data: result};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }

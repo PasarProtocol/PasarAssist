@@ -436,4 +436,24 @@ router.get('/getLatestElaPrice', function(req, res) {
     })
 });
 
+router.get('/getCollection', function(req, res) {
+    stickerDBService.getCollections().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
+router.get('/getCollection/:token', function(req, res) {
+    let token = req.params.token;
+    console.log(token);
+    stickerDBService.getCollectionByToken(token).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 module.exports = router;

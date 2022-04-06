@@ -6,6 +6,7 @@ let indexDBService = require('./service/indexDBService');
 let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarV2ABI');
 let stickerContractABI = require('./contractABI/stickerV2ABI');
+let pasarRegisterABI = require('./contractABI/pasarRegisterABI');
 let jobService = require('./service/jobService');
 let authService  = require('./service/authService')
 let sendMail = require('./send_mail');
@@ -41,6 +42,7 @@ module.exports = {
         let web3Ws = new Web3(web3WsProvider);
         let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarV2Contract);
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerV2Contract);
+        let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarRegisterContract)
 
         let web3Rpc = new Web3(config.escRpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Contract);
@@ -58,6 +60,8 @@ module.exports = {
         let isOrderDidURIJobRun = false;
         let isTokenTransferBatchJobRun = false;
         let isGetTokenInfoWithBatchMemoJobRun = false;
+        let isTokenRegisteredJobRun = false;
+        let isRoyaltyChangedJobRun = false;
         let now = Date.now();
 
         let recipients = [];
@@ -682,6 +686,60 @@ module.exports = {
             })
         });
 
+        let tokenRegisteredJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered');
+
+            isTokenRegisteredJobRun = true;
+
+            logger.info(`[tokenRegistered] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+
+            pasarRegisterWs.events.TokenRegistered({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[tokenRegistered] Sync Ending ...")
+                isTokenRegisteredJobRun = false;
+                
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                logger.info(`[TokenRegistered] : ${JSON.stringify(orderInfo)}`);
+
+                let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+
+                await stickerDBService.collectionEvent(orderEventDetail);
+                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri);              
+            })
+        });
+
+        let royaltyChangedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged');
+
+            isRoyaltyChangedJobRun = true;
+
+            logger.info(`[TokenRoyaltyChanged] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+
+            pasarRegisterWs.events.TokenRoyaltyChanged({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[TokenRoyaltyChanged] Sync Ending ...")
+                isRoyaltyChangedJobRun = false;
+                
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                logger.info(`[TokenRoyaltyChanged] : ${JSON.stringify(orderInfo)}`);
+
+                let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+
+                await stickerDBService.collectionEvent(orderEventDetail);
+                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);                
+            })
+        });
+
         schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '0 */2 * * * *'}, () => {
             let now = Date.now();
 
@@ -717,6 +775,10 @@ module.exports = {
                 tokenTransferBatchSyncJobId.reschedule(new Date(now + 60 * 1000))
             if(!isGetTokenInfoWithBatchMemoJobRun)
                 tokenInfoWithBatchMemoSyncJobId.reschedule(new Date(now + 60 * 1000))
+            if(!isTokenRegisteredJobRun)
+                tokenRegisteredJobId.reschedule(new Date(now + 60 * 1000))
+            if(!isRoyaltyChangedJobRun)
+                royaltyChangedJobRun.reschedule(new Date(now + 60 * 1000))
         });
 
         /**
