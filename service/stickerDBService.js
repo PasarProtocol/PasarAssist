@@ -906,7 +906,7 @@ module.exports = {
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
                 { $unwind: "$token" },
                 { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
-                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1} },
+                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: 1} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
