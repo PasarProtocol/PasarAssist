@@ -18,6 +18,25 @@ module.exports = [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "_token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "_isGeneralToken",
+        "type": "bool"
+      }
+    ],
+    "name": "GeneralTokenSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -29,6 +48,62 @@ module.exports = [
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_token",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "TokenRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address[]",
+        "name": "_royaltyOwners",
+        "type": "address[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_royaltyRates",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TokenRoyaltyChanged",
     "type": "event"
   },
   {
