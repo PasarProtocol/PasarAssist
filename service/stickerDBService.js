@@ -420,7 +420,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let updateData = {status, price, orderId, marketTime, endTime, blockNumber, quoteToken};
+            let updateData = {price, orderId, marketTime, endTime, blockNumber, quoteToken};
+            if(status != null) {
+                updateData.status = status;
+            }
             if(!quoteToken) {
                 updateData.quoteToken = quoteToken;
             }
@@ -1298,9 +1301,9 @@ module.exports = {
             case '6':
                 sort = {createTime: -1}
                 let current = Date.now();
-                let endTime = Math.floor((current + (24 * 60 * 60 * 1000))/1000).toString();
+                let startTime = Math.floor((current - (24 * 60 * 60 * 1000))/1000).toString();
                 current = Math.floor(current/1000).toString();
-                rateEndTime = {$and: [{endTime: {$gte: current}}, {endTime: {$lte: endTime}}]};
+                rateEndTime = {$and: [{endTime: {$gte: startTime}}, {endTime: {$lte: current}}]};
             default:
                 sort = {marketTime: -1}
         }
@@ -1322,21 +1325,28 @@ module.exports = {
                 let collectionTypeArr = collectionType.split(',');
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
+            let endingTimeCheck = {};
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketSale'});
-                    status_condition.push({status: 'MarketPriceChanged'});
-                }
-                else if(ele == 'Listed'){
+                } else if(ele == 'Buy Now'){
+                    status_condition.push({status: 'MarketSale'});
+                } else if(ele == 'On Auction') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
+                } else if(ele == 'Has Bids') {
+                    status_condition.push({status: 'MarketBid'});
+                } else if(ele == 'Has Ended') {
+                    let current = Date.now();
+                    current = Math.floor(current/1000).toString();
+                    endingTimeCheck = {$and: [{endTime: {$gte: current}}]};
+                } else {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
-                }
-                else {
                     status_condition.push({status: 'MarketSale'});
-                    status_condition.push({status: 'MarketPriceChanged'});
                 }
             }
             status_condition = {$or: status_condition};
@@ -1368,7 +1378,7 @@ module.exports = {
                     }
                 },
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
