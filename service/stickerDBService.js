@@ -1310,7 +1310,7 @@ module.exports = {
             let status_condition = [];
             let statusArr = status.split(',');
             let tokenTypeCheck = {};
-            if(tokenType != null) {
+            if(tokenType != null && tokenType != '') {
                 let typeArr = tokenType.split(',');
                 if(typeArr.indexOf('0x0000000000000000000000000000000000000000') != -1) {
                     typeArr.push(null);
@@ -1318,7 +1318,7 @@ module.exports = {
                 tokenTypeCheck = {quoteToken: {$in: typeArr}};
             }
             let collectionTypeCheck = {};
-            if(collectionType != null) {
+            if(collectionType != null && collectionType != '') {
                 let collectionTypeArr = collectionType.split(',');
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
