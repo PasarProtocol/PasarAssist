@@ -321,6 +321,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let pageNumStr = req.query.pageNum;
     let pageSizeStr = req.query.pageSize;
     let keyword = req.query.keyword;
+    let tokenType = req.query.tokenType;
     let pageNum, pageSize;
 
     try {
@@ -338,7 +339,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
         return;
     }
 
-    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword).then(result => {
+    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, tokenType).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
