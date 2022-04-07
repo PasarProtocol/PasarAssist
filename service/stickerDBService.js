@@ -1313,10 +1313,15 @@ module.exports = {
             if(tokenType != null) {
                 let typeArr = tokenType.split(',');
                 if(typeArr.indexOf('0x0000000000000000000000000000000000000000') != -1) {
+                    typeArr.push(null);
                 }
                 tokenTypeCheck = {quoteToken: {$in: typeArr}};
             }
-            
+            let collectionTypeCheck = {};
+            if(collectionType != null) {
+                let collectionTypeArr = collectionType.split(',');
+                collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
+            }
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
@@ -1363,7 +1368,7 @@ module.exports = {
                     }
                 },
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",

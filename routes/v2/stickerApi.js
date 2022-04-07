@@ -314,7 +314,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let status = req.query.status;
     let minPrice = req.query.minPrice;
     let maxPrice = req.query.maxPrice;
-    let collectionType = req.query.collectiionType;
+    let collectionType = req.query.collectionType;
     let itemType = req.query.itemType;
     let adult = req.query.adult;
     let orderType = req.query.order;
