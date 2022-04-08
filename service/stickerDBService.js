@@ -1344,7 +1344,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck = {$and: [{endTime: {$gte: current}}]};
+                    endingTimeCheck = {$and: [{endTime: {$lte: current}}]};
                 } else {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
