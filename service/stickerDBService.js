@@ -1340,6 +1340,8 @@ module.exports = {
                 } else if(ele == 'Has Bids') {
                     status_condition.push({status: 'MarketBid'});
                 } else if(ele == 'Has Ended') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
                     endingTimeCheck = {$and: [{endTime: {$gte: current}}]};
