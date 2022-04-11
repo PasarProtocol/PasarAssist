@@ -937,7 +937,7 @@ module.exports = {
     getCollectibleByTokenId: async function(tokenId) {
         let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$token.holder",
         tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
-        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', tokenIdHex: '$token.tokenIdHex',
+        royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', endTime: '$token.endTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
         thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
         adult: "$token.adult", properties: "$token.properties", data: "$token.data", tokenJsonVersion: "$token.tokenJsonVersion"}
@@ -979,8 +979,6 @@ module.exports = {
             if(priceRecord.length > 0) {
                 result['Price'] = priceRecord[0].price;
                 result['orderType'] = priceRecord[0].orderType;
-                result['createTime'] = priceRecord[0].createTime;
-                result['endTime'] = priceRecord[0].endTime;
             } else 
             result['Price'] = 0;
             if(result.type == 'image')
