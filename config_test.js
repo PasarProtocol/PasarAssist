@@ -24,6 +24,8 @@ module.exports = {
     dexSwapContract: '0x86c8fb13A9B933920F0bF482E9d6E022E8FD6370',
     pasarRegisterContract: '0x5d9Cf411cdebF75db34b45c014D4f44F558012C0',
     diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
+    token721Contract: '0x32e36240eA2CDe9128A510901a9689E92EBe8ac1',
+    token1155Contract: '0x52aDF83463Afe415ab48Da0C38DAA03211C580dC',
 
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
@@ -33,7 +35,9 @@ module.exports = {
     pasarRegisterContractDeploy: 11469116,
     dexSwapContractDeploy: 11469120,
     diaTokenContractDeploy: 10433331,
-
+    token721ContractDeploy: 11365833,
+    token1155ContractDeploy: 11365831,
+    
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
     serviceName: 'default',

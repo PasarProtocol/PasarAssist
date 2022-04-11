@@ -7,6 +7,8 @@ let config = require('./config');
 let pasarContractABI = require('./contractABI/pasarV2ABI');
 let stickerContractABI = require('./contractABI/stickerV2ABI');
 let pasarRegisterABI = require('./contractABI/pasarRegisterABI');
+let token721ABI = require('./contractABI/token721ABI');
+let token1155ABI = require('./contractABI/token1155ABI');
 let jobService = require('./service/jobService');
 let authService  = require('./service/authService')
 let sendMail = require('./send_mail');
@@ -719,9 +721,20 @@ module.exports = {
                 let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id}
+                
+                let tokenContract = new web3Rpc.eth.Contract(token721ABI, orderInfo._token);
+                const is721 = await tokenContract.methods.supportsInterface('0x80ac58cd').call();
+                const is1155 = await tokenContract.methods.supportsInterface('0xd9b67a26').call();
+                let symbol = await tokenContract.methods.symbol().call();
+                let check721;
+                if(is721){
+                    check721 = true;
+                } else if(is1155) {
+                    check721 = false;
+                }
 
                 await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri);              
+                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri, symbol, check721);              
             })
         });
 
