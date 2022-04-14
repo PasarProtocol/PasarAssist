@@ -1343,6 +1343,9 @@ module.exports = {
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
                     endingTimeCheck = {$and: [{endTime: {$lte: current}}]};
+                } else if(ele == 'Not Met') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
                 } else {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
