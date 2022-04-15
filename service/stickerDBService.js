@@ -1920,7 +1920,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    registerCollection: async function(token, owner, name, uri, symbol, is721) {
+    registerCollection: async function(token, owner, name, uri, symbol, is721, totalCount) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -1933,6 +1933,7 @@ module.exports = {
                 uri: uri,
                 symbol: symbol,
                 is721: is721,
+                totalCount: totalCount,
                 createdTime: (new Date()/1000).toFixed()
             }
             await token_collection.insertOne(data);

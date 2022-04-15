@@ -727,6 +727,13 @@ module.exports = {
                 const is1155 = await tokenContract.methods.supportsInterface('0xd9b67a26').call();
                 let symbol = await tokenContract.methods.symbol().call();
                 let check721;
+                let totalCount = 0;
+                try {
+                    totalCount = await tokenContract.methods.totalSupply().call();
+                } catch(err) {
+                    totalCount = 0;
+                }
+                
                 if(is721){
                     check721 = true;
                 } else if(is1155) {
@@ -734,7 +741,7 @@ module.exports = {
                 }
 
                 await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri, symbol, check721);              
+                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri, symbol, check721, totalCount);              
             })
         });
 
