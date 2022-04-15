@@ -734,6 +734,11 @@ module.exports = {
                     totalCount = 0;
                 }
                 
+                for(var i = 0; i < totalCount; i++) {
+                    let tokenId = await tokenContract.methods.tokenByIndex(i).call();
+                    let tokenUri = await tokenContract.methods.tokenURI(tokenId).call();
+                }
+
                 if(is721){
                     check721 = true;
                 } else if(is1155) {
