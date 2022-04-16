@@ -710,7 +710,7 @@ module.exports = {
             ]).toArray();
             if(rows.length > 0)
                 await temp_collection.insertMany(rows);
-            
+
             // fetch results from temporary collection
             let result = await temp_collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
             await temp_collection.drop();
@@ -979,7 +979,7 @@ module.exports = {
             if(priceRecord.length > 0) {
                 result['Price'] = priceRecord[0].price;
                 result['orderType'] = priceRecord[0].orderType;
-            } else 
+            } else
             result['Price'] = 0;
             if(result.type == 'image')
                 result.type = "General";
@@ -1198,7 +1198,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            let result = await collection.aggregate([ 
+            let result = await collection.aggregate([
                 { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {event: 'OrderBid'} ] } },
                 { $sort: {timestamp: -1} }
             ]).toArray();
@@ -1259,7 +1259,7 @@ module.exports = {
                 }else if(result0[0]['event'] == 'OrderForAuction') {
                     result.event = 'OrderForAuction';
                     result.endTime = result0[0].endTime;
-                }   
+                }
             }
             if(result1.length > 0) {
                 result.price = result1[0].price;
@@ -1382,14 +1382,14 @@ module.exports = {
                 },
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
-                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
-                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
                 { $sort: sort }
             ]).toArray();
-            
+
             let total = marketTokens.length;
             let result = this.paginateRows(marketTokens, pageNum, pageSize);
             return {code: 200, message: 'success', match: {$and: [market_condition, status_condition, price_condition, {orderState: '1'}, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]}, data: {total, result}};
@@ -1432,7 +1432,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             if(Object.keys(sort).indexOf('createTime') == -1) {
-                let collection  = mongoClient.db(config.dbName).collection('pasar_order');   
+                let collection  = mongoClient.db(config.dbName).collection('pasar_order');
                 let status_condition = [];
                 let statusArr = status.split(',');
                 for (let i = 0; i < statusArr.length; i++) {
@@ -1548,8 +1548,8 @@ module.exports = {
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}, market_condition]} },
                 { $sort: sort },
-                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
-                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
@@ -1589,8 +1589,8 @@ module.exports = {
                 { $lookup: {from: "pasar_order", localField: "tokenId", foreignField: "tokenId", as: "tokenOrder"} },
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}]} },
-                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1, 
-                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1, 
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: "$tokenOrder.baseToken", currentBid: 1, thumbnail: 1, kind: 1 },},
@@ -1810,7 +1810,7 @@ module.exports = {
             let tokens = await token_collection.aggregate([
                 { $match: {$expr:{$ne:["$royaltyOwner", "$holder"]}} }
             ]).toArray();
-            
+
             for(var i = 0; i < tokens.length; i++) {
                 let tokenId = tokens[i].tokenId;
                 let result = await token_event_collection.aggregate([
@@ -1877,12 +1877,12 @@ module.exports = {
                         case 'OrderBid':
                             status = 'MarketBid';
                             break;
-                    }   
+                    }
                 }
                 await token_collection.updateOne({ tokenId: token['tokenId']}, {$set: {holder, price, orderId, status, marketTime, endTime}});
             }
             console.log('successull done');
-            return {code: 200, message: 'sucess'}; 
+            return {code: 200, message: 'sucess'};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -1920,20 +1920,21 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    registerCollection: async function(token, owner, name, uri, symbol, is721, totalCount) {
+    registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
 
             let data = {
-                token: token,
-                owner: owner,
-                name: name,
-                uri: uri,
-                symbol: symbol,
-                is721: is721,
-                totalCount: totalCount,
+                token,
+                owner,
+                name,
+                uri,
+                symbol,
+                is721,
+                blockNumber,
+                tokenJson,
                 createdTime: (new Date()/1000).toFixed()
             }
             await token_collection.insertOne(data);
@@ -1953,7 +1954,7 @@ module.exports = {
                 royaltyOwner: royaltyOwners,
                 royaltyRates: royaltyRates
             }
-            
+
             await collection.insertOne(data);
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -1996,6 +1997,25 @@ module.exports = {
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getLastUserToken: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = await mongoClient.db(config.dbName).collection('pasar_token_event');
+            let doc = await collection.findOne({token}, {sort:{blockNumber: -1}});
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                return 0;
+            }
+        } catch(err) {
+            logger.error(err);
+            throw new Error();
         } finally {
             await mongoClient.close();
         }

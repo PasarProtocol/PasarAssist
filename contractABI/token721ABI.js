@@ -1,4 +1,4 @@
-module.exports = module.exports = [
+module.exports = [
   {
     "inputs": [
       {
@@ -989,4 +989,3 @@ module.exports = module.exports = [
     "type": "function"
   }
 ]
-

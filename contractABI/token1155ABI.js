@@ -42,31 +42,6 @@ module.exports = [
       {
         "indexed": true,
         "internalType": "address",
-        "name": "_approved",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "_operator",
         "type": "address"
       },
@@ -137,6 +112,12 @@ module.exports = [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "_operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "_from",
         "type": "address"
       },
@@ -147,13 +128,161 @@ module.exports = [
         "type": "address"
       },
       {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TransferBatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
+        "internalType": "address",
+        "name": "_operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "TransferBatchWithMemo",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_value",
         "type": "uint256"
       }
     ],
-    "name": "Transfer",
+    "name": "TransferSingle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "TransferSingleWithMemo",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "URI",
     "type": "event"
   },
   {
@@ -173,26 +302,13 @@ module.exports = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "_to",
+        "name": "_owner",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
         "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
       }
     ],
     "name": "balanceOf",
@@ -209,8 +325,37 @@ module.exports = [
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "_owners",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
         "type": "uint256"
       }
     ],
@@ -229,6 +374,11 @@ module.exports = [
       {
         "internalType": "uint256",
         "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
         "type": "uint256"
       }
     ],
@@ -276,25 +426,6 @@ module.exports = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getApproved",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -423,7 +554,12 @@ module.exports = [
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_tokenSupply",
         "type": "uint256"
       },
       {
@@ -441,7 +577,12 @@ module.exports = [
     "inputs": [
       {
         "internalType": "uint256[]",
-        "name": "_tokenIds",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_tokenSupplies",
         "type": "uint256[]"
       },
       {
@@ -484,25 +625,6 @@ module.exports = [
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "ownerOf",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_addr",
         "type": "address"
@@ -530,8 +652,145 @@ module.exports = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "safeBatchTransferFromWithMemo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "safeBatchTransferFromWithMemo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_tokenSupply",
         "type": "uint256"
       },
       {
@@ -554,7 +813,12 @@ module.exports = [
     "inputs": [
       {
         "internalType": "uint256[]",
-        "name": "_tokenIds",
+        "name": "_ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_tokenSupplies",
         "type": "uint256[]"
       },
       {
@@ -577,47 +841,6 @@ module.exports = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "safeTransfer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeTransfer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
         "name": "_from",
         "type": "address"
       },
@@ -628,7 +851,12 @@ module.exports = [
       },
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
         "type": "uint256"
       }
     ],
@@ -651,7 +879,12 @@ module.exports = [
       },
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
         "type": "uint256"
       },
       {
@@ -661,6 +894,77 @@ module.exports = [
       }
     ],
     "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "safeTransferFromWithMemo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "safeTransferFromWithMemo",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -806,17 +1110,122 @@ module.exports = [
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
       }
     ],
-    "name": "tokenByIndex",
+    "name": "tokenCountOfOwner",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_owners",
+        "type": "address[]"
+      }
+    ],
+    "name": "tokenCountOfOwnerBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenIdByIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_indexes",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "tokenIdByIndexBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenIdOfOwnerByIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_indexes",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "tokenIdOfOwnerByIndexBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -845,9 +1254,9 @@ module.exports = [
             "type": "uint256"
           },
           {
-            "internalType": "address",
-            "name": "tokenOwner",
-            "type": "address"
+            "internalType": "uint256",
+            "name": "tokenSupply",
+            "type": "uint256"
           },
           {
             "internalType": "string",
@@ -870,7 +1279,7 @@ module.exports = [
             "type": "uint256"
           }
         ],
-        "internalType": "struct IToken721Info.TokenInfo",
+        "internalType": "struct IToken1155Info.TokenInfo",
         "name": "",
         "type": "tuple"
       }
@@ -881,17 +1290,68 @@ module.exports = [
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "tokenInfoBatch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "tokenUri",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenMinter",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "updateTime",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IToken1155Info.TokenInfo[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint256",
-        "name": "_index",
+        "name": "_id",
         "type": "uint256"
       }
     ],
-    "name": "tokenOfOwnerByIndex",
+    "name": "tokenSupply",
     "outputs": [
       {
         "internalType": "uint256",
@@ -905,17 +1365,17 @@ module.exports = [
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
       }
     ],
-    "name": "tokenURI",
+    "name": "tokenSupplyBatch",
     "outputs": [
       {
-        "internalType": "string",
+        "internalType": "uint256[]",
         "name": "",
-        "type": "string"
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -938,47 +1398,6 @@ module.exports = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
         "name": "newOwner",
         "type": "address"
       }
@@ -986,6 +1405,44 @@ module.exports = [
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "uriBatch",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

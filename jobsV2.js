@@ -136,7 +136,7 @@ module.exports = {
                     token.name = data.name;
                     token.description = data.description;
                     token.properties = data.properties;
-    
+
                     if(token.type === 'feeds-channel') {
                         token.tippingAddress = data.tippingAddress;
                         token.entry = data.entry;
@@ -145,7 +145,7 @@ module.exports = {
                         await stickerDBService.replaceGalleriaToken(token);
                         return;
                     }
-    
+
                     if(token.type === 'video' || data.version === "2") {
                         token.data = data.data;
                     } else {
@@ -154,7 +154,7 @@ module.exports = {
                         token.kind = data.kind;
                         token.size = data.size;
                     }
-    
+
                     token.adult = data.adult ? data.adult : false;
                     token.price = 0;
                     token.marketTime = null;
@@ -184,7 +184,7 @@ module.exports = {
                 logger.info(error);
                 logger.info("[OrderDidURI2] Sync Ending ...")
                 isOrderDidURIJobRun = false;
-                
+
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
                 let token = {orderId: orderInfo._orderId}
@@ -275,10 +275,10 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    price: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, reservePrice: {oldPrice: orderInfo._oldReservePrice, _newReservePrice: orderInfo._newPrice}, 
+                    price: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, reservePrice: {oldPrice: orderInfo._oldReservePrice, _newReservePrice: orderInfo._newPrice},
                     buyoutPrice: {oldPrice: orderInfo._oldBuyoutPrice, newPrice: orderInfo._newBuyoutPrice}, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, timestamp: result.updateTime, gasFee}
-                
+
                 result.price = orderInfo._newPrice;
                 result.reservePrice = orderInfo._newReservePrice;
                 result.buyoutPrice = orderInfo._newBuyoutPrice;
@@ -327,7 +327,7 @@ module.exports = {
 
                 let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
                     txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
-                
+
                 result.sellerAddr = orderInfo._seller;
                 result.buyerAddr = orderInfo._buyer;
                 result.amount = orderInfo._amount;
@@ -506,7 +506,7 @@ module.exports = {
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
                     await stickerDBService.replaceEvent(transferEvent);
                 }
-                
+
 
                 if(to === burnAddress) {
                     await stickerDBService.burnTokenBatch(tokenIds);
@@ -641,7 +641,7 @@ module.exports = {
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
                     quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice,
                     buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
-                
+
                 result.sellerAddr = orderInfo._seller;
                 result.baseToken = orderInfo._baseToken;
                 result.tokenId = orderInfo._tokenId;
@@ -652,7 +652,7 @@ module.exports = {
                 result.buyoutPrice = orderInfo._buyoutPrice;
                 result.createTime = orderInfo._startTime;
                 result.endTime = orderInfo._endTime;
-                
+
                 logger.info(`[OrderForAuction2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
@@ -713,40 +713,68 @@ module.exports = {
                 logger.info(error);
                 logger.info("[tokenRegistered] Sync Ending ...")
                 isTokenRegisteredJobRun = false;
-                
-            }).on("data", async function (event) {
-                let orderInfo = event.returnValues;
-                logger.info(`[TokenRegistered] : ${JSON.stringify(orderInfo)}`);
 
-                let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
+            }).on("data", async function (event) {
+                let registeredTokenInfo = event.returnValues;
+                logger.info(`[TokenRegistered] : ${JSON.stringify(registeredTokenInfo)}`);
+
+                let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id}
-                
-                let tokenContract = new web3Rpc.eth.Contract(token721ABI, orderInfo._token);
-                const is721 = await tokenContract.methods.supportsInterface('0x80ac58cd').call();
-                const is1155 = await tokenContract.methods.supportsInterface('0xd9b67a26').call();
-                let symbol = await tokenContract.methods.symbol().call();
+
+                let tokenContract = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
+                let [is721, is1155, symbol] = await jobService.makeBatchRequest([
+                    {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
+                    {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
+                    {method: tokenContract.methods.symbol().call, params: {}}
+                ], web3Ws)
+
+                let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
+
                 let check721;
-                let totalCount = 0;
-                try {
-                    totalCount = await tokenContract.methods.totalSupply().call();
-                } catch(err) {
-                    totalCount = 0;
-                }
-                
-                for(var i = 0; i < totalCount; i++) {
-                    let tokenId = await tokenContract.methods.tokenByIndex(i).call();
-                    let tokenUri = await tokenContract.methods.tokenURI(tokenId).call();
-                }
+                // let totalCount = 0;
+                // try {
+                //     totalCount = await tokenContract.methods.totalSupply().call();
+                // } catch(err) {
+                //     totalCount = 0;
+                // }
+                //
+                // for(var i = 0; i < totalCount; i++) {
+                //     let tokenId = await tokenContract.methods.tokenByIndex(i).call();
+                //     let tokenUri = await tokenContract.methods.tokenURI(tokenId).call();
+                // }
 
                 if(is721){
                     check721 = true;
+
+                    tokenContract.events.Transfer({
+                        fromBlock: event.blockNumber
+                    }).on("error", function (error) {
+                        logger.info(error);
+                        logger.info("[Contract721] Sync Ending ...")
+                    }).on("data", async function (event) {
+                        await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                    })
                 } else if(is1155) {
                     check721 = false;
+
+                    tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
+                    tokenContract.events.TransferSingle({
+                        fromBlock: event.blockNumber
+                    }).on("error", function (error) {
+                        logger.info(error);
+                        logger.info("[Contract1155] Sync Ending ...")
+                    }).on("data", async function (event) {
+                        await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                    })
+                } else {
+                    logger.error("unknown token type");
+                    return;
                 }
 
-                await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.registerCollection(orderInfo._token, orderInfo._owner, orderInfo._name, orderInfo._uri, symbol, check721, totalCount);              
+                await stickerDBService.collectionEvent(registeredTokenDetail);
+                await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
+                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
             })
         });
 
@@ -763,7 +791,7 @@ module.exports = {
                 logger.info(error);
                 logger.info("[TokenRoyaltyChanged] Sync Ending ...")
                 isRoyaltyChangedJobRun = false;
-                
+
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
                 logger.info(`[TokenRoyaltyChanged] : ${JSON.stringify(orderInfo)}`);
@@ -773,7 +801,7 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id}
 
                 await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);                
+                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);
             })
         });
 
@@ -938,5 +966,10 @@ module.exports = {
                 await indexDBService.removeOldPriceRecords(record.timestamp - 30 * 24 * 60 * 60 * 1000)
             })
         }
+
+        /**
+         *  Start to listen all user's contract events
+         */
+        jobService.startupUsersContractEvents(web3Ws, web3Rpc);
     }
 }
