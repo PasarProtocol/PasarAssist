@@ -68,6 +68,7 @@ module.exports = {
 
         let recipients = [];
         recipients.push('lifayi2008@163.com');
+        
         async function dealWithNewToken(blockNumber,tokenId) {
             try {
                 let [result] = await jobService.makeBatchRequest([
@@ -730,7 +731,7 @@ module.exports = {
                 ], web3Ws)
 
                 let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
-
+                
                 let check721;
                 // let totalCount = 0;
                 // try {
@@ -753,11 +754,12 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract721] Sync Ending ...")
                     }).on("data", async function (event) {
+                        console.log(JSON.stringify(event))
                         await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
                     })
                 } else if(is1155) {
                     check721 = false;
-
+                    
                     tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
                     tokenContract.events.TransferSingle({
                         fromBlock: event.blockNumber
@@ -765,6 +767,7 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract1155] Sync Ending ...")
                     }).on("data", async function (event) {
+                        console.log(JSON.stringify(event));
                         await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
                     })
                 } else {
@@ -772,9 +775,9 @@ module.exports = {
                     return;
                 }
 
-                await stickerDBService.collectionEvent(registeredTokenDetail);
-                await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
-                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
+                // await stickerDBService.collectionEvent(registeredTokenDetail);
+                // await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
+                //     registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
             })
         });
 

@@ -3,13 +3,20 @@ const config_test = require("../config_test");
 const token1155ABI = require("../contractABI/token1155ABI");
 const token721ABI = require("../contractABI/token721ABI");
 config = config.curNetwork == 'testNet'? config_test : config;
+
+const burnAddress = '0x0000000000000000000000000000000000000000';
+
 module.exports = {
 
     getInfoByIpfsUri: async function(uri) {
         console.log(uri, 'this is ipfs method')
         let tokenCID = uri.split(":")[2];
-        let response = await fetch(config.ipfsNodeUrl + tokenCID);
-        return await response.json();
+        if(tokenCID) {
+            let response = await fetch(config.ipfsNodeUrl + tokenCID);
+            return await response.json();
+        } else {
+            return null;
+        }
     },
 
     makeBatchRequest: function (calls, web3) {
@@ -27,19 +34,19 @@ module.exports = {
         return Promise.all(promises)
     },
 
-    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc) {
+    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, baseToken) {
         let tokenInfo = event.returnValues;
-
+        console.log(tokenInfo);
         let [result, txInfo, blockInfo] = await this.makeBatchRequest([
-            {method: tokenContract.methods.tokenURI(tokenInfo._id).call, params: {}},
+            {method: check721 ? tokenContract.methods.tokenURI(tokenInfo._id).call : tokenContract.methods.uri(tokenInfo._id).call, params: {}},
             {method: web3Rpc.eth.getTransaction, params: event.transactionHash},
             {method: web3Rpc.eth.getBlock, params: event.blockNumber}
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-
+        console.log("URI: " + result)
         let data = await this.getInfoByIpfsUri(result);
-
+        
         let tokenEventDetail = {
             tokenId: tokenInfo._id,
             blockNumber: event.blockNumber,
@@ -53,35 +60,46 @@ module.exports = {
             token
         };
         logger.info(`[Contract721] : ${JSON.stringify(tokenEventDetail)}`);
+        const stickerDBService = require("./stickerDBService");
         await stickerDBService.addEvent(tokenEventDetail)
 
         let tokenDetail = {
-            token,
             tokenId: tokenInfo._id,
             blockNumber: event.blockNumber,
-            quantity: check721 ? 1 : parseInt(tokenInfo._value),
             royalties: 0,
-            royaltyOwner: "",
-            holder: "",
-            createTime: blockInfo.timestamp,
             updateTime: blockInfo.timestamp,
-            tokenIdHex: '0x' + BigInt(tokenInfo._id).toString(16),
-            tokenJsonVersion: data.version,
-            type: data.type,
-            name: data.name,
-            description: data.description,
-            thumbnail: data.data.thumbnail,
-            asset: data.data.image,
-            kind: data.data.kind,
-            size: data.data.size,
-            adult: data.adult,
             price: 0,
             marketTime: 0,
-            status: "Not on sale",
             endTime: 0,
             orderId: ""
         }
-        const stickerDBService = require("./stickerDBService");
+        
+        if(tokenInfo._from == burnAddress) {
+            tokenDetail.status = "Not on sale";
+            tokenDetail.royaltyOwner = tokenInfo._to;
+            tokenDetail.holder = tokenInfo._to;
+            tokenDetail.createTime = blockInfo.timestamp;
+            tokenDetail.quantity = check721 ? 1 : parseInt(tokenInfo._value);
+            tokenDetail.tokenIdHex = '0x' + BigInt(tokenInfo._id).toString(16);
+            tokenDetail.tokenJsonVersion = data.version;
+            tokenDetail.type = data.type;
+            tokenDetail.name = data.name;
+            tokenDetail.description = data.description;
+            tokenDetail.thumbnail = data.data.thumbnail;
+            tokenDetail.asset = data.data.image;
+            tokenDetail.kind = data.data.kind;
+            tokenDetail.size = data.data.size;
+            tokenDetail.adult = data.adult;
+            tokenDetail.baseToken = token;
+        } else if(tokenInfo._to == burnAddress) {
+            tokenDetail.holder = burnAddress;
+        } else if(tokenInfo._to == token) {
+            tokenDetail.status = "MarketSale";
+        } else {
+            tokenDetail.status = "Not on sale";
+            tokenDetail.holder = tokenInfo._to;
+        }
+        console.log(JSON.stringify(tokenDetail));
         await stickerDBService.replaceToken(tokenDetail);
     },
 
