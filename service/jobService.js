@@ -1,6 +1,5 @@
 let config = require("../config");
 const config_test = require("../config_test");
-const stickerDBService = require("./stickerDBService");
 const token1155ABI = require("../contractABI/token1155ABI");
 const token721ABI = require("../contractABI/token721ABI");
 config = config.curNetwork == 'testNet'? config_test : config;
@@ -82,11 +81,12 @@ module.exports = {
             endTime: 0,
             orderId: ""
         }
-
+        const stickerDBService = require("./stickerDBService");
         await stickerDBService.replaceToken(tokenDetail);
     },
 
     startupUsersContractEvents: async function (web3Ws, web3Rpc) {
+        const stickerDBService = require("./stickerDBService");
         let data = (await stickerDBService.getCollections()).data;
 
         for(let x of data) {

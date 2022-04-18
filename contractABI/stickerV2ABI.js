@@ -1347,7 +1347,7 @@ module.exports = [
             "type": "uint256"
           }
         ],
-        "internalType": "struct ITokenGeneralInfo.TokenInfo",
+        "internalType": "struct IPasarCollectionInfo.TokenInfo",
         "name": "",
         "type": "tuple"
       }
@@ -1413,7 +1413,7 @@ module.exports = [
             "type": "uint256"
           }
         ],
-        "internalType": "struct ITokenGeneralInfo.TokenInfo[]",
+        "internalType": "struct IPasarCollectionInfo.TokenInfo[]",
         "name": "",
         "type": "tuple[]"
       }
