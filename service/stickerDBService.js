@@ -1162,6 +1162,7 @@ module.exports = {
                     result[i]['asset'] = res['asset'];
                     result[i]['royaltyOwner'] = res['royaltyOwner'];
                     result[i]['thumbnail'] = res['thumbnail'];
+                    result[i]['quoteToken'] = res['quoteToken'] ? res['quoteToken'] : null;
                     result[i]['data'] = {...result[i]['data'], ...res['data']};
                     result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                 } else if(result[i]['event'] != 'SetApprovalForAll') continue;
