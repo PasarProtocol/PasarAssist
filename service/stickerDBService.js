@@ -424,10 +424,10 @@ module.exports = {
             if(status != null) {
                 updateData.status = status;
             }
-            if(!quoteToken) {
+            if(quoteToken != null) {
                 updateData.quoteToken = quoteToken;
             }
-            if(!baseToken) {
+            if(baseToken != null) {
                 updateData.baseToken = baseToken;
             }
             await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
