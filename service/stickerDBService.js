@@ -420,7 +420,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let updateData = {price, orderId, marketTime, endTime, blockNumber, quoteToken};
+            let updateData = {price, orderId, marketTime, endTime, blockNumber};
             if(status != null) {
                 updateData.status = status;
             }
