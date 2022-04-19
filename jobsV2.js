@@ -64,6 +64,7 @@ module.exports = {
         let isGetTokenInfoWithBatchMemoJobRun = false;
         let isTokenRegisteredJobRun = false;
         let isRoyaltyChangedJobRun = false;
+        let isTokenInfoUpdatedJobRun = false;
         let now = Date.now();
 
         let recipients = [];
@@ -808,6 +809,33 @@ module.exports = {
             })
         });
 
+        let tokenInfoUpdatedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenInfoUpdated');
+
+            isTokenInfoUpdatedJobRun = true;
+
+            logger.info(`[TokenInfoUpdated] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+
+            pasarRegisterWs.events.TokenInfoUpdated({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[tokenRegistered] Sync Ending ...")
+                isTokenInfoUpdatedJobRun = false;
+
+            }).on("data", async function (event) {
+                let updatedTokenInfo = event.returnValues;
+                logger.info(`[TokenRegistered] : ${JSON.stringify(updatedTokenInfo)}`);
+
+                let updatedTokenDetail = {token: updatedTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+
+                await stickerDBService.collectionEvent(updatedTokenDetail);
+                await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber);
+            })
+        });
+
         schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '0 */2 * * * *'}, () => {
             let now = Date.now();
 
@@ -847,6 +875,8 @@ module.exports = {
                 tokenRegisteredJobId.reschedule(new Date(now + 60 * 1000))
             if(!isRoyaltyChangedJobRun)
                 royaltyChangedJobRun.reschedule(new Date(now + 60 * 1000))
+            if(!isTokenInfoUpdatedJobRun)
+                tokenInfoUpdatedJobRun.reschedule(new Date(now + 60 * 1000))
         });
 
         /**

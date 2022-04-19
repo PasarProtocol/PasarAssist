@@ -1936,9 +1936,29 @@ module.exports = {
                 is721,
                 blockNumber,
                 tokenJson,
-                createdTime: (new Date()/1000).toFixed()
+                createdTime: (new Date()/1000).toFixed(),
+                updatedTime: (new Date()/1000).toFixed()
             }
             await token_collection.insertOne(data);
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    updateCollection: async function(token, name, uri, blockNumber) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
+
+            let data = {
+                name,
+                uri,
+                blockNumber,
+                updatedTime: (new Date()/1000).toFixed()
+            }
+            await token_collection.updateOne({token}, {$set: data});
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
