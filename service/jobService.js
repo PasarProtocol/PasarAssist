@@ -36,9 +36,11 @@ module.exports = {
 
     dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, baseToken) {
         let tokenInfo = event.returnValues;
+        let tokenId = check721 ? tokenInfo._tokenId : tokenInfo._id;
+        
         console.log(tokenInfo);
         let [result, txInfo, blockInfo] = await this.makeBatchRequest([
-            {method: check721 ? tokenContract.methods.tokenURI(tokenInfo._id).call : tokenContract.methods.uri(tokenInfo._id).call, params: {}},
+            {method: check721 ? tokenContract.methods.tokenURI(tokenId).call : tokenContract.methods.uri(tokenId).call, params: {}},
             {method: web3Rpc.eth.getTransaction, params: event.transactionHash},
             {method: web3Rpc.eth.getBlock, params: event.blockNumber}
         ], web3Rpc)
@@ -48,7 +50,7 @@ module.exports = {
         let data = await this.getInfoByIpfsUri(result);
         
         let tokenEventDetail = {
-            tokenId: tokenInfo._id,
+            tokenId: tokenId,
             blockNumber: event.blockNumber,
             timestamp: blockInfo.timestamp,
             txHash: event.transactionHash,
@@ -64,7 +66,7 @@ module.exports = {
         await stickerDBService.addEvent(tokenEventDetail)
 
         let tokenDetail = {
-            tokenId: tokenInfo._id,
+            tokenId: tokenId,
             blockNumber: event.blockNumber,
             royalties: 0,
             updateTime: blockInfo.timestamp,
@@ -80,7 +82,7 @@ module.exports = {
             tokenDetail.holder = tokenInfo._to;
             tokenDetail.createTime = blockInfo.timestamp;
             tokenDetail.quantity = check721 ? 1 : parseInt(tokenInfo._value);
-            tokenDetail.tokenIdHex = '0x' + BigInt(tokenInfo._id).toString(16);
+            tokenDetail.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
             tokenDetail.tokenJsonVersion = data.version;
             tokenDetail.type = data.type;
             tokenDetail.name = data.name;
