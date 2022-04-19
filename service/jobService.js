@@ -94,6 +94,7 @@ module.exports = {
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
 
+            console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
             await stickerDBService.replaceToken(tokenDetail);
         }
     },

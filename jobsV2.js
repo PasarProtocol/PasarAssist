@@ -196,7 +196,8 @@ module.exports = {
                 if(token.did.KYCedProof != undefined) {
                     await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
                 }
-                await stickerDBService.replaceToken(token);
+                logger.info("[OrderDidURI2] " + JSON.stringify(token));
+                // await stickerDBService.replaceToken(token);
             })
         });
 
