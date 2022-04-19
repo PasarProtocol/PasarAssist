@@ -908,7 +908,7 @@ module.exports = {
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
                 { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
-                { $unwind: "$token" },
+                { $unwind: "$to ken" },
                 { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
                 , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: 1} },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
@@ -1994,7 +1994,15 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let result = await token_collection.find({owner: owner}).toArray();
+
+            let result = await token_collection.aggregate([
+                { $lookup: {from: "pasar_collection_royalty", localField: "token", foreignField: "token", as: "royalty"} },
+                { $unwind: "$royalty"},
+                { $match: {$and: [{owner: owner}]} },
+                { $project: {"_id": 0, token: 1, owner: 1, name: 1, uri: 1, symbol: 1, is721: 1, tokenJson: 1, createdTime: 1,
+                    "owners": "$royalty.royaltyOwner", "feeRates": "$royalty.royaltyRates"},},
+            ]).toArray();
+
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
