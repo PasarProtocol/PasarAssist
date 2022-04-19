@@ -93,16 +93,9 @@ module.exports = {
             tokenDetail.size = data.data.size;
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
-        } else if(tokenInfo._to == burnAddress) {
-            tokenDetail.holder = burnAddress;
-        } else if(tokenInfo._to == token) {
-            tokenDetail.status = "MarketSale";
-        } else {
-            tokenDetail.status = "Not on sale";
-            tokenDetail.holder = tokenInfo._to;
+
+            await stickerDBService.replaceToken(tokenDetail);
         }
-        console.log(JSON.stringify(tokenDetail));
-        await stickerDBService.replaceToken(tokenDetail);
     },
 
     startupUsersContractEvents: async function (web3Ws, web3Rpc) {
