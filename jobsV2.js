@@ -691,10 +691,14 @@ module.exports = {
                 ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
+                let resultData = await stickerDBService.search(result.tokenId);
+                let token = resultData.code == 200 && resultData.data && resultData.data.result && resultData.data.result.length  > 0 ? resultData.data.result[0] : null;
+
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, timestamp: result.updateTime, gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, 
+                    quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
 
                 logger.info(`[OrderForBid2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
