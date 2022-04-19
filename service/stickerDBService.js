@@ -1972,12 +1972,11 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_collection_royalty');
             let data = {
-                token: token,
                 royaltyOwner: royaltyOwners,
                 royaltyRates: royaltyRates
             }
 
-            await collection.insertOne(data);
+            await collection.updateOne({token}, {$set: data}, { upsert: true });
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
