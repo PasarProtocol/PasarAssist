@@ -47,8 +47,12 @@ module.exports = {
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
         console.log("URI: " + result)
-        let data = await this.getInfoByIpfsUri(result);
-        
+        let jsonData = await this.getInfoByIpfsUri(result);
+        let data;
+        if(result.indexOf("pasar:json" != -1)) {
+            data = this.parsePasar(jsonData);
+        }
+
         let tokenEventDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -87,10 +91,10 @@ module.exports = {
             tokenDetail.type = data.type;
             tokenDetail.name = data.name;
             tokenDetail.description = data.description;
-            tokenDetail.thumbnail = data.data.thumbnail;
-            tokenDetail.asset = data.data.image;
-            tokenDetail.kind = data.data.kind;
-            tokenDetail.size = data.data.size;
+            tokenDetail.thumbnail = data.thumbnail;
+            tokenDetail.asset = data.image;
+            tokenDetail.kind = data.kind;
+            tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
 
@@ -133,5 +137,20 @@ module.exports = {
                 })
             }
         }
+    },
+
+    parsePasar: function(data) {
+        let returnValue = {};
+
+        returnValue.tokenJsonVersion = data.version;
+        returnValue.type = data.type;
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.data.thumbnail;
+        returnValue.asset = data.data.image;
+        returnValue.kind = data.data.kind;
+        returnValue.size = data.data.size;
+        returnValue.adult = data.adult;
+        return returnValue;
     }
 }
