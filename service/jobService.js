@@ -46,11 +46,17 @@ module.exports = {
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        console.log("URI: " + result)
-        let jsonData = await this.getInfoByIpfsUri(result);
         let data;
-        if(result.indexOf("pasar:json" != -1)) {
+        if(result.indexOf("pasar:json") != -1) {
+            let jsonData = await this.getInfoByIpfsUri(result);
             data = this.parsePasar(jsonData);
+        } else if(result.indexOf("Solana") != -1) {
+            if(result.indexOf("https://") == -1) {
+                result = "https://gateway.pinata.cloud/ipfs/" + result;
+            }
+            let response = await fetch(result);
+            let jsonData = await response.json();
+            data = this.parseSolana(jsonData);
         }
 
         let tokenEventDetail = {
@@ -92,7 +98,7 @@ module.exports = {
             tokenDetail.name = data.name;
             tokenDetail.description = data.description;
             tokenDetail.thumbnail = data.thumbnail;
-            tokenDetail.asset = data.image;
+            tokenDetail.asset = data.asset;
             tokenDetail.kind = data.kind;
             tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
@@ -141,7 +147,6 @@ module.exports = {
 
     parsePasar: function(data) {
         let returnValue = {};
-
         returnValue.tokenJsonVersion = data.version;
         returnValue.type = data.type;
         returnValue.name = data.name;
@@ -151,6 +156,21 @@ module.exports = {
         returnValue.kind = data.data.kind;
         returnValue.size = data.data.size;
         returnValue.adult = data.adult;
+        return returnValue;
+    },
+
+    parseSolana: function(data) {
+        let returnValue = {};
+        console.log("SolanaData: " + JSON.stringify(data));
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = data.properties.files[0].type;
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image;
+        returnValue.asset = data.image;
+        returnValue.kind = data.properties.files[0].type;
+        returnValue.size = null;
+        returnValue.adult = false;
         return returnValue;
     }
 }
