@@ -347,6 +347,43 @@ router.get('/getDetailedCollectibles', function(req, res) {
     })
 })
 
+router.get('/getDetailedCollectiblesInCollection/:baseToken', function(req, res) {
+    let status = req.query.status;
+    let minPrice = req.query.minPrice;
+    let maxPrice = req.query.maxPrice;
+    let collectionType = req.params.baseToken;
+    let itemType = req.query.itemType;
+    let adult = req.query.adult;
+    let orderType = req.query.order;
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+    let keyword = req.query.keyword;
+    let tokenType = req.query.tokenType;
+    let pageNum, pageSize;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+        minPrice = minPrice ? minPrice : 0;
+        maxPrice = maxPrice ? maxPrice : 10000000000000000000000000000000000000000000000000000000000;
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+    }catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+
+    stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, tokenType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/getListedCollectiblesByAddress/:address', function(req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
