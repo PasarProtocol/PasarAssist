@@ -2041,7 +2041,20 @@ module.exports = {
             await mongoClient.close();
         }
     },
-
+    getOwnersOfCollection: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection_royalty = await mongoClient.db(config.dbName).collection('pasar_collection_royalty');
+            let result = await token_collection_royalty.findOne({token});
+            let listAddress = result && result.royaltyOwner ? result.royaltyOwner : [];
+            return {code: 200, message: 'success', data: {total: listAddress.length, address: listAddress}};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getLastUserToken: async function(token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
