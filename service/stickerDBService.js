@@ -1370,8 +1370,8 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            minPrice = BigInt(minPrice, 10) / BigInt(10 ** 18, 10);
-            maxPrice = BigInt(maxPrice, 10) / BigInt(10 ** 18, 10);
+            minPrice = minPrice / 10 ** 18;
+            maxPrice = maxPrice / 10 ** 18;
             let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let marketTokens = await collection.aggregate([

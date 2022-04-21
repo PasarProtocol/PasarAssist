@@ -703,7 +703,7 @@ module.exports = {
                 logger.info(`[OrderForBid2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid', result.sellerAddr, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, null, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid', result.sellerAddr, event.blockNumber);
             })
         });
 
@@ -720,7 +720,6 @@ module.exports = {
                 logger.info(error);
                 logger.info("[tokenRegistered] Sync Ending ...")
                 isTokenRegisteredJobRun = false;
-
             }).on("data", async function (event) {
                 let registeredTokenInfo = event.returnValues;
                 logger.info(`[TokenRegistered] : ${JSON.stringify(registeredTokenInfo)}`);

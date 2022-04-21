@@ -338,7 +338,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
         res.json({code: 400, message: 'bad request'});
         return;
     }
-
+    
     stickerDBService.getDetailedCollectibles(status, minPrice, maxPrice, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, tokenType).then(result => {
         res.json(result);
     }).catch(error => {
