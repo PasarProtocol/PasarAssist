@@ -1370,7 +1370,7 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            let checkOrder = [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}];
             if(minPrice) {
                 checkOrder.push({price: {$gte: minPrice.toString()}});
             }
@@ -1381,7 +1381,7 @@ module.exports = {
             let marketTokens = await collection.aggregate([
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"ttokenId": "$tokenId"},
+                    let: {"torderId": "$orderId"},
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 { $lookup: {from: "pasar_order_event",
