@@ -1370,12 +1370,20 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            minPrice = minPrice / 10 ** 18;
-            maxPrice = maxPrice / 10 ** 18;
-            let price_condition = {$and: [{priceCalculated: {$gte: parseInt(minPrice)}}, {priceCalculated: {$lte: parseInt(maxPrice)}}]};
+            let checkOrder = [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}];
+            if(minPrice) {
+                checkOrder.push({price: {$gte: minPrice.toString()}});
+            }
+            if(maxPrice) {
+                checkOrder.push({price: {$lte: maxPrice.toString()}});
+            }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let marketTokens = await collection.aggregate([
-                { $lookup: {from: "pasar_order", localField: "tokenId", foreignField: "tokenId", as: "tokenOrder"} },
+                { $lookup: {
+                    from: "pasar_order",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: {$and: checkOrder}}],
+                    as: "tokenOrder"}},
                 { $lookup: {from: "pasar_order_event",
                     let: {"ttokenId": "$tokenId"},
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
@@ -1386,7 +1394,7 @@ module.exports = {
                     }
                 },
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, price_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1394,10 +1402,10 @@ module.exports = {
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
                 { $sort: sort }
             ]).toArray();
-
+            
             let total = marketTokens.length;
             let result = this.paginateRows(marketTokens, pageNum, pageSize);
-            return {code: 200, message: 'success', match: {$and: [market_condition, status_condition, price_condition, {orderState: '1'}, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]}, data: {total, result}};
+            return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
