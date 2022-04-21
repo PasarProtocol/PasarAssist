@@ -943,7 +943,7 @@ module.exports = {
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
         thumbnail: "$token.thumbnail", asset: "$token.asset", size: "$token.size", tokenDid: "$token.did",
         adult: "$token.adult", properties: "$token.properties", data: "$token.data", tokenJsonVersion: "$token.tokenJsonVersion",
-        quoteToken: "$toke.quoteToken", baseToken: "$token.baseToken"}
+        quoteToken: "$toke.quoteToken", baseToken: "$token.baseToken", reservePrice: "$order.reservePrice"}
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
@@ -956,6 +956,7 @@ module.exports = {
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
                 { $replaceRoot: { newRoot: "$doc"}},
                 { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$token"},
                 { $project: projectionToken}
             ]).toArray();
