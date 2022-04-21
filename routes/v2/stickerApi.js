@@ -507,4 +507,13 @@ router.get('/getOwnersOfCollection/:token', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+router.get('/getTotalCountCollectibles/:token', function(req, res) {
+    let token = req.params.token;
+    stickerDBService.getTotalCountCollectibles(token).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
 module.exports = router;

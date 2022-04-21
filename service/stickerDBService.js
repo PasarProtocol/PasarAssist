@@ -2055,6 +2055,19 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getTotalCountCollectibles: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const tokenDB = await mongoClient.db(config.dbName).collection('pasar_token');
+            let result = await tokenDB.find({baseToken: token}).toArray();
+            return {code: 200, message: 'success', data: {total: result.length}};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getLastUserToken: async function(token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
