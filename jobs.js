@@ -700,7 +700,7 @@ module.exports = {
             schedule.scheduleJob('*/4 * * * *', async () => {
                 let x = Math.floor(Math.random() * config.cmcApiKeys.length);
                 let headers = {'Content-Type': 'application/json', 'X-CMC_PRO_API_KEY': config.cmcApiKeys[x]}
-                let res = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100', {method: 'get', headers})
+                let res = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=110', {method: 'get', headers})
                 let result = await res.json();
 
                 let record = {timestamp: Date.parse(result.status.timestamp)}
