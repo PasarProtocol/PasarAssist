@@ -2099,6 +2099,37 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getFloorPriceCollectibles: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let result = await token_collection.aggregate([
+                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
+                { $unwind: "$order"},
+                { $match: {baseToken: token}},
+                { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
+            ]).toArray();
+
+            let listPrice = [];
+            let rateDia = await this.getDiaTokenPrice();
+
+            result.forEach(cell => {
+                let rate = 1;
+                if(cell.quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    rate = rateDia.token.derivedELA;
+                }
+                
+                let price = cell.price * rate / 10 ** 18;
+                listPrice.push(price);
+            })
+            return {code: 200, message: 'success', data: {price: Math.min(...listPrice)}};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getLastUserToken: async function(token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
