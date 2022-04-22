@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const axios = require('axios');
 const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
@@ -2068,6 +2069,36 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getTotalPriceCollectibles: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let result = await token_collection.aggregate([
+                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
+                { $unwind: "$order"},
+                { $match: {baseToken: token}},
+                { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
+            ]).toArray();
+
+            let total = 0;
+            let rateDia = await this.getDiaTokenPrice();
+
+            result.forEach(cell => {
+                let rate = 1;
+                if(cell.quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    rate = rateDia.token.derivedELA;
+                }
+                let price = cell.price * rate / 10 ** 18;
+                total = total + price;
+            })
+            return {code: 200, message: 'success', data: {total}};
+        } catch(err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getLastUserToken: async function(token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2086,4 +2117,28 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getDiaTokenPrice: async function () {
+        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let blocknum = await walletConnectWeb3.eth.getBlockNumber();
+        console.log(blocknum);
+        const graphQLParams = {
+            query: `query tokenPriceData { token(id: "0x2c8010ae4121212f836032973919e8aec9aeaee5", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
+            variables: null,
+            operationName: 'tokenPriceData'
+        };
+        
+        let response = await axios({
+            method: 'POST',
+            url: 'https://api.glidefinance.io/subgraphs/name/glide/exchange',
+            headers: {
+              'content-type': 'application/json',
+              // "x-rapidapi-host": "reddit-graphql-proxy.p.rapidapi.com",
+              // "x-rapidapi-key": process.env.RAPIDAPI_KEY,
+              accept: 'application/json'
+            },
+            data: graphQLParams
+        })
+
+        return response.data.data;
+    }
 }
