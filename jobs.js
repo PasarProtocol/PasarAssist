@@ -694,7 +694,7 @@ module.exports = {
         /**
          *  Get ELA price from CoinMarketCap
          */
-        let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890};
+        let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890, "IOTX": 2777};
         let coins2 = {"FSN": 2530, "ELA": 2492, "TLOS": 4660}
         if(config.cmcApiKeys.length > 0) {
             schedule.scheduleJob('*/4 * * * *', async () => {
