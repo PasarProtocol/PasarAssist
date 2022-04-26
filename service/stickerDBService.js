@@ -1533,7 +1533,7 @@ module.exports = {
                     }
                 },
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
-                { $match: {$and: [market_condition, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -2279,7 +2279,8 @@ module.exports = {
                 let price = cell.price * rate / 10 ** 18;
                 listPrice.push(price);
             })
-            return {code: 200, message: 'success', data: {price: Math.min(...listPrice)}};
+            console.log(listPrice);
+            return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
