@@ -1934,6 +1934,24 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getLastRegisterCollectionEvent: async function (token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_collection_event');
+            let doc = await collection.findOne({token}, {sort:{blockNumber:-1}})
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                return 1;
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
     registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

@@ -738,12 +738,13 @@ module.exports = {
                 let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
                 
                 let check721;
-
+                let lastHeight = await stickerDBService.getLastRegisterCollectionEvent(registeredTokenInfo._token);
+                
                 if(is721){
                     check721 = true;
 
                     tokenContract.events.Transfer({
-                        fromBlock: 1
+                        fromBlock: lastHeight
                     }).on("error", function (error) {
                         logger.info(error);
                         logger.info("[Contract721] Sync Ending ...")
