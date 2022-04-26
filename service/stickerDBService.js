@@ -1516,7 +1516,7 @@ module.exports = {
             if(maxPrice) {
                 checkOrder.push({price: {$lte: maxPrice.toString()}});
             }
-            let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+            let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}, {status: 'Not on sale'}] };
             let marketTokens = await collection.aggregate([
                 { $lookup: {
                     from: "pasar_order",
@@ -1532,8 +1532,8 @@ module.exports = {
                         "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
                     }
                 },
-                { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
+                { $match: {$and: [market_condition, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
