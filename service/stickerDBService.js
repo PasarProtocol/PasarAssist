@@ -1415,6 +1415,144 @@ module.exports = {
         }
     },
 
+    getDetailedCollectiblesInCollection: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, tokenType=null) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        let sort = {};
+        let rateEndTime = {};
+        switch (order) {
+            case '0':
+                sort = {marketTime: -1};
+                break;
+            case '1':
+                sort = {createTime: -1};
+                break;
+            case '2':
+                sort = {marketTime: 1};
+                break;
+            case '3':
+                sort = {createTime: 1};
+                break;
+            case '4':
+                sort = {price: 1};
+                break;
+            case '5':
+                sort = {price: -1};
+                break;
+            case '6':
+                sort = {createTime: -1}
+                let current = Date.now();
+                let startTime = Math.floor((current - (24 * 60 * 60 * 1000))/1000).toString();
+                current = Math.floor(current/1000).toString();
+                rateEndTime = {$and: [{endTime: {$gte: startTime}}, {endTime: {$lte: current}}]};
+            default:
+                sort = {marketTime: -1}
+        }
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let status_condition = [];
+            let statusArr = status.split(',');
+            let tokenTypeCheck = {};
+            if(tokenType != null && tokenType != '') {
+                let typeArr = tokenType.split(',');
+                if(typeArr.indexOf('0x0000000000000000000000000000000000000000') != -1) {
+                    typeArr.push(null);
+                }
+                tokenTypeCheck = {quoteToken: {$in: typeArr}};
+            }
+            let collectionTypeCheck = {};
+            if(collectionType != null && collectionType != '') {
+                let collectionTypeArr = collectionType.split(',');
+                collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
+            }
+            let endingTimeCheck = {};
+            for (let i = 0; i < statusArr.length; i++) {
+                const ele = statusArr[i];
+                if(ele == 'All') {
+                    status_condition.push({status: 'MarketAuction'});
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'Not on sale'});
+                } else if(ele == 'Buy Now'){
+                    status_condition.push({status: 'MarketSale'});
+                } else if(ele == 'On Auction') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
+                } else if(ele == 'Has Bids') {
+                    status_condition.push({status: 'MarketBid'});
+                } else if(ele == 'Has Ended') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
+                    let current = Date.now();
+                    current = Math.floor(current/1000).toString();
+                    endingTimeCheck = {$and: [{endTime: {$lte: current}}]};
+                } else if(ele == 'Not Met') {
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketAuction'});
+                } else {
+                    status_condition.push({status: 'MarketAuction'});
+                    status_condition.push({status: 'MarketBid'});
+                    status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'Not on sale'});
+                }
+            }
+            status_condition = {$or: status_condition};
+
+            let itemType_condition = [];
+            let itemTypeArr = itemType.split(',');
+            for (let i = 0; i < itemTypeArr.length; i++) {
+                const ele = itemTypeArr[i];
+                if(ele == 'General')
+                    ele = 'image';
+                if(ele == 'All')
+                    itemType_condition.push({type: new RegExp('')});
+                else itemType_condition.push({type: ele});
+            }
+            itemType_condition = {$or: itemType_condition};
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}];
+            if(minPrice) {
+                checkOrder.push({price: {$gte: minPrice.toString()}});
+            }
+            if(maxPrice) {
+                checkOrder.push({price: {$lte: maxPrice.toString()}});
+            }
+            let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+            let marketTokens = await collection.aggregate([
+                { $lookup: {
+                    from: "pasar_order",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: {$and: checkOrder}}],
+                    as: "tokenOrder"}},
+                { $lookup: {from: "pasar_order_event",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
+                    as: "currentBid"}},
+                {
+                    $addFields: {
+                        "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
+                    }
+                },
+                { $unwind: "$tokenOrder"},
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
+                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
+                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                { $sort: sort }
+            ]).toArray();
+            
+            let total = marketTokens.length;
+            let result = this.paginateRows(marketTokens, pageNum, pageSize);
+            return {code: 200, message: 'success', data: {total, result}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     getDetailedCollectibles1: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};
