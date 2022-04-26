@@ -1,3 +1,4 @@
+const { json } = require("body-parser");
 let config = require("../config");
 const config_test = require("../config_test");
 const token1155ABI = require("../contractABI/token1155ABI");
@@ -49,45 +50,36 @@ module.exports = {
         console.log("Register URL: " + result)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        let data;
-        if(result.indexOf("pasar:json") != -1) {
-            let jsonData = await this.getInfoByIpfsUri(result);
-            data = this.parsePasar(jsonData);
-        } else if(result.indexOf("Solana") != -1) {
-            if(result.indexOf("https://") == -1) {
-                result = "https://gateway.pinata.cloud/ipfs/" + result;
-            }
-
-            fetch('https://cloudflare-ipfs.com/ipfs/QmU7FNsvsN4x9J4hKU81V67vUjvK3iz7Z4aa4xJrR2i9Z6/Solana_Data_7.json')
-            .then(res => res.text())
-            .then(data => {
-                console.log(222222222222);
-                console.log(data);
-            })
-        }
-
+        
+        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721);
         
     },
 
-    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token) {
+    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721) {
         if(result.indexOf("pasar:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
-            let data = this.parsePasar(jsonData);
-            this.updateTokenInfo(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, data)
+            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
         } else if(result.indexOf("Solana") != -1) {
-            if(result.indexOf("https://") == -1) {
-                result = "https://gateway.pinata.cloud/ipfs/" + result;
-            }
-
+            result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
             fetch(result)
             .then(res => res.text())
-            .then(data => {
-                this.updateTokenInfo(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, data)
+            .then(async data => {
+                let jsonData = await JSON.parse(data);
+                jsonData.tokenJsonVersion = 1;
+                jsonData.type = jsonData.properties.files[0].type;
+                jsonData.name = jsonData.name;
+                jsonData.description = jsonData.description;
+                jsonData.thumbnail = jsonData.image;
+                jsonData.asset = jsonData.image;
+                jsonData.kind = jsonData.properties.files[0].type;
+                jsonData.size = 0;
+                jsonData.adult = false;
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
             })
         }
     },
 
-    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, data) {
+    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, data) {
         let tokenEventDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -101,7 +93,7 @@ module.exports = {
             token
         };
         logger.info(`[Contract721] : ${JSON.stringify(tokenEventDetail)}`);
-        const stickerDBService = require("./stickerDBService");
+        let stickerDBService = require("./stickerDBService");
         await stickerDBService.addEvent(tokenEventDetail)
 
         let tokenDetail = {
