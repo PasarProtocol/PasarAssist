@@ -2076,7 +2076,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_collection_event');
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             let doc = await collection.findOne({token}, {sort:{blockNumber:-1}})
             if(doc) {
                 return doc.blockNumber

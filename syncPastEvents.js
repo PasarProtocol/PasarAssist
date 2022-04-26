@@ -250,7 +250,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee}
-                await stickerDBService.addEvent(transferEvent);
+                // await stickerDBService.addEvent(transferEvent);
 
                 if(to === burnAddress) {
                     // await stickerDBService.burnToken(tokenId);
@@ -364,7 +364,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, memo, gasFee}
-                await stickerDBService.addEvent(transferEvent);
+                // await stickerDBService.addEvent(transferEvent);
                 // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
             tokenInfoMemoSyncJobCurrent = toBlock + 1;

@@ -739,7 +739,6 @@ module.exports = {
                 
                 let check721;
                 let lastHeight = await stickerDBService.getLastRegisterCollectionEvent(registeredTokenInfo._token);
-                
                 if(is721){
                     check721 = true;
 
