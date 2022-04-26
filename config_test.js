@@ -25,6 +25,7 @@ module.exports = {
     pasarRegisterContract: '0xa140CC39Cf636A40FB2Ffe127928b08B67d90564',
     diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
     token721Contract: '0x32e36240eA2CDe9128A510901a9689E92EBe8ac1',
+
     token1155Contract: '0x52aDF83463Afe415ab48Da0C38DAA03211C580dC',
 
     pasarContractDeploy: 7377671,

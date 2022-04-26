@@ -4,6 +4,8 @@ const token1155ABI = require("../contractABI/token1155ABI");
 const token721ABI = require("../contractABI/token721ABI");
 config = config.curNetwork == 'testNet'? config_test : config;
 
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
 module.exports = {
@@ -34,16 +36,17 @@ module.exports = {
         return Promise.all(promises)
     },
 
-    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, baseToken) {
+    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc) {
         let tokenInfo = event.returnValues;
         let tokenId = check721 ? tokenInfo._tokenId : tokenInfo._id;
         
-        console.log(tokenInfo);
+        console.log("Register Info: " + JSON.stringify(tokenInfo));
         let [result, txInfo, blockInfo] = await this.makeBatchRequest([
             {method: check721 ? tokenContract.methods.tokenURI(tokenId).call : tokenContract.methods.uri(tokenId).call, params: {}},
             {method: web3Rpc.eth.getTransaction, params: event.transactionHash},
             {method: web3Rpc.eth.getBlock, params: event.blockNumber}
         ], web3Rpc)
+        console.log("Register URL: " + result)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
         let data;
@@ -54,11 +57,37 @@ module.exports = {
             if(result.indexOf("https://") == -1) {
                 result = "https://gateway.pinata.cloud/ipfs/" + result;
             }
-            let response = await fetch(result);
-            let jsonData = await response.json();
-            data = this.parseSolana(jsonData);
+
+            fetch('https://cloudflare-ipfs.com/ipfs/QmU7FNsvsN4x9J4hKU81V67vUjvK3iz7Z4aa4xJrR2i9Z6/Solana_Data_7.json')
+            .then(res => res.text())
+            .then(data => {
+                console.log(222222222222);
+                console.log(data);
+            })
         }
 
+        
+    },
+
+    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token) {
+        if(result.indexOf("pasar:json") != -1) {
+            let jsonData = await this.getInfoByIpfsUri(result);
+            let data = this.parsePasar(jsonData);
+            this.updateTokenInfo(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, data)
+        } else if(result.indexOf("Solana") != -1) {
+            if(result.indexOf("https://") == -1) {
+                result = "https://gateway.pinata.cloud/ipfs/" + result;
+            }
+
+            fetch(result)
+            .then(res => res.text())
+            .then(data => {
+                this.updateTokenInfo(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, data)
+            })
+        }
+    },
+
+    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, data) {
         let tokenEventDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -172,5 +201,5 @@ module.exports = {
         returnValue.size = null;
         returnValue.adult = false;
         return returnValue;
-    }
+    },
 }

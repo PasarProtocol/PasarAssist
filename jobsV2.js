@@ -738,23 +738,12 @@ module.exports = {
                 let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
                 
                 let check721;
-                // let totalCount = 0;
-                // try {
-                //     totalCount = await tokenContract.methods.totalSupply().call();
-                // } catch(err) {
-                //     totalCount = 0;
-                // }
-                //
-                // for(var i = 0; i < totalCount; i++) {
-                //     let tokenId = await tokenContract.methods.tokenByIndex(i).call();
-                //     let tokenUri = await tokenContract.methods.tokenURI(tokenId).call();
-                // }
 
                 if(is721){
                     check721 = true;
 
                     tokenContract.events.Transfer({
-                        fromBlock: event.blockNumber
+                        fromBlock: 1
                     }).on("error", function (error) {
                         logger.info(error);
                         logger.info("[Contract721] Sync Ending ...")
