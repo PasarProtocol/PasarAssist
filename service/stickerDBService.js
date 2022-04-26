@@ -1544,6 +1544,20 @@ module.exports = {
             
             let total = marketTokens.length;
             let result = this.paginateRows(marketTokens, pageNum, pageSize);
+
+            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+            for (let i = 0; i < result.length; i++) {
+                if( marketStatus.indexOf(result[i]['status']) != -1 ) {
+                    if(result[i]['holder'] == result[i]['royaltyOwner']) {
+                        result[i].saleType = 'Primary Sale';
+                    } else {
+                        result[i].saleType = 'Secondary Sale';
+                    }
+                }else {
+                    result[i].saleType = 'Not on sale';
+                }
+            }
+
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
