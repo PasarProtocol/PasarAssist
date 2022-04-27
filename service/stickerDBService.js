@@ -1567,6 +1567,23 @@ module.exports = {
         }
     },
 
+    getAttributeOfCollection: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try{
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_collection');
+            let tokenValue = await collection.findOne({token});
+            let result = tokenValue.attribute;
+            return {code: 200, message: 'success', data: {result}};
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+        
+    },
+
     getDetailedCollectibles1: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};

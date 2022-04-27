@@ -380,6 +380,17 @@ router.get('/getDetailedCollectiblesInCollection/:baseToken', function(req, res)
     })
 })
 
+router.get('/getAttributeOfCollection/:token', function(req, res) {
+    let token = req.params.token;
+
+    stickerDBService.getAttributeOfCollection(token).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/getListedCollectiblesByAddress/:address', function(req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
