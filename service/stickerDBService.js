@@ -1415,7 +1415,7 @@ module.exports = {
         }
     },
 
-    getDetailedCollectiblesInCollection: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, tokenType=null) {
+    getDetailedCollectiblesInCollection: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, attribute, tokenType=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};
         let rateEndTime = {};
@@ -1516,6 +1516,25 @@ module.exports = {
             if(maxPrice) {
                 checkOrder.push({price: {$lte: maxPrice.toString()}});
             }
+            let jsonAttribute = attribute;
+            let checkAttribute = {};
+
+            if(attribute) {
+                let listCheckAttribute = [];
+                Object.keys(attribute).forEach(key => {
+                    let listValues = jsonAttribute[key];
+                    let listValueCheck = [];
+                    listValues.forEach(value => {
+                        let objValue = {};
+                        objValue["attribute." + key] = value;
+                        listValueCheck.push(objValue);
+                    });
+
+                    listCheckAttribute.push({$or: listValueCheck});
+                });
+                checkAttribute = {$and: listCheckAttribute};
+            }
+            
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}, {status: 'Not on sale'}] };
             let marketTokens = await collection.aggregate([
                 { $lookup: {
@@ -1533,12 +1552,12 @@ module.exports = {
                     }
                 },
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1 },},
                 { $sort: sort }
             ]).toArray();
             
