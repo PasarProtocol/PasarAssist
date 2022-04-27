@@ -60,6 +60,7 @@ module.exports = {
             let jsonData = await this.getInfoByIpfsUri(result);
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
         } else if(result.indexOf("Solana") != -1) {
+            let stickerDBService = require("./stickerDBService");
             result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
             fetch(result)
             .then(res => res.text())
@@ -74,6 +75,31 @@ module.exports = {
                 jsonData.kind = jsonData.properties.files[0].type;
                 jsonData.size = 0;
                 jsonData.adult = false;
+                jsonData.attribute={};
+                let listAttributes = jsonData.attributes;
+                
+                let collection = await stickerDBService.getCollection(token);
+                let attributeOfCollection = {};
+                if(collection && collection.attribute) {
+                    attributeOfCollection = collection.attribute;
+                }
+
+                listAttributes.forEach(element => {
+                    let type = element.trait_type;
+                    let value = element.value;
+                    jsonData.attribute[type] = value;
+                    if(attributeOfCollection[type]) {
+                        let listParams = attributeOfCollection[type];
+                        if(listParams.indexOf(value) == -1) {
+                            attributeOfCollection[type].push(value);
+                        }
+                    } else {
+                        attributeOfCollection[type] = [value];
+                    }
+                });
+                if(attributeOfCollection) {
+                    await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+                }
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
             })
         }
@@ -94,7 +120,6 @@ module.exports = {
         };
         logger.info(`[Contract721] : ${JSON.stringify(tokenEventDetail)}`);
         let stickerDBService = require("./stickerDBService");
-        await stickerDBService.addEvent(tokenEventDetail)
 
         let tokenDetail = {
             tokenId: tokenId,
@@ -124,8 +149,10 @@ module.exports = {
             tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
-
+            tokenDetail.attribute = data.attribute ? data.attribute : null;
             console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
+
+            await stickerDBService.addEvent(tokenEventDetail)
             await stickerDBService.replaceToken(tokenDetail);
         }
     },

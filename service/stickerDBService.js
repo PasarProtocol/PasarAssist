@@ -2239,6 +2239,33 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getCollection: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const tokenDB = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let result = await tokenDB.findOne({token});
+            return result;
+        } catch(err) {
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    updateCollectionAttribute: async function(token, attribute) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            console.log("attribute: " + token + ":" +JSON.stringify(attribute));
+            const tokenDB = await mongoClient.db(config.dbName).collection('pasar_collection');
+            await tokenDB.updateOne({token}, {$set: {attribute}});
+            return true;
+        } catch(err) {
+            return false;
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getTotalPriceCollectibles: async function(token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
