@@ -345,18 +345,18 @@ router.get('/getDetailedCollectibles', function(req, res) {
     })
 })
 
-router.get('/getDetailedCollectiblesInCollection/:baseToken', function(req, res) {
-    let status = req.query.status;
-    let minPrice = req.query.minPrice;
-    let maxPrice = req.query.maxPrice;
-    let collectionType = req.params.baseToken;
-    let itemType = req.query.itemType;
-    let adult = req.query.adult;
-    let orderType = req.query.order;
-    let pageNumStr = req.query.pageNum;
-    let pageSizeStr = req.query.pageSize;
-    let keyword = req.query.keyword;
-    let tokenType = req.query.tokenType;
+router.post('/getDetailedCollectiblesInCollection', function(req, res) {
+    let status = req.body.status;
+    let minPrice = req.body.minPrice;
+    let maxPrice = req.body.maxPrice;
+    let collectionType = req.body.baseToken;
+    let itemType = req.body.itemType;
+    let adult = req.body.adult;
+    let orderType = req.body.order;
+    let pageNumStr = req.body.pageNum;
+    let pageSizeStr = req.body.pageSize;
+    let keyword = req.body.keyword;
+    let tokenType = req.body.tokenType;
     let attribute = req.body.attribute;
     let pageNum, pageSize;
 
