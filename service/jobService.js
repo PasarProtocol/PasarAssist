@@ -152,9 +152,13 @@ module.exports = {
             tokenDetail.attribute = data.attribute ? data.attribute : null;
             console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
 
-            await stickerDBService.addEvent(tokenEventDetail)
+            await stickerDBService.replaceToken(tokenDetail);
+        } else {
+            tokenDetail.holder = tokenInfo._to;
             await stickerDBService.replaceToken(tokenDetail);
         }
+        await stickerDBService.addEvent(tokenEventDetail)
+
     },
 
     startupUsersContractEvents: async function (web3Ws, web3Rpc) {
