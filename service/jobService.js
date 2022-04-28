@@ -162,6 +162,7 @@ module.exports = {
         let data = (await stickerDBService.getCollections()).data;
 
         for(let x of data) {
+
             let tokenContract = new web3Ws.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
 
             let result = await stickerDBService.getLastUserToken(x.token);
@@ -176,7 +177,8 @@ module.exports = {
                 }).on("connected", function () {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`)
                 }).on("data", async function (event) {
-                    await this.dealWithUsersToken(event,x.token, x.is721, tokenContract, web3Rpc)
+                    let jobService = require('./jobService.js');
+                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
                 })
             } else {
                 tokenContract.events.TransferSingle({
@@ -187,7 +189,8 @@ module.exports = {
                 }).on("connected", function () {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`);
                 }).on("data", async function (event) {
-                    await this.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
+                    let jobService = require('./jobService.js');
+                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
                 })
             }
         }
