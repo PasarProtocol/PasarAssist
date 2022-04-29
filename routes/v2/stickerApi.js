@@ -494,7 +494,9 @@ router.get('/getLatestElaPrice', function(req, res) {
 });
 
 router.get('/getCollection', function(req, res) {
-    stickerDBService.getCollections().then(result => {
+    let sort = req.query.sort;
+    
+    stickerDBService.getCollections(sort).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

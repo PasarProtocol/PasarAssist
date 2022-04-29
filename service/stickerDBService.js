@@ -2282,12 +2282,92 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function() {
+    getCollections: async function(sort = 0) {
+
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
+            
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let result = await token_collection.find({}).toArray();
+            let collections = await token_collection.find({}).toArray();
+            let result = [];
+
+            const temp_collection = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
+            console.log(sort);
+            let sortData = {}
+            switch(sort) {
+                case "0":
+                    sortData = {createTime: -1}
+                    break;
+                case "1":
+                    sortData = {createTime: 1}
+                    break;
+                case "2":
+                    sortData = {totalPrice: 1}
+                    break;
+                case "3":
+                    sortData = {totalPrice: -1}
+                    break;
+                case "4":
+                    sortData = {totalCount: 1}
+                    break;
+                case "5":
+                    sortData = {totalCount: -1}
+                    break;
+                case "6":
+                    sortData = {floorPrice: 1}
+                    break;
+                case "7":
+                    sortData = {floorPrice: -1}
+                    break;
+                case "8":
+                    sortData = {totalOwner: 1}
+                    break;
+                case "9":
+                    sortData = {totalOwner: -1}
+                    break;
+                default: 
+                    sortData = {createTime: -1}
+                    break;
+            }
+            
+            await Promise.all(collections.map(async cell => {
+                let reponse = await this.getTotalCountCollectibles(cell.token);
+                cell.collectibles = [];
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalCount = reponse.data.total;
+                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
+                    for(var i = 0; i < endCount; i++) {
+                        cell.collectibles.push(reponse.data.list[i])
+                    }
+                } else {
+                    cell.totalCount = 0;
+                }
+                reponse = await this.getFloorPriceCollectibles(cell.token);
+                if(reponse.code == 200 && reponse.data.price) {
+                    cell.floorPrice = reponse.data.price;
+                } else {
+                    cell.floorPrice = 0;
+                }
+                reponse = await this.getOwnersOfCollection(cell.token);
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalOwner = reponse.data.total;
+                } else {
+                    cell.totalOwner = 0;
+                }
+                reponse = await this.getTotalPriceCollectibles(cell.token);
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalPrice = reponse.data.total;
+                } else {
+                    cell.totalPrice = 0;
+                }
+                result.push(cell);
+            }));
+            if(result.length > 0) {
+                await temp_collection.insertMany(result);
+                result = await temp_collection.find({}).sort(sortData).toArray();
+                await temp_collection.drop();
+            }
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -2348,8 +2428,8 @@ module.exports = {
         try {
             await mongoClient.connect();
             const tokenDB = await mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await tokenDB.find({baseToken: token}).toArray();
-            return {code: 200, message: 'success', data: {total: result.length}};
+            let result = await tokenDB.find({baseToken: token}).sort({createTime: -1}).toArray();
+            return {code: 200, message: 'success', data: {total: result.length, list: result}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
