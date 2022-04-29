@@ -1913,6 +1913,69 @@ module.exports = {
         }
     },
 
+    getBidCollectiblesByAddress: async function(address, orderType) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let sort = {};
+            switch (orderType) {
+                case '0':
+                    sort = {createTime: -1};
+                    break;
+                case '1':
+                    sort = {createTime: 1};
+                    break;
+                case '2':
+                    sort = {price: -1};
+                    break;
+                case '3':
+                    sort = {price: 1};
+                    break;
+                default:
+                    sort = {createTime: -1}
+            }
+
+            let tokens = await token_collection.aggregate([
+                { $lookup: {
+                    from: "pasar_order",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [
+                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {orderType: "2"}, {orderState: "1"}]} },
+                    ],
+                    as: "tokenOrder"}
+                },
+                { $unwind: "$tokenOrder"},
+                { $match: {$and: [{holder: address}]}},
+                { $sort: sort },
+                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
+                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
+                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+            ]).toArray();
+
+            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+            for (let i = 0; i < tokens.length; i++) {
+                if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
+                    if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
+                        tokens[i].saleType = 'Primary Sale';
+                    } else {
+                        tokens[i].saleType = 'Secondary Sale';
+                    }
+                }else {
+                    tokens[i].saleType = 'Not on sale';
+                }
+            }
+            return { code: 200, message: 'sucess', data: tokens};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     getCreatedCollectiblesByAddress: async function(address, orderType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

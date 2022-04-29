@@ -414,6 +414,17 @@ router.get('/getOwnCollectiblesByAddress/:address', function (req, res) {
     })
 })
 
+router.get('/getBidCollectiblesByAddress/:address', function (req, res) {
+    let address = req.params.address;
+    let orderType = req.query.order;
+    stickerDBService.getBidCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/getCreatedCollectiblesByAddress/:address', function(req, res) {
     let address = req.params.address;
     let orderType = req.query.orderType;
