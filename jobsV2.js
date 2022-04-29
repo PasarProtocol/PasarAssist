@@ -707,73 +707,73 @@ module.exports = {
             })
         });
 
-        // let tokenRegisteredJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-        //     let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered');
+        let tokenRegisteredJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered');
 
-        //     isTokenRegisteredJobRun = true;
+            isTokenRegisteredJobRun = true;
 
-        //     logger.info(`[tokenRegistered] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[tokenRegistered] Sync start from height: ${config.pasarRegisterContractDeploy}`);
 
-        //     pasarRegisterWs.events.TokenRegistered({
-        //         fromBlock: lastHeight + 1
-        //     }).on("error", function (error) {
-        //         logger.info(error);
-        //         logger.info("[tokenRegistered] Sync Ending ...")
-        //         isTokenRegisteredJobRun = false;
-        //     }).on("data", async function (event) {
-        //         let registeredTokenInfo = event.returnValues;
-        //         logger.info(`[TokenRegistered] : ${JSON.stringify(registeredTokenInfo)}`);
+            pasarRegisterWs.events.TokenRegistered({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[tokenRegistered] Sync Ending ...")
+                isTokenRegisteredJobRun = false;
+            }).on("data", async function (event) {
+                let registeredTokenInfo = event.returnValues;
+                logger.info(`[TokenRegistered] : ${JSON.stringify(registeredTokenInfo)}`);
 
-        //         let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
-        //             tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        //             logIndex: event.logIndex, removed: event.removed, id: event.id}
+                let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id}
 
-        //         let tokenContract = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
-        //         let [is721, is1155, symbol] = await jobService.makeBatchRequest([
-        //             {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
-        //             {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
-        //             {method: tokenContract.methods.symbol().call, params: {}}
-        //         ], web3Ws)
+                let tokenContract = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
+                let [is721, is1155, symbol] = await jobService.makeBatchRequest([
+                    {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
+                    {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
+                    {method: tokenContract.methods.symbol().call, params: {}}
+                ], web3Ws)
 
-        //         let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
+                let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
                 
-        //         let check721;
-        //         let lastHeight = await stickerDBService.getLastRegisterCollectionEvent(registeredTokenInfo._token);
-        //         if(is721){
-        //             check721 = true;
+                let check721;
+                let lastHeight = await stickerDBService.getLastRegisterCollectionEvent(registeredTokenInfo._token);
+                if(is721){
+                    check721 = true;
 
-        //             tokenContract.events.Transfer({
-        //                 fromBlock: lastHeight
-        //             }).on("error", function (error) {
-        //                 logger.info(error);
-        //                 logger.info("[Contract721] Sync Ending ...")
-        //             }).on("data", async function (event) {
-        //                 console.log(JSON.stringify(event))
-        //                 await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
-        //             })
-        //         } else if(is1155) {
-        //             check721 = false;
+                    tokenContract.events.Transfer({
+                        fromBlock: lastHeight
+                    }).on("error", function (error) {
+                        logger.info(error);
+                        logger.info("[Contract721] Sync Ending ...")
+                    }).on("data", async function (event) {
+                        console.log(JSON.stringify(event))
+                        await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                    })
+                } else if(is1155) {
+                    check721 = false;
                     
-        //             tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
-        //             tokenContract.events.TransferSingle({
-        //                 fromBlock: event.blockNumber
-        //             }).on("error", function (error) {
-        //                 logger.info(error);
-        //                 logger.info("[Contract1155] Sync Ending ...")
-        //             }).on("data", async function (event) {
-        //                 console.log(JSON.stringify(event));
-        //                 await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
-        //             })
-        //         } else {
-        //             logger.error("unknown token type");
-        //             return;
-        //         }
+                    tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
+                    tokenContract.events.TransferSingle({
+                        fromBlock: event.blockNumber
+                    }).on("error", function (error) {
+                        logger.info(error);
+                        logger.info("[Contract1155] Sync Ending ...")
+                    }).on("data", async function (event) {
+                        console.log(JSON.stringify(event));
+                        await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                    })
+                } else {
+                    logger.error("unknown token type");
+                    return;
+                }
 
-        //         await stickerDBService.collectionEvent(registeredTokenDetail);
-        //         await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
-        //             registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
-        //     })
-        // });
+                await stickerDBService.collectionEvent(registeredTokenDetail);
+                await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
+                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
+            })
+        });
 
         let royaltyChangedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged');
@@ -864,8 +864,8 @@ module.exports = {
                 tokenTransferBatchSyncJobId.reschedule(new Date(now + 60 * 1000))
             if(!isGetTokenInfoWithBatchMemoJobRun)
                 tokenInfoWithBatchMemoSyncJobId.reschedule(new Date(now + 60 * 1000))
-            // if(!isTokenRegisteredJobRun)
-                // tokenRegisteredJobId.reschedule(new Date(now + 60 * 1000))
+            if(!isTokenRegisteredJobRun)
+                tokenRegisteredJobId.reschedule(new Date(now + 60 * 1000))
             if(!isRoyaltyChangedJobRun)
                 royaltyChangedJobRun.reschedule(new Date(now + 60 * 1000))
             if(!isTokenInfoUpdatedJobRun)

@@ -56,51 +56,20 @@ module.exports = {
     },
 
     parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721) {
-        if(result.indexOf("pasar:json") != -1) {
+        if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
+            jsonData = this.parsePasar(jsonData);
+            console.log("Pasar Data: " + JSON.stringify(jsonData));
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
         } else if(result.indexOf("Solana") != -1) {
-            let stickerDBService = require("./stickerDBService");
             result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
             fetch(result)
             .then(res => res.text())
             .then(async data => {
                 let jsonData = await JSON.parse(data);
-                jsonData.tokenJsonVersion = 1;
-                jsonData.type = jsonData.properties.files[0].type;
-                jsonData.name = jsonData.name;
-                jsonData.description = jsonData.description;
-                jsonData.thumbnail = jsonData.image.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
-                jsonData.asset = jsonData.image.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
-                jsonData.kind = jsonData.properties.files[0].type;
-                jsonData.size = 0;
-                jsonData.adult = false;
-                jsonData.attribute={};
-                let listAttributes = jsonData.attributes;
-                
-                let collection = await stickerDBService.getCollection(token);
-                let attributeOfCollection = {};
-                if(collection && collection.attribute) {
-                    attributeOfCollection = collection.attribute;
-                }
+                let returnData = await this.parseSolana(jsonData, token);
 
-                listAttributes.forEach(element => {
-                    let type = element.trait_type;
-                    let value = element.value;
-                    jsonData.attribute[type] = value;
-                    if(attributeOfCollection[type]) {
-                        let listParams = attributeOfCollection[type];
-                        if(listParams.indexOf(value) == -1) {
-                            attributeOfCollection[type].push(value);
-                        }
-                    } else {
-                        attributeOfCollection[type] = [value];
-                    }
-                });
-                if(attributeOfCollection) {
-                    await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
-                }
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
         }
     },
@@ -152,10 +121,11 @@ module.exports = {
             tokenDetail.attribute = data.attribute ? data.attribute : null;
             console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
 
-            await stickerDBService.replaceToken(tokenDetail);
+            await stickerDBService.insertToken(tokenDetail);
         } else {
+            console.log("Transer: " + data.name + " : " + tokenInfo._to);
             tokenDetail.holder = tokenInfo._to;
-            await stickerDBService.replaceToken(tokenDetail);
+            await stickerDBService.updateToken(tokenDetail);
         }
         await stickerDBService.addEvent(tokenEventDetail)
 
@@ -211,21 +181,52 @@ module.exports = {
         returnValue.kind = data.data.kind;
         returnValue.size = data.data.size;
         returnValue.adult = data.adult;
+        console.log("Paser Data: " + JSON.parse(data));
         return returnValue;
     },
 
-    parseSolana: function(data) {
+    
+
+    parseSolana: async function(data, token) {
         let returnValue = {};
-        console.log("SolanaData: " + JSON.stringify(data));
+
         returnValue.tokenJsonVersion = 1;
         returnValue.type = data.properties.files[0].type;
         returnValue.name = data.name;
         returnValue.description = data.description;
-        returnValue.thumbnail = data.image;
-        returnValue.asset = data.image;
+        returnValue.thumbnail = data.image.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
+        returnValue.asset = data.image.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
         returnValue.kind = data.properties.files[0].type;
-        returnValue.size = null;
+        returnValue.size = 0;
         returnValue.adult = false;
+        returnValue.attribute={};
+        let listAttributes = data.attributes;
+
+        let stickerDBService = require("./stickerDBService");
+        let collection = await stickerDBService.getCollection(token);
+        let attributeOfCollection = {};
+        if(collection && collection.attribute) {
+            attributeOfCollection = collection.attribute;
+        }
+
+        listAttributes.forEach(element => {
+            let type = element.trait_type;
+            let value = element.value;
+            returnValue.attribute[type] = value;
+            if(attributeOfCollection[type]) {
+                let listParams = attributeOfCollection[type];
+                if(listParams.indexOf(value) == -1) {
+                    attributeOfCollection[type].push(value);
+                }
+            } else {
+                attributeOfCollection[type] = [value];
+            }
+        });
+        if(attributeOfCollection) {
+            await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+        }
+        console.log("SolanaData: " + JSON.stringify(returnValue));
+
         return returnValue;
     },
 }
