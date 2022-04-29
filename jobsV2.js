@@ -66,7 +66,7 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let now = Date.now();
-
+        
         let recipients = [];
         recipients.push('lifayi2008@163.com');
         
