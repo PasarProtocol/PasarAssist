@@ -12,6 +12,8 @@ let pasarContractABI = require('../contractABI/pasarABI');
 config = config.curNetwork == 'testNet'? config_test : config;
 let jobService = require('./jobService');
 
+const burnAddress = '0x0000000000000000000000000000000000000000';
+
 module.exports = {
     getLastStickerSyncHeight: async function () {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -298,6 +300,19 @@ module.exports = {
             await client.close();
         }
     },
+    getEvents: async function(tokenId) {
+        let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await client.connect();
+            const collection = client.db(config.dbName).collection('pasar_token_event');
+            let result = await collection.find({tokenId}).sort({blockNumber: 1}).toArray();
+            return {code: 200, message: 'success', data: result};
+        } catch (err) {
+            return {code: 500, message: 'server error'};
+        } finally {
+            await client.close();
+        }
+    },
 
     addEvents: async function(transferEvents) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -400,6 +415,20 @@ module.exports = {
         }
     },
 
+    insertToken: async function (token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection.insertOne(token);
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     updateToken: async function (tokenId, holder, timestamp, blockNumber) {
         if(holder == config.pasarContract)
             return;
@@ -409,6 +438,21 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             await collection.updateOne({tokenId}, {$set: {holder, updateTime: timestamp, blockNumber}});
         } catch (err) {
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateNormalToken: async function (token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            console.log("Update Info: " + JSON.stringify(token));
+            await collection.updateOne({tokenId: token.tokenId}, {$set: token});
+        } catch (err) {
+            logger.error(err);
             throw new Error();
         } finally {
             await mongoClient.close();

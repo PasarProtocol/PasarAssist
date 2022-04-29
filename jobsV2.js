@@ -756,7 +756,7 @@ module.exports = {
                     
                     tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
                     tokenContract.events.TransferSingle({
-                        fromBlock: event.blockNumber
+                        fromBlock: lastHeight
                     }).on("error", function (error) {
                         logger.info(error);
                         logger.info("[Contract1155] Sync Ending ...")

@@ -120,12 +120,28 @@ module.exports = {
             tokenDetail.baseToken = token;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
             console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
-
             await stickerDBService.insertToken(tokenDetail);
+
+            let response = await stickerDBService.getEvents(tokenId);
+
+            if(response.code == 200) {
+                await Promise.all(response.data.map(async event => {
+                    if(event.from != burnAddress) {
+                        let updateTokenInfo = {
+                            tokenId: tokenId,
+                            blockNumber: event.blockNumber,
+                            updateTime: event.updateTime,
+                            holder: event.to,
+                        };
+                        await stickerDBService.updateNormalToken(updateTokenInfo);
+                    }
+                }))
+            }
+
         } else {
             console.log("Transer: " + data.name + " : " + tokenInfo._to);
             tokenDetail.holder = tokenInfo._to;
-            await stickerDBService.updateToken(tokenDetail);
+            await stickerDBService.updateNormalToken(tokenDetail);
         }
         await stickerDBService.addEvent(tokenEventDetail)
 
