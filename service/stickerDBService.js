@@ -1590,10 +1590,26 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try{
             await mongoClient.connect();
-            let collection  = mongoClient.db(config.dbName).collection('pasar_collection');
-            let tokenValue = await collection.findOne({token});
-            let result = tokenValue.attribute;
-            return {code: 200, message: 'success', data: {result}};
+            let collectionToken  = mongoClient.db(config.dbName).collection('pasar_token');
+            let attributesOfToken = await collectionToken.aggregate([
+                {$match: {baseToken: token}},
+                {$project: {_id: 0, attribute: 1}}
+            ]).toArray();
+            let result = {};
+            attributesOfToken.forEach(token => {
+                Object.keys(token.attribute).forEach(att => {                    
+                    if(result[att] && result[att][token.attribute[att]] && result[att][token.attribute[att]] != 0) {
+                        result[att][token.attribute[att]] += 1;
+                    } else {
+                        if(!result[att]) {
+                            result[att] = {};
+                        }
+                        result[att][token.attribute[att]] = 1;
+                    }
+                })
+            })
+            
+            return {code: 200, message: 'success', data: result};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
