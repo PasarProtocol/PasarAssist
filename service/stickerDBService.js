@@ -1850,7 +1850,7 @@ module.exports = {
 
             let tokens = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
-                { $unwind: "$tokenOrder"},
+                { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                 { $match: {$and: [{holder: address}]} },
                 { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
