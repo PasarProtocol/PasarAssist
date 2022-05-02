@@ -93,17 +93,17 @@ module.exports = {
         let tokenDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
-            royalties: 0,
             updateTime: blockInfo.timestamp,
-            price: 0,
-            marketTime: 0,
-            endTime: 0,
-            orderId: ""
         }
         
         if(tokenInfo._from == burnAddress) {
             tokenDetail.status = "Not on sale";
             tokenDetail.royaltyOwner = tokenInfo._to;
+            tokenDetail.orderId = "";
+            tokenDetail.endTime = 0;
+            tokenDetail.price = 0;
+            tokenDetail.orderId = 0;
+            tokenDetail.royalties = 0,
             tokenDetail.holder = tokenInfo._to;
             tokenDetail.createTime = blockInfo.timestamp;
             tokenDetail.quantity = check721 ? 1 : parseInt(tokenInfo._value);
