@@ -883,7 +883,7 @@ module.exports = {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order');
             let temp_collection = 'token_temp' + Date.now().toString();
-            await collection.find({"tokenId": tokenId, orderState: 2}).forEach( function (x) {
+            await collection.find({"tokenId": tokenId, orderState: "2"}).forEach( function (x) {
                 x.updateTime = new Date(x.updateTime * 1000);
                 x.price = parseInt(x.price);
                 mongoClient.db(config.dbName).collection(temp_collection).save(x);
@@ -2512,7 +2512,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_order');
-            
+
             let result = await token_collection.aggregate([
                 { $match: {baseToken: token, orderState: "2"}},
                 { $project: {"_id": 0, price: 1, quoteToken: 1}},
