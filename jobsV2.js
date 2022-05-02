@@ -703,7 +703,7 @@ module.exports = {
                 logger.info(`[OrderForBid2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, null, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid', result.sellerAddr, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketBid', result.sellerAddr, event.blockNumber);
             })
         });
 
