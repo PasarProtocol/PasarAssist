@@ -2475,9 +2475,15 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const token_collection_royalty = await mongoClient.db(config.dbName).collection('pasar_collection_royalty');
-            let result = await token_collection_royalty.findOne({token});
-            let listAddress = result && result.royaltyOwner ? result.royaltyOwner : [];
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let listAddress = [];
+            let tokens = await token_collection.find({baseToken: token}).toArray();
+            console.log(tokens);
+            tokens.forEach(cell => {
+                if(listAddress.indexOf(cell.holder) == -1) {
+                    listAddress.push(cell.holder);
+                }
+            });
             return {code: 200, message: 'success', data: {total: listAddress.length, address: listAddress}};
         } catch(err) {
             return {code: 500, message: 'server error'};
