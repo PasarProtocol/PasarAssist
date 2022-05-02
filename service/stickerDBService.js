@@ -1809,6 +1809,10 @@ module.exports = {
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let result = await collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
+                { $lookup: {from: "pasar_order_event",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}, market_condition]} },
                 { $sort: sort },
@@ -1852,6 +1856,10 @@ module.exports = {
 
             let tokens = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
+                { $lookup: {from: "pasar_order_event",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    as: "currentBid"}},
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                 { $match: {$and: [{holder: address}]} },
                 { $sort: sort },
@@ -1991,6 +1999,10 @@ module.exports = {
                     ],
                     as: "tokenOrder"}
                 },
+                { $lookup: {from: "pasar_order_event",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}]}},
                 { $sort: sort },
@@ -2002,18 +2014,22 @@ module.exports = {
             ]).toArray();
 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+            let result = [];
             for (let i = 0; i < tokens.length; i++) {
-                if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
-                    if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
-                        tokens[i].saleType = 'Primary Sale';
-                    } else {
-                        tokens[i].saleType = 'Secondary Sale';
+                if(tokens[i].currentBid.length > 0) {
+                    if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
+                        if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
+                            tokens[i].saleType = 'Primary Sale';
+                        } else {
+                            tokens[i].saleType = 'Secondary Sale';
+                        }
+                    }else {
+                        tokens[i].saleType = 'Not on sale';
                     }
-                }else {
-                    tokens[i].saleType = 'Not on sale';
+                    result.push(tokens[i])
                 }
             }
-            return { code: 200, message: 'sucess', data: tokens};
+            return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
