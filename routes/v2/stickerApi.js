@@ -436,6 +436,17 @@ router.get('/getCreatedCollectiblesByAddress/:address', function(req, res) {
     })
 })
 
+router.get('/getSoldCollectiblesByAddress/:address', function (req, res) {
+    let address = req.params.address;
+    let orderType = req.query.order;
+    stickerDBService.getSoldCollectiblesByAddress(address, orderType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.get('/getMarketStatusByTokenId/:sellerAddr', function(req, res) {
     let sellerAddr = req.params.sellerAddr;
     let tokenId = req.query.tokenId;
