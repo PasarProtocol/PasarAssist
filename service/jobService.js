@@ -138,7 +138,7 @@ module.exports = {
                 }))
             }
 
-        } else {
+        } else if(config.pasarV2Contract.toLowerCase() != tokenInfo._to.toLowerCase() ){
             console.log("Transer: " + data.name + " : " + tokenInfo._to);
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
