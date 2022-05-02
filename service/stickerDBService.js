@@ -2511,12 +2511,11 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            const token_collection = await mongoClient.db(config.dbName).collection('pasar_order');
+            
             let result = await token_collection.aggregate([
-                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
-                { $unwind: "$order"},
-                { $match: {baseToken: token}},
-                { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
+                { $match: {baseToken: token, orderState: "2"}},
+                { $project: {"_id": 0, price: 1, quoteToken: 1}},
             ]).toArray();
 
             let total = 0;
