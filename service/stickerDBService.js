@@ -1008,6 +1008,16 @@ module.exports = {
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
+            if(!result.royalties || result.royalties == 0) {
+                collection = client.db(config.dbName).collection('pasar_collection_royalty');
+                let royatlies = await collection.findOne({token: result.baseToken});
+                if(royatlies && royatlies.royaltyRates && royatlies.royaltyRates.length > 0) {
+                    result.royalties = royatlies.royaltyRates[0];
+                }
+                if(royatlies && royatlies.royaltyOwner) {
+                    result.royaltyOwner = royatlies.royaltyOwner;
+                }
+            }
             collection = client.db(config.dbName).collection('pasar_order');
             let orderForMarketRecord = await collection.find(
                 {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
