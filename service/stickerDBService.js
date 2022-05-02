@@ -2683,6 +2683,30 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getInstanceSearchResult: async function(keyword) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let condition = {$or: [{name: {$regex: keyword, '$options' : 'i'}}, {description: {$regex: keyword, '$options' : 'i'}},
+                {royaltyOwner: {$regex: keyword, '$options' : 'i'}}, {holder: {$regex: keyword, '$options' : 'i'}}, {token: {$regex: keyword, '$options' : 'i'}},
+                {address: {$regex: keyword, '$options' : 'i'}}]}
+            let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let collection_account = await mongoClient.db(config.dbName).collection('pasar_address_did');
+
+            let items = await collection_token.find(condition).sort({marketTime: -1}).limit(3).toArray()
+            let collections = await collection_collection.find(condition).sort({marketTime: -1}).limit(3).toArray()
+            let accounts = await collection_account.find(condition).sort({marketTime: -1}).limit(3).toArray()
+
+            return {code: 200, message: 'success', data: {collections, items, accounts}};
+
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getDiaTokenPrice: async function () {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();

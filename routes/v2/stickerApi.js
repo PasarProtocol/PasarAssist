@@ -570,4 +570,16 @@ router.get('/getFloorPriceCollectibles/:token', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+router.get('/getInstanceSearchResult', function(req, res) {
+    let search = req.query.search ? req.query.search : '';
+
+    stickerDBService.getInstanceSearchResult(search).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 module.exports = router;
