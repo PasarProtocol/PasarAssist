@@ -134,6 +134,7 @@ module.exports = {
                             holder: event.to,
                         };
                         await stickerDBService.updateNormalToken(updateTokenInfo);
+                        await stickerDBService.addEvent(tokenEventDetail)
                     }
                 }))
             }
@@ -142,9 +143,8 @@ module.exports = {
             console.log("Transer: " + data.name + " : " + tokenInfo._to);
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
+            await stickerDBService.addEvent(tokenEventDetail)
         }
-        await stickerDBService.addEvent(tokenEventDetail)
-
     },
 
     startupUsersContractEvents: async function (web3Ws, web3Rpc) {
