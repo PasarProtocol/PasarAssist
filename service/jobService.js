@@ -197,11 +197,9 @@ module.exports = {
         returnValue.kind = data.data.kind;
         returnValue.size = data.data.size;
         returnValue.adult = data.adult;
-        console.log("Paser Data: " + JSON.parse(data));
+        console.log("Paser Data: " + JSON.stringify(returnValue));
         return returnValue;
     },
-
-    
 
     parseSolana: async function(data, token) {
         let returnValue = {};

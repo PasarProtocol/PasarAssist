@@ -748,7 +748,7 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract721] Sync Ending ...")
                     }).on("data", async function (event) {
-                        console.log(JSON.stringify(event))
+                        console.log("[Contract721] Data: " + JSON.stringify(event))
                         await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
                     })
                 } else if(is1155) {
@@ -761,7 +761,7 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract1155] Sync Ending ...")
                     }).on("data", async function (event) {
-                        console.log(JSON.stringify(event));
+                        console.log("[Contract1155] Data: " + JSON.stringify(event));
                         await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
                     })
                 } else {
