@@ -61,8 +61,8 @@ module.exports = {
     },
 
     diaBalance: async function(addresses) {
-        let web3 = new Web3('https://api.elastos.io/eth');
-        let diaContract = new web3.eth.Contract(diaContractABI, '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5');
+        let web3 = new Web3(config.escRpcUrl);
+        let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
 
         let promises = [];
         addresses.forEach(address => {

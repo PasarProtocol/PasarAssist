@@ -11,6 +11,7 @@ let Web3 = require('web3');
 let pasarContractABI = require('../contractABI/pasarABI');
 config = config.curNetwork == 'testNet'? config_test : config;
 let jobService = require('./jobService');
+const indexDBService = require('./indexDBService');
 
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
@@ -2432,41 +2433,46 @@ module.exports = {
             let sortData = {}
             switch(sort) {
                 case "0":
-                    sortData = {createTime: -1}
+                    sortData = {diaBalance: -1}
                     break;
                 case "1":
-                    sortData = {createTime: 1}
+                    sortData = {createdTime: -1}
                     break;
                 case "2":
-                    sortData = {totalPrice: 1}
+                    sortData = {createdTime: 1}
                     break;
                 case "3":
-                    sortData = {totalPrice: -1}
+                    sortData = {totalPrice: 1}
                     break;
                 case "4":
-                    sortData = {totalCount: 1}
+                    sortData = {totalPrice: -1}
                     break;
                 case "5":
-                    sortData = {totalCount: -1}
+                    sortData = {totalCount: 1}
                     break;
                 case "6":
-                    sortData = {floorPrice: 1}
+                    sortData = {totalCount: -1}
                     break;
                 case "7":
-                    sortData = {floorPrice: -1}
+                    sortData = {floorPrice: 1}
                     break;
                 case "8":
-                    sortData = {totalOwner: 1}
+                    sortData = {floorPrice: -1}
                     break;
                 case "9":
+                    sortData = {totalOwner: 1}
+                    break;
+                case "10":
                     sortData = {totalOwner: -1}
                     break;
                 default: 
-                    sortData = {createTime: -1}
+                    sortData = {createdTime: -1}
                     break;
             }
             
             await Promise.all(collections.map(async cell => {
+                let diaBalance = await indexDBService.diaBalance([cell.owner]);
+                cell.diaBalance = diaBalance[cell.owner] / (10 ** 18);
                 let reponse = await this.getTotalCountCollectibles(cell.token);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
@@ -2480,7 +2486,7 @@ module.exports = {
                 }
                 reponse = await this.getFloorPriceCollectibles(cell.token);
                 if(reponse.code == 200 && reponse.data.price) {
-                    cell.floorPrice = reponse.data.price;
+                    cell.floorPrice = reponse.data.price ;
                 } else {
                     cell.floorPrice = 0;
                 }
@@ -2498,12 +2504,13 @@ module.exports = {
                 }
                 result.push(cell);
             }));
+            let returnValue = {}
             if(result.length > 0) {
                 await temp_collection.insertMany(result);
-                result = await temp_collection.find({}).sort(sortData).toArray();
+                returnValue = await temp_collection.find({}).sort(sortData).toArray();
                 await temp_collection.drop();
             }
-            return {code: 200, message: 'success', data: result};
+            return {code: 200, message: 'success', data: returnValue};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {

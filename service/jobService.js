@@ -12,7 +12,6 @@ const burnAddress = '0x0000000000000000000000000000000000000000';
 module.exports = {
 
     getInfoByIpfsUri: async function(uri) {
-        console.log(uri, 'this is ipfs method')
         let tokenCID = uri.split(":")[2];
         if(tokenCID) {
             let response = await fetch(config.ipfsNodeUrl + tokenCID);
@@ -41,13 +40,11 @@ module.exports = {
         let tokenInfo = event.returnValues;
         let tokenId = check721 ? tokenInfo._tokenId : tokenInfo._id;
         
-        console.log("Register Info: " + JSON.stringify(tokenInfo));
         let [result, txInfo, blockInfo] = await this.makeBatchRequest([
             {method: check721 ? tokenContract.methods.tokenURI(tokenId).call : tokenContract.methods.uri(tokenId).call, params: {}},
             {method: web3Rpc.eth.getTransaction, params: event.transactionHash},
             {method: web3Rpc.eth.getBlock, params: event.blockNumber}
         ], web3Rpc)
-        console.log("Register URL: " + result)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
         
@@ -59,7 +56,6 @@ module.exports = {
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
-            console.log("Pasar Data: " + JSON.stringify(jsonData));
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
         } else if(result.indexOf("Solana") != -1) {
             result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
@@ -119,7 +115,6 @@ module.exports = {
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
-            console.log("Register Token: " + token + " : " +JSON.stringify(tokenDetail));
             await stickerDBService.insertToken(tokenDetail);
 
             let response = await stickerDBService.getEvents(tokenId);
@@ -140,7 +135,6 @@ module.exports = {
             }
 
         } else if(config.pasarV2Contract.toLowerCase() != tokenInfo._to.toLowerCase() ){
-            console.log("Transer: " + data.name + " : " + tokenInfo._to);
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
             await stickerDBService.addEvent(tokenEventDetail)
@@ -197,7 +191,6 @@ module.exports = {
         returnValue.kind = data.data.kind;
         returnValue.size = data.data.size;
         returnValue.adult = data.adult;
-        console.log("Paser Data: " + JSON.stringify(returnValue));
         return returnValue;
     },
 
@@ -239,7 +232,6 @@ module.exports = {
         if(attributeOfCollection) {
             await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
         }
-        console.log("SolanaData: " + JSON.stringify(returnValue));
 
         return returnValue;
     },
