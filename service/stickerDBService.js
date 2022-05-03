@@ -1006,6 +1006,7 @@ module.exports = {
                 { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$token"},
+                { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
@@ -1014,9 +1015,6 @@ module.exports = {
                 let royatlies = await collection.findOne({token: result.baseToken});
                 if(royatlies && royatlies.royaltyRates && royatlies.royaltyRates.length > 0) {
                     result.royalties = royatlies.royaltyRates[0];
-                }
-                if(royatlies && royatlies.royaltyOwner) {
-                    result.royaltyOwner = royatlies.royaltyOwner;
                 }
             }
             collection = client.db(config.dbName).collection('pasar_order');
