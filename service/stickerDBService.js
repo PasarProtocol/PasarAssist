@@ -748,7 +748,7 @@ module.exports = {
             if(rows.length > 0)
                 await temp_collection.insertMany(rows);
 
-            // // fetch approval_events
+            // fetch approval_events
             // collection =  mongoClient.db(config.dbName).collection('pasar_approval_event');
             // rows = await collection.aggregate([
             //     { $project: {'_id': 0, blockNumber: 1, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
@@ -757,39 +757,39 @@ module.exports = {
             // if(rows.length > 0)
             //     await temp_collection.insertMany(rows);
 
-            // // fetch results from temporary collection
-            // let result = await temp_collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
-            // await temp_collection.drop();
-            // for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
-            // {
-            //     if(i >= result.length)
-            //         break;
-            //     if(result[i]['event'] == 'SetApprovalForAll') {
-            //         results.push(result[i]);
-            //         continue;
-            //     }
-            //     let res  = await collection_token.findOne({tokenId: result[i]['tokenId']});
-            //     if(res != null) {
-            //         result[i]['name'] = res['name'];
-            //         result[i]['royalties'] = res['royalties'];
-            //         result[i]['asset'] = res['asset'];
-            //         result[i]['royaltyOwner'] = res['royaltyOwner'];
-            //         result[i]['thumbnail'] = res['thumbnail'];
-            //         result[i]['data'] = {...result[i]['data'], ...res['data']};
-            //         result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
-            //         result[i]['quoteToken'] = res['quoteToken'];
-            //     }
-            //     if(result[i]['event'] == 'OrderFilled') {
-            //         let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
-            //         if(res != null) {
-            //             result[i]['platformfee'] = res['platformFee'];
-            //         }
-            //     }
-            //     if(result[i]['gasFee'] == null) {
-            //         result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
-            //     }
-            //     results.push(result[i]);
-            // }
+            // fetch results from temporary collection
+            let result = await temp_collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
+            await temp_collection.drop();
+            for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
+            {
+                if(i >= result.length)
+                    break;
+                if(result[i]['event'] == 'SetApprovalForAll') {
+                    results.push(result[i]);
+                    continue;
+                }
+                let res  = await collection_token.findOne({tokenId: result[i]['tokenId']});
+                if(res != null) {
+                    result[i]['name'] = res['name'];
+                    result[i]['royalties'] = res['royalties'];
+                    result[i]['asset'] = res['asset'];
+                    result[i]['royaltyOwner'] = res['royaltyOwner'];
+                    result[i]['thumbnail'] = res['thumbnail'];
+                    result[i]['data'] = {...result[i]['data'], ...res['data']};
+                    result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
+                    result[i]['quoteToken'] = res['quoteToken'];
+                }
+                if(result[i]['event'] == 'OrderFilled') {
+                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
+                    if(res != null) {
+                        result[i]['platformfee'] = res['platformFee'];
+                    }
+                }
+                if(result[i]['gasFee'] == null) {
+                    result[i]['gasFee'] = await this.getGasFee(result[i]['tHash']);
+                }
+                results.push(result[i]);
+            }
             results = this.verifyEvents(results);
             let total = result.length;
             return {code: 200, message: 'success', data: {total, results}};
