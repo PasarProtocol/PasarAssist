@@ -2695,7 +2695,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let condition = {$or: [{name: {$regex: keyword, '$options' : 'i'}}, {description: {$regex: keyword, '$options' : 'i'}},
+            let condition = {$or: [{name: {$regex: keyword, '$options' : 'i'}}, {tokenId: {$regex: keyword, '$options' : 'i'}} , {tokenIdHex: {$regex: keyword, '$options' : 'i'}}, {description: {$regex: keyword, '$options' : 'i'}},
                 {royaltyOwner: {$regex: keyword, '$options' : 'i'}}, {holder: {$regex: keyword, '$options' : 'i'}}, {token: {$regex: keyword, '$options' : 'i'}},
                 {address: {$regex: keyword, '$options' : 'i'}}]}
             let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
