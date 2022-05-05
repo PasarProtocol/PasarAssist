@@ -132,11 +132,11 @@ module.exports = {
                     }
                 }))
             }
-            await stickerDBService.addEvent(tokenEventDetail)
+            await stickerDBService.replaceEvent(tokenEventDetail)
         } else if(config.pasarV2Contract.toLowerCase() != tokenInfo._to.toLowerCase() ){
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
-            await stickerDBService.addEvent(tokenEventDetail)
+            await stickerDBService.replaceEvent(tokenEventDetail)
         }
     },
 
