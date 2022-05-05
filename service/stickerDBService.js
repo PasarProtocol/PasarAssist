@@ -421,7 +421,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.insertOne(token);
+            let data = await collection.findOne({tokenId: token.tokenId});
+            if(!data) {
+                await collection.insertOne(token);
+            }
         } catch (err) {
             logger.error(err);
             throw new Error();
