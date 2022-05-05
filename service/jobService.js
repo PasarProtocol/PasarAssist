@@ -118,7 +118,7 @@ module.exports = {
             await stickerDBService.insertToken(tokenDetail);
 
             let response = await stickerDBService.getEvents(tokenId);
-
+            
             if(response.code == 200) {
                 await Promise.all(response.data.map(async event => {
                     if(event.from != burnAddress) {
@@ -129,11 +129,10 @@ module.exports = {
                             holder: event.to,
                         };
                         await stickerDBService.updateNormalToken(updateTokenInfo);
-                        await stickerDBService.addEvent(tokenEventDetail)
                     }
                 }))
             }
-
+            await stickerDBService.addEvent(tokenEventDetail)
         } else if(config.pasarV2Contract.toLowerCase() != tokenInfo._to.toLowerCase() ){
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
