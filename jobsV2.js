@@ -993,9 +993,13 @@ module.exports = {
             })
         }
 
-        /**
-         *  Start to listen all user's contract events
-         */
-        jobService.startupUsersContractEvents(web3Ws, web3Rpc);
+        schedule.scheduleJob('0 */10 * * * *', async () => {
+            /**
+                *  Start to listen all user's contract events
+            */
+            jobService.startupUsersContractEvents(web3Ws, web3Rpc);
+        })
+
+        
     }
 }
