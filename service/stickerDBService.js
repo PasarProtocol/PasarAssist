@@ -330,11 +330,11 @@ module.exports = {
 
     replaceEvent: async function(transferEvent) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        
+
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber}, transferEvent, {upsert: true});
+            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber}, {$set: transferEvent}, {upsert: true});
         } catch (err) {
             logger.error(err);
         } finally {
@@ -379,7 +379,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId: token.tokenId}, token, {upsert: true});
+            await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -393,7 +393,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({orderId: token.orderId}, token, {upsert: true});
+            await collection.updateOne({orderId: token.orderId}, {$set: token}, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -407,7 +407,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token_galleria');
-            await collection.updateOne({tokenId: token.tokenId}, token, {upsert: true});
+            await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
