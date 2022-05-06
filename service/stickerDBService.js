@@ -1079,7 +1079,7 @@ module.exports = {
             result.forEach(x => {
                 x.time = new Date(x.updateTime * 1000);
                 let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
-                x.value = type == 1 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(x.royaltyFee)) : parseInt(x.price) * parseFloat(x.amount) - parseInt(platformFee);
+                x.value = type == 0 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(x.royaltyFee)) : parseInt(x.price) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
             });
             let now  = Date.now().toString();
