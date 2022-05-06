@@ -453,7 +453,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            console.log("Update Info: " + JSON.stringify(token));
+
             await collection.updateOne({tokenId: token.tokenId}, {$set: token});
         } catch (err) {
             logger.error(err);
@@ -1999,7 +1999,7 @@ module.exports = {
                     { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1, sellerAddr: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
-                console.log(record);
+
                 if(record.length > 1) {
                     if(record[0]['sellerAddr'] == address && record[0]['orderState'] == '1') {
                         tokens[i].saleType = 'Secondary Sale';
@@ -2258,7 +2258,7 @@ module.exports = {
             const order_event_collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
             let tokens = await token_collection.find({}).toArray();
-            console.log(tokens.length);
+
             for(var i = 0; i < tokens.length; i++) {
                 let token = tokens[i];
                 let token_event = await token_event_collection.find({$and: [{to: {$ne: config.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
@@ -2430,7 +2430,7 @@ module.exports = {
             let result = [];
 
             const temp_collection = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
-            console.log(sort);
+
             let sortData = {}
             switch(sort) {
                 case "0":
@@ -2559,7 +2559,7 @@ module.exports = {
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
             let listAddress = [];
             let tokens = await token_collection.find({baseToken: token}).toArray();
-            console.log(tokens);
+
             tokens.forEach(cell => {
                 if(listAddress.indexOf(cell.holder) == -1) {
                     listAddress.push(cell.holder);
@@ -2602,7 +2602,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            console.log("attribute: " + token + ":" +JSON.stringify(attribute));
+
             const tokenDB = await mongoClient.db(config.dbName).collection('pasar_collection');
             await tokenDB.updateOne({token}, {$set: {attribute}});
             return true;
@@ -2665,7 +2665,7 @@ module.exports = {
                 let price = cell.price * rate / 10 ** 18;
                 listPrice.push(price);
             })
-            console.log(listPrice);
+
             return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -2736,7 +2736,7 @@ module.exports = {
     getDiaTokenPrice: async function () {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
-        console.log(blocknum);
+
         const graphQLParams = {
             query: `query tokenPriceData { token(id: "0x2c8010ae4121212f836032973919e8aec9aeaee5", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
             variables: null,

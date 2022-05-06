@@ -844,8 +844,8 @@ module.exports = {
                 orderForSaleJobId.reschedule(new Date(now + 10 * 1000));
 
                 if(config.galleriaContract !== '' && config.galleriaContractDeploy !== 0) {
-                    panelCreatedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
-                    panelRemovedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
+                    // panelCreatedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
+                    // panelRemovedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
                 }
             }
             if(!isGetForOrderPriceChangedJobRun)
