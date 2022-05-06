@@ -330,11 +330,11 @@ module.exports = {
 
     replaceEvent: async function(transferEvent) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        let {tokenId, blockNumber} = transferEvent
+        
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.replaceOne({tokenId, blockNumber}, transferEvent, {upsert: true});
+            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber}, transferEvent, {upsert: true});
         } catch (err) {
             logger.error(err);
         } finally {
@@ -379,7 +379,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.replaceOne({tokenId: token.tokenId}, token, {upsert: true});
+            await collection.updateOne({tokenId: token.tokenId}, token, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -393,7 +393,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.replaceOne({orderId: token.orderId}, token, {upsert: true});
+            await collection.updateOne({orderId: token.orderId}, token, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -407,7 +407,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token_galleria');
-            await collection.replaceOne({tokenId: token.tokenId}, token, {upsert: true});
+            await collection.updateOne({tokenId: token.tokenId}, token, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -2678,6 +2678,24 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = await mongoClient.db(config.dbName).collection('pasar_token_event');
+            let doc = await collection.findOne({token}, {sort:{blockNumber: -1}});
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                return 0;
+            }
+        } catch(err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getLastCollectionToken: async function(token) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = await mongoClient.db(config.dbName).collection('pasar_collection_event');
             let doc = await collection.findOne({token}, {sort:{blockNumber: -1}});
             if(doc) {
                 return doc.blockNumber
