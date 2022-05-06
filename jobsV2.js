@@ -769,6 +769,12 @@ module.exports = {
                     return;
                 }
 
+                let creator = data.creator ? data.creator : null;
+                
+                if(creator) {
+                    await pasarDBService.updateDid({address: registeredTokenInfo._owner, did: creator});
+                }
+
                 await stickerDBService.collectionEvent(registeredTokenDetail);
                 await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
                     registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
