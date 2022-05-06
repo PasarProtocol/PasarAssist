@@ -204,8 +204,8 @@ router.get('/whitelist', function(req, res) {
     })
 })
 
-router.get('/getDidByAddress', function(req, res) {
-    let address = req.query.address;
+router.get('/getDidByAddress/:address', function(req, res) {
+    let address = req.params.address;
 
     pasarDBService.getDidByAddress(address).then(result => {
         res.json(result);
