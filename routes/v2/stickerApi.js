@@ -32,15 +32,15 @@ router.get('/listStickers', function(req, res) {
 
 router.get('/search/:key', function(req, res) {
     let keyword = req.params.key;
-
+    console.log(keyword);
     if(!keyword) {
         res.json({code: 400, message: 'bad request'})
         return;
     }
 
-    if(keyword.startsWith('0x') && keyword.length > 42) {
-        keyword = BigInt(keyword).toFormat({prefix:""});
-    }
+    // if(keyword.startsWith('0x') && keyword.length > 42) {
+    //     keyword = BigInt(keyword).toFormat({prefix:""});
+    // }
 
     stickerDBService.search(keyword).then(result => {
         res.json(result);

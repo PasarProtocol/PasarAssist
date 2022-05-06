@@ -38,9 +38,9 @@ router.get('/search', function(req, res) {
         return;
     }
 
-    if(keyword.startsWith('0x') && keyword.length > 42) {
-        keyword = BigInt(keyword).toFormat({prefix:""});
-    }
+    // if(keyword.startsWith('0x') && keyword.length > 42) {
+    //     keyword = BigInt(keyword).toFormat({prefix:""});
+    // }
 
     stickerDBService.search(keyword).then(result => {
         res.json(result);
