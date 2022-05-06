@@ -1063,8 +1063,8 @@ module.exports = {
         try {
             await client.connect();
             let addressCondition = [];
-            //type 0: total royalties, 1: total sales
-            if(type == 0)
+            //type 0: total sales, 1: total royalties
+            if(type == 1)
                 addressCondition.push({"sellerAddr": new RegExp('^' + walletAddr)});
             else
                 addressCondition.push({"royaltyOwner": new RegExp('^' + walletAddr)});
