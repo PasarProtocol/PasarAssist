@@ -2697,7 +2697,7 @@ module.exports = {
             await mongoClient.connect();
             let condition = {$or: [{name: {$regex: keyword, '$options' : 'i'}}, {tokenId: {$regex: keyword, '$options' : 'i'}} , {tokenIdHex: {$regex: keyword, '$options' : 'i'}}, {description: {$regex: keyword, '$options' : 'i'}},
                 {royaltyOwner: {$regex: keyword, '$options' : 'i'}}, {holder: {$regex: keyword, '$options' : 'i'}}, {token: {$regex: keyword, '$options' : 'i'}},
-                {address: {$regex: keyword, '$options' : 'i'}}]}
+                {address: {$regex: keyword, '$options' : 'i'}}, {"did.name": {$regex: keyword, '$options' : 'i'}}, {"did.description": {$regex: keyword, '$options' : 'i'}}]}
             let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
             let collection_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let collection_account = await mongoClient.db(config.dbName).collection('pasar_address_did');
