@@ -434,7 +434,7 @@ module.exports = {
     },
 
     updateToken: async function (tokenId, holder, timestamp, blockNumber) {
-        if(holder == config.pasarContract)
+        if(holder == config.pasarContract || holder == config.pasarV2Contract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

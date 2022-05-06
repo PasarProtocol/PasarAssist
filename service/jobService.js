@@ -133,8 +133,9 @@ module.exports = {
                 }))
             }
             await stickerDBService.replaceEvent(tokenEventDetail)
-        } else if(config.pasarV2Contract.toLowerCase() != tokenInfo._to.toLowerCase() ){
+        } else if(tokenInfo._to != config.pasarV2Contract && tokenInfo._to != config.pasarContract && tokenInfo._to != null){
             tokenDetail.holder = tokenInfo._to;
+            tokenDetail.updateTime = 1111111111,
             await stickerDBService.updateNormalToken(tokenDetail);
             await stickerDBService.replaceEvent(tokenEventDetail)
         }
