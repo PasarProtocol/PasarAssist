@@ -148,7 +148,7 @@ module.exports = {
 
             let tokenContract = new web3Ws.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
 
-            let result = await stickerDBService.getLastCollectionToken(x.token);
+            let result = await stickerDBService.getLastRegisterCollectionEvent(x.token);
             let fromBlock = result === 0 ? x.blockNumber : result + 1;
 
             if(x.is721){
