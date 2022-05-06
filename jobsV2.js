@@ -112,6 +112,7 @@ module.exports = {
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
+                token.baseToken = config.stickerV2Contract;
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                 await stickerDBService.replaceToken(token);
             } catch (e) {
@@ -163,6 +164,7 @@ module.exports = {
                     token.status = "Not on sale";
                     token.endTime = null;
                     token.orderId = null;
+                    token.baseToken = config.stickerV2Contract;
                     tokens.push(token);
                     logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                     await stickerDBService.replaceToken(tokens);
