@@ -480,7 +480,7 @@ module.exports = {
                 updateData.baseToken = baseToken;
             }
             await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
-            if(holder != config.stickerContract && holder != config.stickerV2Contract && holder != null) {
+            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
                 await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
             }
         } catch (err) {
