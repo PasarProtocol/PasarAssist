@@ -1387,8 +1387,7 @@ module.exports = {
                 let collectionTypeArr = collectionType.split(',');
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
-            let endingTimeCheck = [];
-            let checkNotMet = {};
+            
             let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}];
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
@@ -1399,23 +1398,23 @@ module.exports = {
                 } else if(ele == 'Buy Now'){
                     status_condition.push({status: 'MarketSale'});
                 } else if(ele == 'On Auction') {
-                    status_condition.push({status: 'MarketBid'});
-                    status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck.push({endTime: {$gt: current}});
+
+                    status_condition.push({$and: [{endTime: {$gt: current}}, {$or: [{status: 'MarketBid'}, {status: 'MarketAuction'}]}]});
                 } else if(ele == 'Has Bids') {
                     status_condition.push({status: 'MarketBid'});
                 } else if(ele == 'Has Ended') {
-                    status_condition.push({status: 'MarketBid'});
-                    status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck.push({endTime: {$lte: current}});
+
+                    status_condition.push({$and: [{endTime: {$lte: current}}, {$or: [{status: 'MarketBid'}, {status: 'MarketAuction'}]}]});
                 } else if(ele == 'Not Met') {
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketAuction'});
-                    checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
+                    if(statusArr.length == 1) {
+                        checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
+                    }
                 } else {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
@@ -1423,11 +1422,6 @@ module.exports = {
                 }
             }
             status_condition = {$or: status_condition};
-            if(endingTimeCheck.length > 0) {
-                endingTimeCheck = {$and: [{$or: endingTimeCheck}]};
-            } else {
-                endingTimeCheck = {};
-            }
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
             for (let i = 0; i < itemTypeArr.length; i++) {
@@ -1462,7 +1456,7 @@ module.exports = {
                     }
                 },
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, endingTimeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
