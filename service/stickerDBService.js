@@ -1387,7 +1387,7 @@ module.exports = {
                 let collectionTypeArr = collectionType.split(',');
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
-            let endingTimeCheck = {};
+            let endingTimeCheck = [];
             let checkNotMet = {};
             let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}];
             for (let i = 0; i < statusArr.length; i++) {
@@ -1403,7 +1403,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck = {$and: [{endTime: {$gt: current}}]};
+                    endingTimeCheck.push({$and: {endTime: {$gt: current}}});
                 } else if(ele == 'Has Bids') {
                     status_condition.push({status: 'MarketBid'});
                 } else if(ele == 'Has Ended') {
@@ -1411,7 +1411,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck = {$and: [{endTime: {$lte: current}}]};
+                    endingTimeCheck.push({$and: {endTime: {$lte: current}}});
                 } else if(ele == 'Not Met') {
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketAuction'});
@@ -1423,7 +1423,7 @@ module.exports = {
                 }
             }
             status_condition = {$or: status_condition};
-
+            endingTimeCheck = {$or: endingTimeCheck};
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
             for (let i = 0; i < itemTypeArr.length; i++) {
