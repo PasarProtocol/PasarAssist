@@ -1426,7 +1426,7 @@ module.exports = {
             if(endingTimeCheck.length > 0) {
                 endingTimeCheck = {$and: [{$or: endingTimeCheck}]};
             } else {
-                status_condition = {};
+                endingTimeCheck = {};
             }
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
