@@ -1403,7 +1403,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck.push({$and: {endTime: {$gt: current}}});
+                    endingTimeCheck.push({endTime: {$gt: current}});
                 } else if(ele == 'Has Bids') {
                     status_condition.push({status: 'MarketBid'});
                 } else if(ele == 'Has Ended') {
@@ -1411,7 +1411,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     let current = Date.now();
                     current = Math.floor(current/1000).toString();
-                    endingTimeCheck.push({$and: {endTime: {$lte: current}}});
+                    endingTimeCheck.push({endTime: {$lte: current}});
                 } else if(ele == 'Not Met') {
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketAuction'});
@@ -1423,7 +1423,7 @@ module.exports = {
                 }
             }
             status_condition = {$or: status_condition};
-            endingTimeCheck = {$or: endingTimeCheck};
+            endingTimeCheck = {$and: [{$or: endingTimeCheck}]};
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
             for (let i = 0; i < itemTypeArr.length; i++) {
