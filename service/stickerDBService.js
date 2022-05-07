@@ -1534,6 +1534,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'Not on sale'});
                 } else if(ele == 'Buy Now'){
                     status_condition.push({status: 'MarketSale'});
                 } else if(ele == 'On Auction') {
@@ -1558,6 +1559,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'Not on sale'});
                 }
             }
             status_condition = {$or: status_condition};
