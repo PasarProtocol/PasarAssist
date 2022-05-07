@@ -85,7 +85,7 @@ module.exports = {
         };
         logger.info(`[Contract721] : ${JSON.stringify(tokenEventDetail)}`);
         let stickerDBService = require("./stickerDBService");
-
+        
         let tokenDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -133,7 +133,7 @@ module.exports = {
                 }))
             }
             await stickerDBService.replaceEvent(tokenEventDetail)
-        } else if(tokenInfo._to != config.pasarV2Contract && tokenInfo._to != config.pasarContract && tokenInfo._to != null){
+        } else if(tokenInfo._to != config.pasarV2Contract && tokenInfo._to != config.pasarContract && tokenInfo._to != null && tokenInfo._from != config.pasarV2Contract && tokenInfo._from != config.pasarContract && tokenInfo._from != null){
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
             await stickerDBService.replaceEvent(tokenEventDetail)

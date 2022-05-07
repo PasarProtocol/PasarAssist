@@ -559,7 +559,7 @@ module.exports = {
 
                 let transferEvent = {tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee};
                 logger.info(`[TokenInfoWithMemo2] transferToken: ${JSON.stringify(transferEvent)}`)
-                await stickerDBService.addEvent(transferEvent);
+                // await stickerDBService.addEvent(transferEvent);
                 // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
         });
@@ -606,7 +606,7 @@ module.exports = {
                     transferEvents.push({tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee});
                     logger.info(`[TokenInfoWithBatchMemo2] transferToken: ${JSON.stringify({tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee})}`)
                 }
-                await stickerDBService.addEvents(transferEvents);
+                // await stickerDBService.replaceEvent(transferEvents);
 
                 // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
             })
