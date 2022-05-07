@@ -469,7 +469,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let updateData = {price, orderId, marketTime, endTime, blockNumber};
+            let updateData = {price, orderId, endTime, blockNumber};
             if(status != null) {
                 updateData.status = status;
             }
@@ -478,6 +478,9 @@ module.exports = {
             }
             if(baseToken != null) {
                 updateData.baseToken = baseToken;
+            }
+            if(marketTime != null) {
+                updateData.marketTime = marketTime;
             }
             await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
@@ -1811,10 +1814,10 @@ module.exports = {
             let sort = {};
             switch (orderType) {
                 case '0':
-                    sort = {createTime: -1};
+                    sort = {updateTime: -1};
                     break;
                 case '1':
-                    sort = {createTime: 1};
+                    sort = {updateTime: 1};
                     break;
                 case '2':
                     sort = {price: -1};
@@ -1823,7 +1826,7 @@ module.exports = {
                     sort = {price: 1};
                     break;
                 default:
-                    sort = {createTime: -1}
+                    sort = {updateTime: -1}
             }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let result = await collection.aggregate([
@@ -1858,10 +1861,10 @@ module.exports = {
             let sort = {};
             switch (orderType) {
                 case '0':
-                    sort = {createTime: -1};
+                    sort = {updateTime: -1};
                     break;
                 case '1':
-                    sort = {createTime: 1};
+                    sort = {updateTime: 1};
                     break;
                 case '2':
                     sort = {price: -1};
@@ -1870,7 +1873,7 @@ module.exports = {
                     sort = {price: 1};
                     break;
                 default:
-                    sort = {createTime: -1}
+                    sort = {updateTime: -1}
             }
 
             let tokens = await token_collection.aggregate([
@@ -1918,10 +1921,10 @@ module.exports = {
             let sort = {};
             switch (orderType) {
                 case '0':
-                    sort = {createTime: -1};
+                    sort = {updateTime: -1};
                     break;
                 case '1':
-                    sort = {createTime: 1};
+                    sort = {updateTime: 1};
                     break;
                 case '2':
                     sort = {price: -1};
@@ -1930,7 +1933,7 @@ module.exports = {
                     sort = {price: 1};
                     break;
                 default:
-                    sort = {createTime: -1}
+                    sort = {updateTime: -1}
             }
 
             let tokens = await token_collection.aggregate([
@@ -1979,10 +1982,10 @@ module.exports = {
             let sort = {};
             switch (orderType) {
                 case '0':
-                    sort = {createTime: -1};
+                    sort = {updateTime: -1};
                     break;
                 case '1':
-                    sort = {createTime: 1};
+                    sort = {updateTime: 1};
                     break;
                 case '2':
                     sort = {price: -1};
@@ -1991,7 +1994,7 @@ module.exports = {
                     sort = {price: 1};
                     break;
                 default:
-                    sort = {createTime: -1}
+                    sort = {updateTime: -1}
             }
             let tokens = await token_collection.aggregate([
                 { $match: {$and: [{holder: address}]} }
@@ -2054,10 +2057,10 @@ module.exports = {
             let sort = {};
             switch (orderType) {
                 case '0':
-                    sort = {createTime: -1};
+                    sort = {updateTime: -1};
                     break;
                 case '1':
-                    sort = {createTime: 1};
+                    sort = {updateTime: 1};
                     break;
                 case '2':
                     sort = {price: -1};
@@ -2066,7 +2069,7 @@ module.exports = {
                     sort = {price: 1};
                     break;
                 default:
-                    sort = {createTime: -1}
+                    sort = {updateTime: -1}
             }
 
             let tokens = await token_collection.aggregate([
