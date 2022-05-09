@@ -78,7 +78,7 @@ module.exports = {
 
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                    createTime: result.createTime, updateTime: result.updateTime}
+                    createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime}
 
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
@@ -108,7 +108,6 @@ module.exports = {
 
                 token.adult = data.adult ? data.adult : false;
                 token.price = 0;
-                token.marketTime = null;
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
@@ -131,7 +130,7 @@ module.exports = {
                 results.map(async result => {
                     let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                         royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                        createTime: result.createTime, updateTime: result.updateTime}
+                        createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime}
                     token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                     let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                     token.tokenJsonVersion = data.version;
@@ -160,7 +159,6 @@ module.exports = {
 
                     token.adult = data.adult ? data.adult : false;
                     token.price = 0;
-                    token.marketTime = null;
                     token.status = "Not on sale";
                     token.endTime = null;
                     token.orderId = null;

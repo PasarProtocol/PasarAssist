@@ -90,6 +90,7 @@ module.exports = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
             updateTime: blockInfo.timestamp,
+            marketTime: blockInfo.timestamp,
         }
         
         if(tokenInfo._from == burnAddress) {
