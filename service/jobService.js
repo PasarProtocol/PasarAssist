@@ -133,7 +133,8 @@ module.exports = {
                 }))
             }
             await stickerDBService.replaceEvent(tokenEventDetail)
-        } else if(tokenInfo._to != config.pasarV2Contract && tokenInfo._to != config.pasarContract && tokenInfo._to != null && tokenInfo._from != config.pasarV2Contract && tokenInfo._from != config.pasarContract && tokenInfo._from != null){
+        } else if(tokenEventDetail._to != config.pasarV2Contract && tokenEventDetail._to != config.pasarContract && tokenEventDetail._to != null
+            && tokenEventDetail._from != config.pasarV2Contract && tokenEventDetail._from != config.pasarContract && tokenEventDetail._from != null){
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
             await stickerDBService.replaceEvent(tokenEventDetail)

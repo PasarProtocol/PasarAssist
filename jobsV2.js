@@ -418,58 +418,58 @@ module.exports = {
             });
         });
 
-        let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight();
-            // if(isGetTokenInfoJobRun == false) {
-            //     //initial state
-            //     stickerDBService.removeTokenInfoByHeight(lastHeight);
-            // } else {
-            //     lastHeight += 1;
-            // }
-            isGetTokenInfoJobRun = true;
-            logger.info(`[TokenInfo2] Sync Starting ... from block ${lastHeight + 1}`)
+        // let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+        //     let lastHeight = await stickerDBService.getLastStickerSyncHeight();
+        //     // if(isGetTokenInfoJobRun == false) {
+        //     //     //initial state
+        //     //     stickerDBService.removeTokenInfoByHeight(lastHeight);
+        //     // } else {
+        //     //     lastHeight += 1;
+        //     // }
+        //     isGetTokenInfoJobRun = true;
+        //     logger.info(`[TokenInfo2] Sync Starting ... from block ${lastHeight + 1}`)
 
-            stickerContractWs.events.TransferSingle({
-                fromBlock: lastHeight + 1
-            }).on("error", function (error) {
-                logger.info(error);
-                logger.info("[TokenInfo2] Sync Ending ...");
-                isGetTokenInfoJobRun = false
-            }).on("data", async function (event) {
-                let blockNumber = event.blockNumber;
-                let txHash = event.transactionHash;
-                let txIndex = event.transactionIndex;
-                let from = event.returnValues._from;
-                let to = event.returnValues._to;
+        //     stickerContractWs.events.TransferSingle({
+        //         fromBlock: lastHeight + 1
+        //     }).on("error", function (error) {
+        //         logger.info(error);
+        //         logger.info("[TokenInfo2] Sync Ending ...");
+        //         isGetTokenInfoJobRun = false
+        //     }).on("data", async function (event) {
+        //         let blockNumber = event.blockNumber;
+        //         let txHash = event.transactionHash;
+        //         let txIndex = event.transactionIndex;
+        //         let from = event.returnValues._from;
+        //         let to = event.returnValues._to;
 
-                //After contract upgrade, this job just deal Mint and Burn event
-                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
-                //     return;
-                // }
+        //         //After contract upgrade, this job just deal Mint and Burn event
+        //         // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+        //         //     return;
+        //         // }
 
-                let tokenId = event.returnValues._id;
-                let value = event.returnValues._value;
+        //         let tokenId = event.returnValues._id;
+        //         let value = event.returnValues._value;
 
-                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
-                    {method: web3Rpc.eth.getBlock, params: blockNumber},
-                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-                ], web3Rpc)
-                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-                let timestamp = blockInfo.timestamp;
+        //         let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+        //             {method: web3Rpc.eth.getBlock, params: blockNumber},
+        //             {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+        //         ], web3Rpc)
+        //         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+        //         let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
-                logger.info(`[TokenInfo2] tokenEvent: ${JSON.stringify(transferEvent)}`)
-                await stickerDBService.replaceEvent(transferEvent);
+        //         let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
+        //         logger.info(`[TokenInfo2] tokenEvent: ${JSON.stringify(transferEvent)}`)
+        //         await stickerDBService.replaceEvent(transferEvent);
 
-                if(to === burnAddress) {
-                    await stickerDBService.burnToken(tokenId);
-                } else if(from === burnAddress) {
-                    await dealWithNewToken(blockNumber, tokenId)
-                } else {
-                    // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
-                }
-            })
-        });
+        //         if(to === burnAddress) {
+        //             await stickerDBService.burnToken(tokenId);
+        //         } else if(from === burnAddress) {
+        //             await dealWithNewToken(blockNumber, tokenId)
+        //         } else {
+        //             // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+        //         }
+        //     })
+        // });
 
         let tokenTransferBatchSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
             let lastHeight = await stickerDBService.getLastStickerSyncHeight();
