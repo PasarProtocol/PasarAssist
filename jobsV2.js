@@ -457,8 +457,8 @@ module.exports = {
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
                 logger.info(`[TokenInfo2] tokenEvent: ${JSON.stringify(transferEvent)}`)
-                if(transferEvent._to != config.pasarV2Contract && transferEvent._to != config.pasarContract && transferEvent._to != null
-                    && transferEvent._from != config.pasarV2Contract && transferEvent._from != config.pasarContract && transferEvent._from != null) {
+                if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != null
+                    && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != null) {
                     await stickerDBService.replaceEvent(transferEvent);
                 }
 
@@ -467,7 +467,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
-                    // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
             })
         });
