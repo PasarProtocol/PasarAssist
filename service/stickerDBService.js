@@ -1502,10 +1502,10 @@ module.exports = {
                 sort = {createTime: 1};
                 break;
             case '4':
-                sort = {price: 1};
+                sort = {priceCalculated: 1};
                 break;
             case '5':
-                sort = {price: -1};
+                sort = {priceCalculated: -1};
                 break;
             case '6':
                 sort = {createTime: -1}
@@ -1626,7 +1626,6 @@ module.exports = {
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1, lastBid: "$tokenOrder.lastBid" },},
-                { $sort: sort }
             ]).toArray();
             
             let total = marketTokens.length;
@@ -1653,8 +1652,6 @@ module.exports = {
                     marketTokens[i].saleType = 'Not on sale';
                 }
             }
-
-            console.log(JSON.stringify(marketTokens));
 
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
             if(marketTokens.length > 0)
