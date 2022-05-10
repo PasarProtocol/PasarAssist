@@ -1454,7 +1454,6 @@ module.exports = {
             ]).toArray();
 
             let total = marketTokens.length;
-            // let result = await this.paginateRows(marketTokens, pageNum, pageSize);
 
             let rateDia = await this.getDiaTokenPrice();
             let rate = parseFloat(rateDia.token.derivedELA);
@@ -1620,11 +1619,6 @@ module.exports = {
                     let: {"ttokenId": "$tokenId"},
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                     as: "currentBid"}},
-                {
-                    $addFields: {
-                        "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
-                    }
-                },
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                 { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
@@ -1636,22 +1630,42 @@ module.exports = {
             ]).toArray();
             
             let total = marketTokens.length;
-            let result = this.paginateRows(marketTokens, pageNum, pageSize);
+            
+            let rateDia = await this.getDiaTokenPrice();
+            let rate = parseFloat(rateDia.token.derivedELA);
 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
-            for (let i = 0; i < result.length; i++) {
-                if( marketStatus.indexOf(result[i]['status']) != -1 ) {
-                    if(result[i]['holder'] == result[i]['royaltyOwner']) {
-                        result[i].saleType = 'Primary Sale';
+
+            for (let i = 0; i < marketTokens.length; i++) {
+                if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                } else {
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                }
+
+                if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
+                    if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
+                        marketTokens[i].saleType = 'Primary Sale';
                     } else {
-                        result[i].saleType = 'Secondary Sale';
+                        marketTokens[i].saleType = 'Secondary Sale';
                     }
                 }else {
-                    result[i].saleType = 'Not on sale';
+                    marketTokens[i].saleType = 'Not on sale';
                 }
             }
 
-            return {code: 200, message: 'success', data: {total, result}};
+            console.log(JSON.stringify(marketTokens));
+
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+            if(marketTokens.length > 0)
+                await temp_collection.insertMany(marketTokens);
+            
+            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+
+            if(marketTokens.length > 0)
+                await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: {total, result: returnValue}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
