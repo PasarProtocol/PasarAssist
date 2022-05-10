@@ -116,6 +116,12 @@ module.exports = {
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
+
+            let creator = data.creator ? data.creator : null;
+            if(creator) {
+                await pasarDBService.updateDid({address: tokenInfo._to, did: creator});
+            }
+
             await stickerDBService.replaceToken(tokenDetail);
 
             let response = await stickerDBService.getEvents(tokenId);

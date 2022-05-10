@@ -79,7 +79,7 @@ module.exports = {
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                     createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime}
-
+                
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                 token.tokenJsonVersion = data.version;
@@ -112,6 +112,12 @@ module.exports = {
                 token.endTime = null;
                 token.orderId = null;
                 token.baseToken = config.stickerV2Contract;
+
+                let creator = data.creator ? data.creator : null;
+                if(creator) {
+                    await pasarDBService.updateDid({address: result.royaltyOwner, did: creator});
+                }
+
                 logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                 await stickerDBService.replaceToken(token);
             } catch (e) {
