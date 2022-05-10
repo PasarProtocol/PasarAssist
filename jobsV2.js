@@ -389,7 +389,7 @@ module.exports = {
                 logger.info(`[OrderCanceled2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.sellerAddr, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber);
             })
         });
 
