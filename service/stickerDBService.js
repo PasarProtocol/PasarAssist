@@ -170,11 +170,18 @@ module.exports = {
         return result;
     },
 
-    paginateRows: function(rows, pageNum, pageSize) {
+    paginateRows: async function(rows, pageNum, pageSize) {
         let result = [];
+        
+        
         for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++) {
             if(i >= rows.length)
                 break;
+            if(rows[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                rows[i].priceCalculated = parseInt(rows[i].price) * rate / 10 ** 18; 
+            } else {
+                rows[i].priceCalculated = parseInt(rows[i].price) / 10 ** 18; 
+            }
             result.push(rows[i]);
         }
         return result;
@@ -1414,9 +1421,6 @@ module.exports = {
 
             status_condition = {$or: status_condition};
             
-            let rateDia = await this.getDiaTokenPrice();
-            let rate = parseFloat(rateDia.token.derivedELA);
-
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
             for (let i = 0; i < itemTypeArr.length; i++) {
@@ -1440,33 +1444,46 @@ module.exports = {
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId"},
-                    pipeline: [
-                        {
-                            $addFields: {
-                                "priceCalculated": {$cond: [{$eq: ["$quoteToken", "0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272"]}, { $divide: [ {$multiply: ["$priceNumber", rate]}, 10 ** 18 ] } , { $divide: [ "$priceNumber", 10 ** 18 ] }]}
-                            }
-                        },
-                        {$match: {$and: checkOrder}}
-                    ],
+                    pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 { $lookup: {from: "pasar_order_event",
                     let: {"ttokenId": "$tokenId"},
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
-                
                 { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
-                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: "$tokenOrder.priceCalculated", orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
-                { $sort: sort }
             ]).toArray();
 
             let total = marketTokens.length;
-            let result = this.paginateRows(marketTokens, pageNum, pageSize);
-            return {code: 200, message: 'success', data: {total, result}};
+            // let result = await this.paginateRows(marketTokens, pageNum, pageSize);
+
+            let rateDia = await this.getDiaTokenPrice();
+            let rate = parseFloat(rateDia.token.derivedELA);
+
+            for(var i = 0; i < total; i++) {
+                if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                } else {
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                }
+            }
+
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+            if(marketTokens.length > 0)
+                await temp_collection.insertMany(marketTokens);
+            
+            console.log(sort);
+            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+
+            if(marketTokens.length > 0)
+                await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: {total, returnValue}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
