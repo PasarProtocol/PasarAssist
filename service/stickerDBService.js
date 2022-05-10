@@ -1126,6 +1126,10 @@ module.exports = {
                 { $match: {$and: [{from: config.burnAddress}, {to: walletAddr}]} }
             ]).toArray();
 
+            let all_collectibles = await collection.aggregate([
+                { $match: {$or: [{from: walletAddr}, {to: walletAddr}]} }
+            ]).toArray();
+
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let count_sold = await collection.aggregate([
                 { $match: {$and: [{sellerAddr: walletAddr}, {event: 'OrderFilled'}]} }
@@ -1136,7 +1140,7 @@ module.exports = {
             let count_transactions = await collection.aggregate([
                 { $match: {$or: [{sellerAddr: walletAddr}, {buyerAddr: walletAddr}]} }
             ]).toArray();
-            result = {assets: mint_collectibles.length - burn_tokens_cnt, sold: count_sold.length, purchased: count_purchased.length, transactions: count_transactions.length};
+            result = {assets: mint_collectibles.length - burn_tokens_cnt, sold: count_sold.length, purchased: count_purchased.length, transactions: count_transactions.length + all_collectibles.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -1182,25 +1186,25 @@ module.exports = {
                       "as": "collection2"
                     }}
                   ],
-                  "collection3": [
-                    { $limit: 1 },
-                    { $lookup: {
-                      from: "pasar_approval_event",
-                      pipeline: [
-                        { $match: {owner: walletAddr} },
-                        { $project: {'_id': 0, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
-                        { $limit:  1 },
-                        { $match: methodCondition_approval}],
-                      "as": "collection3"
-                    }}
-                  ]
+                //   "collection3": [
+                //     { $limit: 1 },
+                //     { $lookup: {
+                //       from: "pasar_approval_event",
+                //       pipeline: [
+                //         { $match: {owner: walletAddr} },
+                //         { $project: {'_id': 0, event: 'SetApprovalForAll', tHash: "$transactionHash", from: '$owner', to: '$operator', gasFee: 1, timestamp: 1} },
+                //         { $limit:  1 },
+                //         { $match: methodCondition_approval}],
+                //       "as": "collection3"
+                //     }}
+                //   ]
                 }},
                 { $project: {
                   data: {
                     $concatArrays: [
                       { "$arrayElemAt": ["$collection1.collection1", 0] },
                       { "$arrayElemAt": ["$collection2.collection2", 0] },
-                      { "$arrayElemAt": ["$collection3.collection3", 0] },
+                    //   { "$arrayElemAt": ["$collection3.collection3", 0] },
                     ]
                   }
                 }},
@@ -1209,6 +1213,7 @@ module.exports = {
                 { $match: condition_performer },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
+            
             let results = [];
             let collection_token = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
@@ -1216,19 +1221,29 @@ module.exports = {
             let tempResult = [];
             for(var i = 0; i < result.length; i++) {
                 let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId']}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
-                if(res != null) {
-                    result[i]['name'] = res['name'];
-                    result[i]['royalties'] = res['royalties'];
-                    result[i]['asset'] = res['asset'];
-                    result[i]['royaltyOwner'] = res['royaltyOwner'];
-                    result[i]['thumbnail'] = res['thumbnail'];
-                    result[i]['quoteToken'] = res['quoteToken'] ? res['quoteToken'] : null;
-                    result[i]['data'] = {...result[i]['data'], ...res['data']};
-                    result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
-                } else if(result[i]['event'] != 'SetApprovalForAll') continue;
+                // if(res != null) {
+                //     result[i]['name'] = res['name'];
+                //     result[i]['royalties'] = res['royalties'];
+                //     result[i]['asset'] = res['asset'];
+                //     result[i]['royaltyOwner'] = res['royaltyOwner'];
+                //     result[i]['thumbnail'] = res['thumbnail'];
+                //     result[i]['quoteToken'] = res['quoteToken'] ? res['quoteToken'] : null;
+                //     result[i]['data'] = {...result[i]['data'], ...res['data']};
+                //     result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
+                // } 
+                result[i]['name'] = res && res['name'] ? res['name'] : null;
+                result[i]['royalties'] = res && res['royalties'] ? res['royalties'] : null;
+                result[i]['asset'] = res && res['asset'] ? res['asset'] : null;
+                result[i]['royaltyOwner'] = res && res['royaltyOwner'] ? res['royaltyOwner'] : null;
+                result[i]['thumbnail'] = res && res['thumbnail'] ? res['thumbnail'] : null;
+                result[i]['quoteToken'] = res && res['quoteToken'] ? res['quoteToken'] : null;
+                result[i]['tokenJsonVersion'] = res && res['tokenJsonVersion'] ? res['tokenJsonVersion'] : null;
+                result[i]['data'] = res && res['data'] ? {...result[i]['data'], ...res['data']} : null;
+
                 tempResult.push(result[i]);
             };
             result = tempResult;
+
             for(var i = start, count = 0; count < pageSize; i++)
             {
                 if(i >= result.length)
