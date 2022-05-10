@@ -459,13 +459,6 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let updateData = {price, orderId, endTime, blockNumber};
 
-            let checkStatus = {status: {$in: ['Not on sale', 'MarketSale', 'MarketBid', 'MarketAuction']}};
-            if(status != null) {
-                updateData.status = status;
-                if(status == "MarketBid") {
-                    checkStatus = {status: {$in: ["MarketAuction", "MarketBid"]}}
-                }
-            }
             if(quoteToken != null) {
                 updateData.quoteToken = quoteToken;
             }
@@ -476,9 +469,16 @@ module.exports = {
                 updateData.marketTime = marketTime;
             }
 
-            await collection.updateOne({tokenId, checkStatus, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
+            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
                 await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
+            }
+            if(status != null) {
+                if(status == 'MarketBid') {
+                    await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
+                } else {
+                    await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
+                }
             }
 
         } catch (err) {
