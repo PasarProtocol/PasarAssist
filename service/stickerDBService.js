@@ -173,15 +173,9 @@ module.exports = {
     paginateRows: async function(rows, pageNum, pageSize) {
         let result = [];
         
-        
         for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++) {
             if(i >= rows.length)
                 break;
-            if(rows[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
-                rows[i].priceCalculated = parseInt(rows[i].price) * rate / 10 ** 18; 
-            } else {
-                rows[i].priceCalculated = parseInt(rows[i].price) / 10 ** 18; 
-            }
             result.push(rows[i]);
         }
         return result;
@@ -1477,13 +1471,12 @@ module.exports = {
             if(marketTokens.length > 0)
                 await temp_collection.insertMany(marketTokens);
             
-            console.log(sort);
             let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(marketTokens.length > 0)
                 await temp_collection.drop();
 
-            return {code: 200, message: 'success', data: {total, returnValue}};
+            return {code: 200, message: 'success', data: {total, result: returnValue}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
