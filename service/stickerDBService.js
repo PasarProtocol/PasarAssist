@@ -458,7 +458,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let updateData = {price, orderId, endTime, blockNumber};
-            let checkStatus = {};
+            let checkStatus = {$or: []};
             if(status != null) {
                 updateData.status = status;
                 if(status == "MarketBid") {
@@ -474,6 +474,7 @@ module.exports = {
             if(marketTime != null) {
                 updateData.marketTime = marketTime;
             }
+
             await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
                 await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: {holder}});

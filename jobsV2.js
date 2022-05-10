@@ -350,7 +350,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, 0, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
             })
         });
 
