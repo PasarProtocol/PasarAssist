@@ -475,9 +475,9 @@ module.exports = {
                 updateData.marketTime = marketTime;
             }
 
-            await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: updateData});
+            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, checkStatus}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
-                await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: {holder}});
+                await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, checkStatus}, {$set: {holder}});
             }
 
         } catch (err) {
