@@ -462,7 +462,7 @@ module.exports = {
             if(status != null) {
                 updateData.status = status;
                 if(status == "MarketBid") {
-                    checkStatus = {status: "MarketAuction"}
+                    checkStatus = {status: {$in: ["MarketAuction", "MarketBid"]}}
                 }
             }
             if(quoteToken != null) {
@@ -474,10 +474,11 @@ module.exports = {
             if(marketTime != null) {
                 updateData.marketTime = marketTime;
             }
-            await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, checkStatus}, {$set: updateData});
+            await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
-                await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
+                await collection.updateOne({$and: [tokenId, {blockNumber: {$lte: blockNumber}}, {holder: {$ne: config.burnAddress}}, checkStatus]}, {$set: {holder}});
             }
+
         } catch (err) {
             logger.error(err);
             throw new Error();
