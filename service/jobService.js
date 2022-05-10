@@ -116,7 +116,7 @@ module.exports = {
             tokenDetail.adult = data.adult;
             tokenDetail.baseToken = token;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
-            await stickerDBService.insertToken(tokenDetail);
+            await stickerDBService.replaceToken(tokenDetail);
 
             let response = await stickerDBService.getEvents(tokenId);
             

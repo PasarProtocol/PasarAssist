@@ -379,7 +379,11 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
+            let length = await collection.find({tokenId: token.tokenId}).count();
+            
+            if(length == 0) {
+                await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
+            }
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -408,23 +412,6 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token_galleria');
             await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
-        } catch (err) {
-            logger.error(err);
-            throw new Error();
-        } finally {
-            await mongoClient.close();
-        }
-    },
-
-    insertToken: async function (token) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let data = await collection.findOne({tokenId: token.tokenId});
-            if(!data) {
-                await collection.insertOne(token);
-            }
         } catch (err) {
             logger.error(err);
             throw new Error();
