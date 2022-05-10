@@ -1333,25 +1333,25 @@ module.exports = {
         let sort = {};
         let rateEndTime = {};
         switch (order) {
-            case 0:
+            case '0':
                 sort = {marketTime: -1};
                 break;
-            case 1:
+            case '1':
                 sort = {createTime: -1};
                 break;
-            case 2:
+            case '2':
                 sort = {marketTime: 1};
                 break;
-            case 3:
+            case '3':
                 sort = {createTime: 1};
                 break;
-            case 4:
+            case '4':
                 sort = {priceCalculated: 1};
                 break;
-            case 5:
+            case '5':
                 sort = {priceCalculated: -1};
                 break;
-            case 6:
+            case '6':
                 sort = {createTime: -1}
                 let start = Date.now();
                 let endTime = Math.floor((start + (24 * 60 * 60 * 1000))/1000).toString();
