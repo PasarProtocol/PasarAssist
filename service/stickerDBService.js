@@ -1333,25 +1333,25 @@ module.exports = {
         let sort = {};
         let rateEndTime = {};
         switch (order) {
-            case '0':
+            case 0:
                 sort = {marketTime: -1};
                 break;
-            case '1':
+            case 1:
                 sort = {createTime: -1};
                 break;
-            case '2':
+            case 2:
                 sort = {marketTime: 1};
                 break;
-            case '3':
+            case 3:
                 sort = {createTime: 1};
                 break;
-            case '4':
+            case 4:
                 sort = {priceCalculated: 1};
                 break;
-            case '5':
+            case 5:
                 sort = {priceCalculated: -1};
                 break;
-            case '6':
+            case 6:
                 sort = {createTime: -1}
                 let start = Date.now();
                 let endTime = Math.floor((start + (24 * 60 * 60 * 1000))/1000).toString();
@@ -1489,25 +1489,25 @@ module.exports = {
         let sort = {};
         let rateEndTime = {};
         switch (order) {
-            case '0':
+            case 0:
                 sort = {marketTime: -1};
                 break;
-            case '1':
+            case 1:
                 sort = {createTime: -1};
                 break;
-            case '2':
+            case 2:
                 sort = {marketTime: 1};
                 break;
-            case '3':
+            case 3:
                 sort = {createTime: 1};
                 break;
-            case '4':
+            case 4:
                 sort = {priceCalculated: 1};
                 break;
-            case '5':
+            case 5:
                 sort = {priceCalculated: -1};
                 break;
-            case '6':
+            case 6:
                 sort = {createTime: -1}
                 let current = Date.now();
                 let startTime = Math.floor((current - (24 * 60 * 60 * 1000))/1000).toString();
@@ -1624,7 +1624,7 @@ module.exports = {
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
-                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1, lastBid: "$tokenOrder.lastBid" },},
             ]).toArray();
             
@@ -1641,7 +1641,7 @@ module.exports = {
                 } else {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
                 }
-
+                marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
                     if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
                         marketTokens[i].saleType = 'Primary Sale';
