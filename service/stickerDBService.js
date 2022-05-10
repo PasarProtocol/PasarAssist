@@ -1345,17 +1345,17 @@ module.exports = {
                 sort = {createTime: 1};
                 break;
             case '4':
-                sort = {price: 1};
+                sort = {priceCalculated: 1};
                 break;
             case '5':
-                sort = {price: -1};
+                sort = {priceCalculated: -1};
                 break;
             case '6':
                 sort = {createTime: -1}
-                let current = Date.now();
-                let startTime = Math.floor((current - (24 * 60 * 60 * 1000))/1000).toString();
-                current = Math.floor(current/1000).toString();
-                rateEndTime = {$and: [{endTime: {$gte: startTime}}, {endTime: {$lte: current}}]};
+                let start = Date.now();
+                let endTime = Math.floor((start + (24 * 60 * 60 * 1000))/1000).toString();
+                start = Math.floor(start/1000).toString();
+                rateEndTime = {$and: [{endTime: {$gte: start}}, {endTime: {$lte: endTime}}]};
             default:
                 sort = {marketTime: -1}
         }
@@ -1411,7 +1411,12 @@ module.exports = {
                     status_condition.push({status: 'MarketSale'});
                 }
             }
+
             status_condition = {$or: status_condition};
+            
+            let rateDia = await this.getDiaTokenPrice();
+            let rate = parseFloat(rateDia.token.derivedELA);
+            
             let itemType_condition = [];
             let itemTypeArr = itemType.split(',');
             for (let i = 0; i < itemTypeArr.length; i++) {
@@ -1430,6 +1435,7 @@ module.exports = {
                 checkOrder.push({price: {$lte: maxPrice.toString()}});
             }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+
             let marketTokens = await collection.aggregate([
                 { $lookup: {
                     from: "pasar_order",
@@ -1442,7 +1448,7 @@ module.exports = {
                     as: "currentBid"}},
                 {
                     $addFields: {
-                        "priceCalculated": { $divide: [ "$price", 10 ** 18 ] }
+                        "priceCalculated": {$cond: [{$eq: ["$quoteToken", "0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272"]}, { $divide: [ {$multiply: ["$price", rate]}, 10 ** 18 ] } , { $divide: [ "$price", 10 ** 18 ] }]}
                     }
                 },
                 { $unwind: "$tokenOrder"},
@@ -1454,7 +1460,7 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
                 { $sort: sort }
             ]).toArray();
-            
+
             let total = marketTokens.length;
             let result = this.paginateRows(marketTokens, pageNum, pageSize);
             return {code: 200, message: 'success', data: {total, result}};
