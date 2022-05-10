@@ -1352,7 +1352,7 @@ module.exports = {
                 sort = {priceCalculated: -1};
                 break;
             case '6':
-                sort = {createTime: -1}
+                sort = {marketTime: -1}
                 let start = Date.now();
                 let endTime = Math.floor((start + (24 * 60 * 60 * 1000))/1000).toString();
                 start = Math.floor(start/1000).toString();
@@ -1508,11 +1508,11 @@ module.exports = {
                 sort = {priceCalculated: -1};
                 break;
             case 6:
-                sort = {createTime: -1}
-                let current = Date.now();
-                let startTime = Math.floor((current - (24 * 60 * 60 * 1000))/1000).toString();
-                current = Math.floor(current/1000).toString();
-                rateEndTime = {$and: [{endTime: {$gte: startTime}}, {endTime: {$lte: current}}]};
+                sort = {marketTime: -1}
+                let start = Date.now();
+                let endTime = Math.floor((start + (24 * 60 * 60 * 1000))/1000).toString();
+                start = Math.floor(start/1000).toString();
+                rateEndTime = {$and: [{endTime: {$gte: start}}, {endTime: {$lte: endTime}}]};
             default:
                 sort = {marketTime: -1}
         }
