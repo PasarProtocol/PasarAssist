@@ -906,7 +906,7 @@ module.exports = {
             ]).toArray();
             if(result.length > 0)
                 await collection.drop();
-                
+
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
@@ -1488,6 +1488,9 @@ module.exports = {
             let rate = parseFloat(rateDia.token.derivedELA);
 
             for(var i = 0; i < total; i++) {
+                marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
+                marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
+                marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                 if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                 } else {
@@ -1665,6 +1668,10 @@ module.exports = {
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for (let i = 0; i < marketTokens.length; i++) {
+                marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
+                marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
+                marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
+                
                 if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                 } else {
