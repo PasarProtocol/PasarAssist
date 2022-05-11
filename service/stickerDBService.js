@@ -883,23 +883,30 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let collection = mongoClient.db(config.dbName).collection('pasar_order');
-            let temp_collection = 'token_temp' + Date.now().toString();
-            await collection.find({"tokenId": tokenId, orderState: "2"}).forEach( function (x) {
-                x.updateTime = new Date(x.updateTime * 1000);
-                x.price = parseInt(x.price);
-                mongoClient.db(config.dbName).collection(temp_collection).save(x);
-            });
+            let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            let temp_collection = 'token_temp_' + Date.now().toString();
+
+            let events = await collection.find({tokenId: tokenId, event: "OrderFilled"}).toArray();
+            for(var i = 0; i < events.length; i++) {
+                console.log(events[i].timestamp);
+                events[i].timestamp = new Date(events[i].timestamp * 1000);
+                console.log(events[i].timestamp);
+                events[i].price = parseInt(events[i].price);
+            }
+
             collection =  mongoClient.db(config.dbName).collection(temp_collection);
+            await collection.insertMany(events);
+
             let result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$updateTime'}}} },
-                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { 'orderState': '2'}]} },
+                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
+                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { event: "OrderFilled" }]} },
                 { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
                 { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
                 { $sort: {onlyDate: 1} }
             ]).toArray();
             if(result.length > 0)
                 await collection.drop();
+                
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
