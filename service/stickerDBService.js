@@ -1976,10 +1976,10 @@ module.exports = {
                     sort = {updateTime: 1};
                     break;
                 case '2':
-                    sort = {price: -1};
+                    sort = {priceCalculated: -1};
                     break;
                 case '3':
-                    sort = {price: 1};
+                    sort = {priceCalculated: 1};
                     break;
                 default:
                     sort = {updateTime: -1}
@@ -1993,14 +1993,17 @@ module.exports = {
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}, market_condition]} },
-                { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
-            return { code: 200, message: 'sucess', data: result };
+
+            result = await this.getSortCollectibles(tokens, sort)
+
+            return { code: 200, message: 'sucess', data: result};
+
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -2023,10 +2026,10 @@ module.exports = {
                     sort = {marketTime: 1};
                     break;
                 case '2':
-                    sort = {price: -1};
+                    sort = {priceCalculated: -1};
                     break;
                 case '3':
-                    sort = {price: 1};
+                    sort = {priceCalculated: 1};
                     break;
                 default:
                     sort = {marketTime: -1}
@@ -2040,7 +2043,6 @@ module.exports = {
                     as: "currentBid"}},
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                 { $match: {$and: [{holder: address}]} },
-                { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
@@ -2048,19 +2050,9 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
 
-            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
-            for (let i = 0; i < tokens.length; i++) {
-                if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
-                    if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
-                        tokens[i].saleType = 'Primary Sale';
-                    } else {
-                        tokens[i].saleType = 'Secondary Sale';
-                    }
-                }else {
-                    tokens[i].saleType = 'Not on sale';
-                }
-            }
-            return { code: 200, message: 'sucess', data: tokens};
+            let result = await this.getSortCollectibles(tokens, sort)
+
+            return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -2083,10 +2075,10 @@ module.exports = {
                     sort = {marketTime: 1};
                     break;
                 case '2':
-                    sort = {price: -1};
+                    sort = {priceCalculated: -1};
                     break;
                 case '3':
-                    sort = {price: 1};
+                    sort = {priceCalculated: 1};
                     break;
                 default:
                     sort = {marketTime: -1}
@@ -2104,7 +2096,6 @@ module.exports = {
                     as: "currentBid"}},
                 { $unwind: {path: "$tokenOrder"}},
                 { $match: {$and: [{holder: {$ne:address}}]} },
-                { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
@@ -2112,19 +2103,9 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
 
-            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
-            for (let i = 0; i < tokens.length; i++) {
-                if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
-                    if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
-                        tokens[i].saleType = 'Primary Sale';
-                    } else {
-                        tokens[i].saleType = 'Secondary Sale';
-                    }
-                }else {
-                    tokens[i].saleType = 'Not on sale';
-                }
-            }
-            return { code: 200, message: 'sucess', data: tokens};
+            let result = await this.getSortCollectibles(tokens, sort)
+
+            return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -2223,10 +2204,10 @@ module.exports = {
                     sort = {marketTime: 1};
                     break;
                 case '2':
-                    sort = {price: -1};
+                    sort = {priceCalculated: -1};
                     break;
                 case '3':
-                    sort = {price: 1};
+                    sort = {priceCalculated: 1};
                     break;
                 default:
                     sort = {marketTime: -1}
@@ -2247,7 +2228,6 @@ module.exports = {
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}]}},
-                { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
@@ -2255,22 +2235,7 @@ module.exports = {
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
 
-            let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
-            let result = [];
-            for (let i = 0; i < tokens.length; i++) {
-                if(tokens[i].currentBid.length > 0) {
-                    if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
-                        if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
-                            tokens[i].saleType = 'Primary Sale';
-                        } else {
-                            tokens[i].saleType = 'Secondary Sale';
-                        }
-                    }else {
-                        tokens[i].saleType = 'Not on sale';
-                    }
-                    result.push(tokens[i])
-                }
-            }
+            let result = await this.getSortCollectibles(tokens, sort)
             return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
@@ -2294,25 +2259,70 @@ module.exports = {
                     sort = {createTime: 1};
                     break;
                 case '2':
-                    sort = {price: -1};
+                    sort = {priceCalculated: -1};
                     break;
                 case '3':
-                    sort = {price: 1};
+                    sort = {priceCalculated: 1};
                     break;
                 default:
                     sort = {createTime: -1}
             }
             let tokens = await collection.aggregate([
                 { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}]} },
-                { $sort: sort }
             ]).toArray();
-            return {code: 200, message: 'sucess', data: tokens};
+
+            let result = await this.getSortCollectibles(tokens, sort)
+            return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
         } finally {
             await mongoClient.close();
         }
+    },
+
+    getSortCollectibles: async function(tokens, sort) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        await mongoClient.connect();
+
+        let temp_collection =  mongoClient.db(config.dbName).collection('token_temp_' + Date.now().toString());
+
+        let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+
+        let rateDia = await this.getDiaTokenPrice();
+
+        for (let i = 0; i < tokens.length; i++) {
+            tokens[i].marketTime = tokens[i].marketTime ? parseInt(tokens[i].marketTime) : 0;
+            tokens[i].createTime = tokens[i].createTime ? parseInt(tokens[i].createTime) : 0;
+            tokens[i].updateTime = tokens[i].createTime ? parseInt(tokens[i].updateTime) : 0;
+
+            let rate = 1;
+            if(tokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                rate = rateDia.token.derivedELA;
+            }
+
+            tokens[i].priceCalculated = tokens[i].price ? tokens[i].price * rate / 10 ** 18 : 0;
+
+            if( marketStatus.indexOf(tokens[i]['status']) != -1 ) {
+                if(tokens[i]['holder'] == tokens[i]['royaltyOwner']) {
+                    tokens[i].saleType = 'Primary Sale';
+                } else {
+                    tokens[i].saleType = 'Secondary Sale';
+                }
+            }else {
+                tokens[i].saleType = 'Not on sale';
+            }
+        }
+        
+        if(tokens.length > 0)
+            await temp_collection.insertMany(tokens);
+        
+        let result = await temp_collection.find().sort(sort).toArray();
+
+        if(tokens.length > 0)
+            await temp_collection.drop(tokens);
+
+        return result;
     },
 
     getLatestPurchasedToken: async function() {
