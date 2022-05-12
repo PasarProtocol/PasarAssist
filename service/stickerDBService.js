@@ -1429,18 +1429,118 @@ module.exports = {
                     current = Math.floor(current/1000).toString();
 
                     status_condition.push({$and: [{endTime: {$lte: current}}, {$or: [{status: 'MarketBid'}, {status: 'MarketAuction'}]}]});
-                } else if(ele == 'Not Met') {
-                    status_condition.push({status: 'MarketBid'});
-                    status_condition.push({status: 'MarketAuction'});
-                    if(statusArr.length == 1) {
-                        checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
-                    }
-                } else {
-                    status_condition.push({status: 'MarketAuction'});
-                    status_condition.push({status: 'MarketBid'});
-                    status_condition.push({status: 'MarketSale'});
                 }
             }
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+
+            if(!(statusArr.length == 1 && statusArr.indexOf('Not Met') != -1)) {
+
+                status_condition = {$or: status_condition};
+                
+                let itemType_condition = [];
+                let itemTypeArr = itemType.split(',');
+                for (let i = 0; i < itemTypeArr.length; i++) {
+                    const ele = itemTypeArr[i];
+                    if(ele == 'General')
+                        ele = 'image';
+                    if(ele == 'All')
+                        itemType_condition.push({type: new RegExp('')});
+                    else itemType_condition.push({type: ele});
+                }
+                itemType_condition = {$or: itemType_condition};
+                if(minPrice) {
+                    checkOrder.push({price: {$gte: minPrice.toString()}});
+                }
+                if(maxPrice) {
+                    checkOrder.push({price: {$lte: maxPrice.toString()}});
+                }
+                let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+
+                let marketTokens = await collection.aggregate([
+                    { $lookup: {
+                        from: "pasar_order",
+                        let: {"torderId": "$orderId"},
+                        pipeline: [{$match: {$and: checkOrder}}],
+                        as: "tokenOrder"}},
+                    { $lookup: {from: "pasar_order_event",
+                        let: {"ttokenId": "$tokenId"},
+                        pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
+                        as: "currentBid"}},
+                    { $unwind: "$tokenOrder"},
+                    { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+                    createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
+                    data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
+                    marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                    baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
+                ]).toArray();
+
+                let rateDia = await this.getDiaTokenPrice();
+                let rate = parseFloat(rateDia.token.derivedELA);
+
+                for(var i = 0; i < marketTokens.length; i++) {
+                    marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
+                    marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
+                    marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
+                    if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                    } else {
+                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                    }
+                }
+
+                if(marketTokens.length > 0)
+                    await temp_collection.insertMany(marketTokens);
+            }
+            let dataNotMet = [];
+
+            if(statusArr.indexOf('Not Met') != -1) {
+                dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+            }
+
+            for(var i = 0; i < dataNotMet.length; i++) {
+                await temp_collection.updateOne({tokenId: dataNotMet[i].tokenId}, {$set: dataNotMet[i]}, {upsert: true});
+            }
+
+            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+
+            if(returnValue.length > 0)
+                await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: {total: returnValue.length, result: returnValue}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getNotMetCollectibles: async function (minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+
+        try {
+            await mongoClient.connect();
+            let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let status_condition = [];
+            let tokenTypeCheck = {};
+            if(tokenType != null && tokenType != '') {
+                let typeArr = tokenType.split(',');
+                if(typeArr.indexOf('0x0000000000000000000000000000000000000000') != -1) {
+                    typeArr.push(null);
+                }
+                tokenTypeCheck = {quoteToken: {$in: typeArr}};
+            }
+            let collectionTypeCheck = {};
+            if(collectionType != null && collectionType != '') {
+                let collectionTypeArr = collectionType.split(',');
+                collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
+            }
+
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}];
+            status_condition.push({status: 'MarketBid'});
+            status_condition.push({status: 'MarketAuction'});
+            checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
 
             status_condition = {$or: status_condition};
             
@@ -1474,7 +1574,7 @@ module.exports = {
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1482,12 +1582,10 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
             ]).toArray();
 
-            let total = marketTokens.length;
-
             let rateDia = await this.getDiaTokenPrice();
             let rate = parseFloat(rateDia.token.derivedELA);
 
-            for(var i = 0; i < total; i++) {
+            for(var i = 0; i < marketTokens.length; i++) {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
@@ -1498,19 +1596,10 @@ module.exports = {
                 }
             }
 
-            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
-            if(marketTokens.length > 0)
-                await temp_collection.insertMany(marketTokens);
-            
-            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
-
-            if(marketTokens.length > 0)
-                await temp_collection.drop();
-
-            return {code: 200, message: 'success', data: {total, result: returnValue}};
+            return marketTokens;
         } catch (err) {
             logger.error(err);
-            return {code: 500, message: 'server error'};
+            return [];
         } finally {
             await mongoClient.close();
         }
