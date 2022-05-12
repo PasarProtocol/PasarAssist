@@ -2093,13 +2093,17 @@ module.exports = {
             }
 
             let tokens = await token_collection.aggregate([
-                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
+                { $lookup: {from: "pasar_order",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: { orderState: "2", sellerAddr: address, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
+                    as: "tokenOrder"}
+                },
                 { $lookup: {from: "pasar_order_event",
                     let: {"torderId": "$orderId"},
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
-                { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
-                { $match: {$and: [{holder: {$ne:address}}, {royaltyOwner: address}]} },
+                { $unwind: {path: "$tokenOrder"}},
+                { $match: {$and: [{holder: {$ne:address}}]} },
                 { $sort: sort },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
