@@ -1584,7 +1584,7 @@ module.exports = {
 
             let rateDia = await this.getDiaTokenPrice();
             let rate = parseFloat(rateDia.token.derivedELA);
-            
+
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for(var i = 0; i < marketTokens.length; i++) {
@@ -1782,7 +1782,6 @@ module.exports = {
                     }
                 }
 
-                let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
                 if(marketTokens.length > 0)
                     await temp_collection.insertMany(marketTokens);
             }
