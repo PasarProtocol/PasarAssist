@@ -2004,7 +2004,7 @@ module.exports = {
                 baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
 
-            result = await this.getSortCollectibles(tokens, sort)
+            result = await this.getSortCollectibles(result, sort)
 
             return { code: 200, message: 'sucess', data: result};
 
