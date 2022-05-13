@@ -457,7 +457,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let updateData = {price, orderId, endTime, blockNumber};
+            let updateData = {price, orderId, blockNumber};
 
             if(quoteToken != null) {
                 updateData.quoteToken = quoteToken;
@@ -467,6 +467,10 @@ module.exports = {
             }
             if(marketTime != null) {
                 updateData.marketTime = marketTime;
+            }
+
+            if(endTime != null) {
+                updateData.endTime = endTime;
             }
 
             await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
