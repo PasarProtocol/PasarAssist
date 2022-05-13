@@ -1044,6 +1044,7 @@ module.exports = {
                 result['buyoutPrice'] = orderForMarketRecord[0]['buyoutPrice'] ? orderForMarketRecord[0]['buyoutPrice'] : null;
                 result['reservePrice'] = orderForMarketRecord[0]['reservePrice'] ? orderForMarketRecord[0]['reservePrice'] : null;
                 result['minPrice'] = orderForMarketRecord[0]['minPrice'] ? orderForMarketRecord[0]['minPrice'] : null;
+                result['orderState'] = orderForMarketRecord[0]['orderState'] ? orderForMarketRecord[0]['orderState'] : null;
             } else {
                 result['DateOnMarket'] = "Not on sale";
                 result['SaleType'] = "Not on sale";
