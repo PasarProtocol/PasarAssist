@@ -2952,6 +2952,41 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getRecentlySold: async function(count) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_order');
+            
+            let fields = {_id: 0, tokenId: 1, quantity: "$token.quantity", royalties: "$token.royalties", royaltyOwner: "$token.royaltyOwner", holder: "$token.holder",
+                createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
+                data: "$token.data", asset: "$token.asset", adult: "$token.adult", quoteToken: "$token.quoteToken",
+                marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail"}
+
+            let result = await collection.aggregate([
+                { $lookup: {
+                    from: "pasar_token",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [
+                        {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}]} },
+                    ],
+                    as: "token"}
+                },
+                { $sort: {blockNumber: -1}},
+                { $limit: count },
+                { $unwind: "$token"},
+                { $match: {$and: [{orderState: "2"}]}},
+                { $project: fields},
+            ]).toArray();
+
+            return {code: 200, message: 'success', data: result};
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getDiaTokenPrice: async function () {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
