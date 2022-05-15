@@ -2719,13 +2719,50 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
 
-            let result = await token_collection.aggregate([
+            let collections = await token_collection.aggregate([
                 { $lookup: {from: "pasar_collection_royalty", localField: "token", foreignField: "token", as: "royalty"} },
                 { $unwind: "$royalty"},
                 { $match: {$and: [{owner: owner}]} },
                 { $project: {"_id": 0, token: 1, owner: 1, name: 1, uri: 1, symbol: 1, is721: 1, tokenJson: 1, createdTime: 1,
                     "owners": "$royalty.royaltyOwner", "feeRates": "$royalty.royaltyRates"},},
             ]).toArray();
+
+            let result = [];
+
+            await Promise.all(collections.map(async cell => {
+                let diaBalance = await indexDBService.diaBalance([cell.owner]);
+                cell.diaBalance = diaBalance[cell.owner] / (10 ** 18);
+                let reponse = await this.getTotalCountCollectibles(cell.token);
+                cell.collectibles = [];
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalCount = reponse.data.total;
+                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
+                    for(var i = 0; i < endCount; i++) {
+                        cell.collectibles.push(reponse.data.list[i])
+                    }
+                } else {
+                    cell.totalCount = 0;
+                }
+                reponse = await this.getFloorPriceCollectibles(cell.token);
+                if(reponse.code == 200 && reponse.data.price) {
+                    cell.floorPrice = reponse.data.price ;
+                } else {
+                    cell.floorPrice = 0;
+                }
+                reponse = await this.getOwnersOfCollection(cell.token);
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalOwner = reponse.data.total;
+                } else {
+                    cell.totalOwner = 0;
+                }
+                reponse = await this.getTotalPriceCollectibles(cell.token);
+                if(reponse.code == 200 && reponse.data.total) {
+                    cell.totalPrice = reponse.data.total;
+                } else {
+                    cell.totalPrice = 0;
+                }
+                result.push(cell);
+            }));
 
             return {code: 200, message: 'success', data: result};
         } catch(err) {
