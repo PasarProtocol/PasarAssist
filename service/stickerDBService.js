@@ -3094,10 +3094,10 @@ module.exports = {
                     as: "token"}
                 },
                 { $sort: {blockNumber: -1}},
-                { $limit: count },
                 { $unwind: "$token"},
                 { $match: {$and: [{orderState: "2"}]}},
                 { $project: fields},
+                { $limit: count },
             ]).toArray();
 
             return {code: 200, message: 'success', data: result};

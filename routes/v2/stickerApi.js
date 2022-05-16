@@ -586,9 +586,8 @@ router.get('/getInstanceSearchResult', function(req, res) {
 router.get('/getRecentlySold', function(req, res) {
     let count = req.query.count;
 
-    count = count ? parseInt(count) : 10;
-
-    stickerDBService.getRecentlySold(count).then(result => {
+    let limit = count ? parseInt(count) : 10;
+    stickerDBService.getRecentlySold(limit).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
