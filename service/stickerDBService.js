@@ -3079,7 +3079,7 @@ module.exports = {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_order');
             
-            let fields = {_id: 0, tokenId: 1, quantity: "$token.quantity", royalties: "$token.royalties", royaltyOwner: "$token.royaltyOwner", holder: "$token.holder",
+            let fields = {_id: 0, tokenId: 1, saleType: 1, quantity: "$token.quantity", royalties: "$token.royalties", royaltyOwner: "$token.royaltyOwner", holder: "$token.holder",
                 createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
                 data: "$token.data", asset: "$token.asset", adult: "$token.adult", quoteToken: "$token.quoteToken",
                 marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail"}
@@ -3093,6 +3093,7 @@ module.exports = {
                     ],
                     as: "token"}
                 },
+                { $addFields: {saleType: 'Not on sale'}},
                 { $sort: {blockNumber: -1}},
                 { $unwind: "$token"},
                 { $match: {$and: [{orderState: "2"}]}},
