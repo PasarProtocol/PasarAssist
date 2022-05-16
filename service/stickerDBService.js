@@ -1515,12 +1515,13 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
+            let total = await temp_collection.find({}).count();
             let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
-            if(returnValue.length > 0)
+            if(total > 0)
                 await temp_collection.drop();
 
-            return {code: 200, message: 'success', data: {total: returnValue.length, result: returnValue}};
+            return {code: 200, message: 'success', data: {total: total, result: returnValue}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -1918,12 +1919,13 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
+            let total = await temp_collection.find({}).count();
             let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
-            if(returnValue.length > 0)
+            if(total > 0)
                 await temp_collection.drop();
 
-            return {code: 200, message: 'success', data: {total: returnValue.length, result: returnValue}};
+            return {code: 200, message: 'success', data: {total: total, result: returnValue}};
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
