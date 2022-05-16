@@ -3001,7 +3001,9 @@ module.exports = {
                 }
                 
                 let price = cell.price * rate / 10 ** 18;
-                listPrice.push(price);
+                if(price != 0) {
+                    listPrice.push(price);
+                }
             })
 
             return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
