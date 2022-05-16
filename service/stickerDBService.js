@@ -1057,8 +1057,8 @@ module.exports = {
             if(result.type == 'image')
                 result.type = "General";
             collection = client.db(config.dbName).collection('pasar_order_event');
-            if(result && result.saleType != 'Not on sale' && result.orderId) {
-                let listBid = await collection.find({orderId: result.orderId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
+            if(result && result.SaleType != 'Not on sale' && result.OrderId) {
+                let listBid = await collection.find({orderId: result.OrderId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
                 result.listBid = listBid;
             } else {
                 result.listBid = [];
