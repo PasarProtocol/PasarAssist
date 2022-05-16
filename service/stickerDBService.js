@@ -1900,14 +1900,22 @@ module.exports = {
                     await temp_collection.insertMany(marketTokens);
             }
 
-            let dataNotMet = [];
+            let dataNotMet = [], dataBuyNow = [];
 
             if(statusArr.indexOf('Not Met') != -1) {
                 dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
             }
 
+            if(statusArr.indexOf('Buy Now') != -1) {
+                dataBuyNow = await this.getBuyNowCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+            }
+
             for(var i = 0; i < dataNotMet.length; i++) {
                 await temp_collection.updateOne({tokenId: dataNotMet[i].tokenId}, {$set: dataNotMet[i]}, {upsert: true});
+            }
+
+            for(var i = 0; i < dataBuyNow.length; i++) {
+                await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
             let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
