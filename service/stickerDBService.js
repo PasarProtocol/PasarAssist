@@ -1057,8 +1057,12 @@ module.exports = {
             if(result.type == 'image')
                 result.type = "General";
             collection = client.db(config.dbName).collection('pasar_order_event');
-            let listBid = await collection.find({tokenId: tokenId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
-            result.listBid = listBid;
+            if(result && result.saleType != 'Not on sale' && result.orderId) {
+                let listBid = await collection.find({orderId: result.orderId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
+                result.listBid = listBid;
+            } else {
+                result.listBid = [];
+            }
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
