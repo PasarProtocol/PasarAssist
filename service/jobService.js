@@ -124,7 +124,7 @@ module.exports = {
 
             await stickerDBService.replaceToken(tokenDetail);
 
-            let response = await stickerDBService.getEvents(tokenId);
+            let response = await stickerDBService.getEvents(tokenId, token);
             
             if(response.code == 200) {
                 await Promise.all(response.data.map(async event => {

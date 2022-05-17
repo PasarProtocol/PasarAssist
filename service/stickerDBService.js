@@ -302,12 +302,12 @@ module.exports = {
             await client.close();
         }
     },
-    getEvents: async function(tokenId) {
+    getEvents: async function(tokenId, token) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            let result = await collection.find({tokenId}).sort({blockNumber: 1}).toArray();
+            let result = await collection.find({tokenId, token}).sort({blockNumber: 1}).toArray();
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             return {code: 500, message: 'server error'};
@@ -335,7 +335,7 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber}, {$set: transferEvent}, {upsert: true});
+            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}, {$set: transferEvent}, {upsert: true});
         } catch (err) {
             logger.error(err);
         } finally {
@@ -480,48 +480,6 @@ module.exports = {
                     await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
                 } else {
                     await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
-                }
-            }
-
-        } catch (err) {
-            logger.error(err);
-            throw new Error();
-        } finally {
-            await mongoClient.close();
-        }
-    },
-
-    updateTokenInfoByOrderId: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null) {
-        price = parseInt(price);
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let updateData = {price, blockNumber};
-
-            if(quoteToken != null) {
-                updateData.quoteToken = quoteToken;
-            }
-            if(baseToken != null) {
-                updateData.baseToken = baseToken;
-            }
-            if(marketTime != null) {
-                updateData.marketTime = marketTime;
-            }
-
-            if(endTime != null) {
-                updateData.endTime = endTime;
-            }
-
-            await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
-            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
-                await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
-            }
-            if(status != null) {
-                if(status == 'MarketBid') {
-                    await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
-                } else {
-                    await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
                 }
             }
 
@@ -3146,6 +3104,20 @@ module.exports = {
             ]).toArray();
 
             return {code: 200, message: 'success', data: result};
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getTokenInfo: async function(tokenId, orderId) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let result = await collection.findOne({tokenId, orderId});
+            return result;
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};

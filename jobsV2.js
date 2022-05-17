@@ -281,12 +281,15 @@ module.exports = {
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId);
+
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     price: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, reservePrice: {oldPrice: orderInfo._oldReservePrice, _newReservePrice: orderInfo._newPrice},
                     buyoutPrice: {oldPrice: orderInfo._oldBuyoutPrice, newPrice: orderInfo._newBuyoutPrice}, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, timestamp: result.updateTime, gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
                 result.price = orderInfo._newPrice;
                 result.reservePrice = orderInfo._newReservePrice;
@@ -297,7 +300,7 @@ module.exports = {
                 logger.info(`[OrderPriceChanged2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken);
             })
         });
 
@@ -378,18 +381,22 @@ module.exports = {
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
+
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee};
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+                    baseToken: token.baseToken, quoteToken: token.quoteToken};
 
                 result.sellerAddr = orderInfo._seller
 
                 logger.info(`[OrderCanceled2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfoByOrderId(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken);
             })
         });
 
@@ -461,7 +468,7 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
                 logger.info(`[TokenInfo2] tokenEvent: ${JSON.stringify(transferEvent)}`)
                 if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != null
                     && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != null) {
@@ -514,7 +521,7 @@ module.exports = {
                 for(var i = 0; i < tokenIds.length; i++) {
                     let tokenId = tokenIds[i];
                     let value = values[i];
-                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee};
+                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
                     await stickerDBService.replaceEvent(transferEvent);
                 }
@@ -700,8 +707,7 @@ module.exports = {
                 ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-                let resultData = await stickerDBService.search(result.tokenId);
-                let token = resultData.code == 200 && resultData.data && resultData.data.result && resultData.data.result.length  > 0 ? resultData.data.result[0] : null;
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -712,7 +718,7 @@ module.exports = {
                 logger.info(`[OrderForBid2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfoByOrderId(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken);
             })
         });
 
