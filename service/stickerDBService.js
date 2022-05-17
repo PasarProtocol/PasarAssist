@@ -1455,12 +1455,7 @@ module.exports = {
                     else itemType_condition.push({type: ele});
                 }
                 itemType_condition = {$or: itemType_condition};
-                if(minPrice) {
-                    checkOrder.push({price: {$gte: minPrice.toString()}});
-                }
-                if(maxPrice) {
-                    checkOrder.push({price: {$lte: maxPrice.toString()}});
-                }
+                
                 let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
 
                 let marketTokens = await collection.aggregate([
@@ -1517,8 +1512,11 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
-            let total = await temp_collection.find({}).count();
-            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+            let min = minPrice / 10 ** 18;
+            let max = maxPrice / 10 ** 18;
+
+            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).count();
+            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(total > 0)
                 await temp_collection.drop();
@@ -1827,12 +1825,7 @@ module.exports = {
                     else itemType_condition.push({type: ele});
                 }
                 itemType_condition = {$or: itemType_condition};
-                if(minPrice) {
-                    checkOrder.push({price: {$gte: minPrice.toString()}});
-                }
-                if(maxPrice) {
-                    checkOrder.push({price: {$lte: maxPrice.toString()}});
-                }
+                
                 let jsonAttribute = attribute;
                 let checkAttribute = {};
 
@@ -1921,8 +1914,11 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
-            let total = await temp_collection.find({}).count();
-            let returnValue = await temp_collection.find({}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+            let min = minPrice / 10 ** 18;
+            let max = maxPrice / 10 ** 18;
+
+            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).count();
+            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(total > 0)
                 await temp_collection.drop();
