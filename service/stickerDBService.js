@@ -1619,6 +1619,7 @@ module.exports = {
                     }
                 }else {
                     marketTokens[i].saleType = 'Not on sale';
+                    marketTokens[i].priceCalculated = 0;
                 }
             }
 
@@ -1720,6 +1721,7 @@ module.exports = {
                     }
                 }else {
                     marketTokens[i].saleType = 'Not on sale';
+                    marketTokens[i].priceCalculated = 0;
                 }
             }
 
@@ -1889,6 +1891,7 @@ module.exports = {
                         }
                     }else {
                         marketTokens[i].saleType = 'Not on sale';
+                        marketTokens[i].priceCalculated = 0; 
                     }
                 }
 
@@ -1914,11 +1917,8 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
-            let min = minPrice / 10 ** 18;
-            let max = maxPrice / 10 ** 18;
-
-            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).count();
-            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: min}}, {priceCalculated: {$lte: max}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).count();
+            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(total > 0)
                 await temp_collection.drop();
