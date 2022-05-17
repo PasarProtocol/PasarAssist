@@ -476,7 +476,7 @@ module.exports = {
                 }
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnToken(tokenId);
+                    await stickerDBService.burnToken(tokenId, config.stickerV2Contract);
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
@@ -528,7 +528,7 @@ module.exports = {
 
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnTokenBatch(tokenIds);
+                    await stickerDBService.burnTokenBatch(tokenIds, config.stickerV2Contract);
                 } else if(from === burnAddress) {
                     await dealWithNewTokenBatch(blockNumber, tokenIds)
                 } else {

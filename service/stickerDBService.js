@@ -343,12 +343,12 @@ module.exports = {
         }
     },
 
-    burnToken: async function (tokenId) {
+    burnToken: async function (tokenId, baseToken) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, baseToken: config.stickerV2Contract}, {$set: {
+            await collection.updateOne({tokenId, baseToken}, {$set: {
                     holder: config.burnAddress
             }});
         } catch (err) {
@@ -359,12 +359,12 @@ module.exports = {
         }
     },
 
-    burnTokenBatch: async function (tokenIds) {
+    burnTokenBatch: async function (tokenIds, baseToken) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.update({tokenId: {$in: tokenIds}}, {$set: {
+            await collection.update({tokenId: {$in: tokenIds}, baseToken}, {$set: {
                     holder: config.burnAddress
             }});
         } catch (err) {
