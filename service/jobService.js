@@ -88,6 +88,7 @@ module.exports = {
         
         let tokenDetail = {
             tokenId: tokenId,
+            baseToken: token,
             blockNumber: event.blockNumber,
             updateTime: blockInfo.timestamp,
             marketTime: blockInfo.timestamp,
@@ -114,7 +115,6 @@ module.exports = {
             tokenDetail.kind = data.kind;
             tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
-            tokenDetail.baseToken = token;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
 
             let creator = data.creator ? data.creator : null;
@@ -134,6 +134,7 @@ module.exports = {
                             blockNumber: event.blockNumber,
                             updateTime: event.updateTime,
                             holder: event.to,
+                            baseToken: token,
                         };
                         await stickerDBService.updateNormalToken(updateTokenInfo);
                     }

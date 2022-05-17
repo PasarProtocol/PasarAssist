@@ -380,10 +380,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let length = await collection.find({tokenId: token.tokenId}).count();
+            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken}).count();
             
             if(length == 0) {
-                await collection.updateOne({tokenId: token.tokenId}, {$set: token}, {upsert: true});
+                await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken}, {$set: token}, {upsert: true});
             }
         } catch (err) {
             logger.error(err);
@@ -421,14 +421,14 @@ module.exports = {
         }
     },
 
-    updateToken: async function (tokenId, holder, timestamp, blockNumber) {
+    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.stickerV2Contract) {
         if(holder == config.pasarContract || holder == config.pasarV2Contract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId}, {$set: {holder, updateTime: timestamp, blockNumber}});
+            await collection.updateOne({tokenId, baseToken}, {$set: {holder, updateTime: timestamp, blockNumber}});
         } catch (err) {
             throw new Error();
         } finally {
@@ -442,7 +442,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
 
-            await collection.updateOne({tokenId: token.tokenId}, {$set: token});
+            await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken}, {$set: token});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -482,6 +482,48 @@ module.exports = {
                     await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
                 } else {
                     await collection.updateOne({tokenId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
+                }
+            }
+
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    updateTokenInfoByOrderId: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null) {
+        price = parseInt(price);
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            let updateData = {price, blockNumber};
+
+            if(quoteToken != null) {
+                updateData.quoteToken = quoteToken;
+            }
+            if(baseToken != null) {
+                updateData.baseToken = baseToken;
+            }
+            if(marketTime != null) {
+                updateData.marketTime = marketTime;
+            }
+
+            if(endTime != null) {
+                updateData.endTime = endTime;
+            }
+
+            await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
+            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
+                await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
+            }
+            if(status != null) {
+                if(status == 'MarketBid') {
+                    await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
+                } else {
+                    await collection.updateOne({tokenId, orderId, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
                 }
             }
 
