@@ -2960,7 +2960,7 @@ module.exports = {
 
             let result = await token_collection.aggregate([
                 { $match: {baseToken: token, orderState: "2"}},
-                { $project: {"_id": 0, price: 1, quoteToken: 1}},
+                { $project: {"_id": 0, filled: 1, quoteToken: 1}},
             ]).toArray();
 
             let total = 0;
@@ -2971,7 +2971,7 @@ module.exports = {
                 if(cell.quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
                     rate = rateDia.token.derivedELA;
                 }
-                let price = cell.price * rate / 10 ** 18;
+                let price = cell.filled * rate / 10 ** 18;
                 total = total + price;
             })
             return {code: 200, message: 'success', data: {total}};
