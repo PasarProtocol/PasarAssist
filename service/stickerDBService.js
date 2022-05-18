@@ -2986,7 +2986,7 @@ module.exports = {
             let result = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$order"},
-                { $match: {baseToken: token}},
+                { $match: {baseToken: token, status: {$ne: "Not on sale"}}},
                 { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
             ]).toArray();
 
