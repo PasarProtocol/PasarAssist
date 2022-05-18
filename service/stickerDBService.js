@@ -1020,6 +1020,7 @@ module.exports = {
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
+            
             if(!result.royalties || result.royalties == 0) {
                 collection = client.db(config.dbName).collection('pasar_collection_royalty');
                 let royatlies = await collection.findOne({token: result.baseToken});
