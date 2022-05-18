@@ -1020,7 +1020,7 @@ module.exports = {
                 { $project: projectionToken}
             ]).toArray();
             result = result[0];
-            
+
             if(!result.royalties || result.royalties == 0) {
                 collection = client.db(config.dbName).collection('pasar_collection_royalty');
                 let royatlies = await collection.findOne({token: result.baseToken});
@@ -1123,6 +1123,11 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
 
+            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0');
+            let assets = 0;
+            if(createdNft.code == 200) {
+                assets = createdNft.data.length;
+            }
             let tokens_burned = await mongoClient.db(config.dbName).collection('pasar_token_event').aggregate([
                 { $match: {$and: [{to: config.burnAddress}, {from: walletAddr}]} },
                 { $project: {"_id": 0, tokenId: 1} }
@@ -1131,31 +1136,28 @@ module.exports = {
             tokens_burned.forEach(ele => {
                 burn_tokens.push(ele['tokenId']);
             });
-            let tokens_self_burned = await mongoClient.db(config.dbName).collection('pasar_token').aggregate([
-                { $match: {$and: [{tokenId: {$in: burn_tokens}}, {royaltyOwner: walletAddr}]} },
-                { $project: {"_id": 0, tokenId: 1} }
-            ]).toArray();
-            let burn_tokens_cnt = tokens_self_burned.length;
+            
             let collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let mint_collectibles = await collection.aggregate([
-                { $match: {$and: [{from: config.burnAddress}, {to: walletAddr}]} }
-            ]).toArray();
-
+  
             let all_collectibles = await collection.aggregate([
                 { $match: {$or: [{from: walletAddr}, {to: walletAddr}]} }
             ]).toArray();
 
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            let count_sold = await collection.aggregate([
-                { $match: {$and: [{sellerAddr: walletAddr}, {event: 'OrderFilled'}]} }
-            ]).toArray();
+
+            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0');
+            let count_sold = 0;
+            if(createdNft.code == 200) {
+                count_sold = soldNft.data.length;
+            }
+
             let count_purchased = await collection.aggregate([
                 { $match: {$and: [{buyerAddr: walletAddr}, {event: 'OrderFilled'}]} }
             ]).toArray();
             let count_transactions = await collection.aggregate([
                 { $match: {$or: [{sellerAddr: walletAddr}, {buyerAddr: walletAddr}]} }
             ]).toArray();
-            result = {assets: mint_collectibles.length - burn_tokens_cnt, sold: count_sold.length, purchased: count_purchased.length, transactions: count_transactions.length + all_collectibles.length};
+            result = {assets: assets, sold: count_sold, purchased: count_purchased.length, transactions: count_transactions.length + all_collectibles.length};
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             logger.error(err);
