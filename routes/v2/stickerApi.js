@@ -210,8 +210,10 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     let tokenId = req.query.tokenId;
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
+    let baseToken = req.query.baseToken;
+
     method = method ? method : 'All';
-    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder).then(result => {
+    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, baseToken).then(result => {
       res.json(result);
     }).catch(error => {
         console.log(error);
@@ -219,9 +221,11 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     })
 });
 
-router.get('/getCollectibleByTokenId/:tokenId', function(req, res) {
+router.get('/getCollectibleByTokenId/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
-    stickerDBService.getCollectibleByTokenId(tokenId).then(result => {
+    let baseToken = req.params.baseToken;
+
+    stickerDBService.getCollectibleByTokenId(tokenId, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

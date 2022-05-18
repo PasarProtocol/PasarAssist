@@ -918,7 +918,7 @@ module.exports = {
         }
     },
 
-    getTranDetailsByTokenId: async function(tokenId, method, timeOrder) {
+    getTranDetailsByTokenId: async function(tokenId, method, timeOrder, baseToken = null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "tokenId", tokenId);
         let methodCondition_order = methodCondition['order'];
@@ -936,8 +936,8 @@ module.exports = {
                       from: "pasar_order_event",
                       pipeline: [
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, quoteToken: 1} },
-                        { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_order]} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, baseToken:1, royaltyFee: 1, quoteToken: 1} },
+                        { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_order, {baseToken: baseToken}]} }
                       ],
                       "as": "collection1"
                     }}
@@ -948,8 +948,8 @@ module.exports = {
                       from: "pasar_token_event",
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                            timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} },
-                        { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_token]} }],
+                            timestamp: 1, memo: 1, tokenId: 1, token:1, blockNumber: 1, royaltyFee: "0"} },
+                        { $match : {$and: [{tokenId : tokenId.toString()}, {token : baseToken},methodCondition_token]} }],
                       "as": "collection2"
                     }}
                   ]
@@ -964,7 +964,12 @@ module.exports = {
                 }},
                 { $unwind: "$data" },
                 { $replaceRoot: { "newRoot": "$data" } },
-                { $lookup: {from: 'pasar_token', localField: 'tokenId', foreignField: 'tokenId', as: 'token'} },
+                { 
+                    $lookup: {from: "pasar_token",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: { baseToken: baseToken, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
+                    as: "token"}
+                },
                 { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
                 { $unwind: "$token" },
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
@@ -994,7 +999,7 @@ module.exports = {
         }
     },
 
-    getCollectibleByTokenId: async function(tokenId) {
+    getCollectibleByTokenId: async function(tokenId, baseToken=null) {
         let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$token.holder",
         tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', marketTime: '$token.marketTime', endTime: '$token.endTime', tokenIdHex: '$token.tokenIdHex',
@@ -1013,7 +1018,12 @@ module.exports = {
                 { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
                 { $replaceRoot: { newRoot: "$doc"}},
-                { $lookup: {from: "pasar_token", localField: "tokenId", foreignField: "tokenId", as: "token"} },
+                { 
+                    $lookup: {from: "pasar_token",
+                    let: {"ttokenId": "$tokenId"},
+                    pipeline: [{$match: { baseToken: baseToken, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
+                    as: "token"}
+                },
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$token"},
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
@@ -1032,7 +1042,7 @@ module.exports = {
             let orderForMarketRecord = await collection.find(
                 {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
             ).sort({'blockNumber': -1}).toArray();
-            let priceRecord = await collection.find({$and: [{tokenId: tokenId}]}).sort({'blockNumber': -1}).toArray();
+            let priceRecord = await collection.find({$and: [{tokenId: tokenId}, {baseToken: baseToken}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
                 result['DateOnMarket'] = orderForMarketRecord[0]['createTime'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
