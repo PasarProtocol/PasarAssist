@@ -48,15 +48,19 @@ module.exports = {
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
         
-        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721);
+        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc);
         
     },
 
-    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721) {
+    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, tokenContract, check721) {
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
-            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData)
+            let [tokenData] = await this.makeBatchRequest([
+                {method: tokenContract.methods.tokenInfo(tokenId).call, params: {}},
+            ], web3Rpc);
+            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
+
         } else if(result.indexOf("Solana") != -1) {
             result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
             fetch(result)
@@ -70,7 +74,7 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, data) {
+    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, data, tokenData=null) {
         let tokenEventDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -101,7 +105,7 @@ module.exports = {
             tokenDetail.endTime = 0;
             tokenDetail.price = 0;
             tokenDetail.orderId = 0;
-            tokenDetail.royalties = 0,
+            tokenDetail.royalties = tokenData && tokenData.royaltyFee? tokenData.royaltyFee : "0",
             tokenDetail.holder = tokenInfo._to;
             tokenDetail.createTime = blockInfo.timestamp;
             tokenDetail.quantity = check721 ? 1 : parseInt(tokenInfo._value);
