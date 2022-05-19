@@ -881,14 +881,14 @@ module.exports = {
         }
     },
 
-    getNftPriceByTokenId: async function(tokenId) {
+    getNftPriceByTokenId: async function(tokenId, baseToken=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let temp_collection = 'token_temp_' + Date.now().toString();
 
-            let events = await collection.find({tokenId: tokenId, event: "OrderFilled"}).toArray();
+            let events = await collection.find({tokenId: tokenId, baseToken: baseToken, event: "OrderFilled"}).toArray();
             for(var i = 0; i < events.length; i++) {
                 console.log(events[i].timestamp);
                 events[i].timestamp = new Date(events[i].timestamp * 1000);
@@ -901,7 +901,7 @@ module.exports = {
 
             let result = await collection.aggregate([
                 { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
-                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, { event: "OrderFilled" }]} },
+                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
                 { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
                 { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
                 { $sort: {onlyDate: 1} }
@@ -1247,7 +1247,7 @@ module.exports = {
             let start = (pageNum - 1) * pageSize;
             let tempResult = [];
             for(var i = 0; i < result.length; i++) {
-                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId']}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
+                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId'], baseToken: result[i]['baseToken']}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
                 // if(res != null) {
                 //     result[i]['name'] = res['name'];
                 //     result[i]['royalties'] = res['royalties'];

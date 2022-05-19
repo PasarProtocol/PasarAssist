@@ -195,10 +195,12 @@ router.get('/gettv', function(req, res) {
     })
 });
 
-router.get('/getNftPriceByTokenId/:tokenId', function(req, res) {
+router.get('/getNftPriceByTokenId/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
     tokenId = tokenId ? tokenId: "^";
-    stickerDBService.getNftPriceByTokenId(tokenId).then(result => {
+    let baseToken = req.params.baseToken;
+
+    stickerDBService.getNftPriceByTokenId(tokenId, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
