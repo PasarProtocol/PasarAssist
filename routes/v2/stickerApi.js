@@ -304,11 +304,13 @@ router.get('/getAuctionOrdersByTokenId/:tokenId', function(req, res) {
 });
 
 
-router.get('/getLatestBids/:tokenId', function(req, res) {
+router.get('/getLatestBids/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
+    let baseToken = req.params.baseToken;
     let ownerAddr = req.query.owner;
     tokenId = tokenId ? tokenId : '';
-    stickerDBService.getLatestBids(tokenId, ownerAddr).then(result => {
+
+    stickerDBService.getLatestBids(tokenId, ownerAddr, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

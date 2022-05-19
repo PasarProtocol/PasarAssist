@@ -1297,13 +1297,13 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getLatestBids: async function (tokenId, sellerAddr) {
+    getLatestBids: async function (tokenId, sellerAddr, baseToken=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
-                { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {event: 'OrderBid'} ] } },
+                { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {baseToken: baseToken}, {event: 'OrderBid'} ] } },
                 { $sort: {timestamp: -1} }
             ]).toArray();
             const collection_address = mongoClient.db(config.dbName).collection('pasar_address_did');
