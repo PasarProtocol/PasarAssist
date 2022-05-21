@@ -891,20 +891,20 @@ module.exports = {
             let events = await collection.find({tokenId: tokenId, baseToken: baseToken, event: "OrderFilled"}).toArray();
             for(var i = 0; i < events.length; i++) {
                 console.log(events[i].timestamp);
-                events[i].timestamp = new Date(events[i].timestamp * 1000);
+                // events[i].timestamp = new Date(events[i].timestamp * 1000);
                 console.log(events[i].timestamp);
                 events[i].price = parseInt(events[i].price);
             }
-
+            
             collection =  mongoClient.db(config.dbName).collection(temp_collection);
             await collection.insertMany(events);
 
             let result = await collection.aggregate([
-                { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
+                // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
                 { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
-                { $group: { "_id"  : { tokenId: "$tokenId", onlyDate: "$onlyDate"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.onlyDate", price:1} },
-                { $sort: {onlyDate: 1} }
+                { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", price:1} },
+                { $sort: {timestamp: 1} }
             ]).toArray();
             if(result.length > 0)
                 await collection.drop();
