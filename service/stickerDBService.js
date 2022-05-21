@@ -781,6 +781,7 @@ module.exports = {
                     result[i]['data'] = {...result[i]['data'], ...res['data']};
                     result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                     result[i]['quoteToken'] = res['quoteToken'];
+                    result[i]['baseToken'] = res['baseToken'];
                 }
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
