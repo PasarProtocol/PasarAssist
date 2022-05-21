@@ -1101,7 +1101,7 @@ module.exports = {
                 { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },
             ]).toArray();
             result.forEach(x => {
-                x.time = new Date(x.updateTime * 1000);
+                // x.time = new Date(x.updateTime * 1000);
                 let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
                 x.value = type == 0 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(x.royaltyFee)) : parseInt(x.price) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
@@ -1112,8 +1112,8 @@ module.exports = {
             if(rows.length > 0) {
                 await collection.insertMany(rows);
                 result = await collection.aggregate([
-                    { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
-                    { $group: { "_id"  : { onlyDate: "$onlyDate"}, "value": {$sum: "$value"}} },
+                    // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
+                    { $group: { "_id"  : { onlyDate: "$updateTime"}, "value": {$sum: "$value"}} },
                     { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
                     { $sort: {onlyDate: 1} },
                 ]).toArray();
