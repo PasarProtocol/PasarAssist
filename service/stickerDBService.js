@@ -1196,7 +1196,7 @@ module.exports = {
                       pipeline: [
                         { $match : {$and: [methodCondition_order]} },
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1, baseToken: 1} }
                       ],
                       "as": "collection1"
                     }}
@@ -1208,7 +1208,7 @@ module.exports = {
                       pipeline: [
                         { $match : {$and: [methodCondition_token]} },
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                            timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+                            timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0", token: 1} }
                       ],
                       "as": "collection2"
                     }}
@@ -1247,7 +1247,7 @@ module.exports = {
             let start = (pageNum - 1) * pageSize;
             let tempResult = [];
             for(var i = 0; i < result.length; i++) {
-                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId'], baseToken: result[i]['baseToken']}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
+                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId'], $or: [{baseToken: result[i]['baseToken']}, {baseToken: result[i]['token']}]}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
                 // if(res != null) {
                 //     result[i]['name'] = res['name'];
                 //     result[i]['royalties'] = res['royalties'];
