@@ -278,8 +278,8 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token');
-            let total = await collection.find().count();
-            let result = await collection.find().sort({createTime: -1})
+            let total = await collection.find({ holder: {$ne: config.burnAddress} }).count();
+            let result = await collection.find({ holder: {$ne: config.burnAddress} }).sort({createTime: -1})
                 .project({"_id": 0}).sort({"createTime": timeOrder}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
@@ -895,7 +895,7 @@ module.exports = {
                 console.log(events[i].timestamp);
                 events[i].price = parseInt(events[i].price);
             }
-            
+
             collection =  mongoClient.db(config.dbName).collection(temp_collection);
             await collection.insertMany(events);
 
