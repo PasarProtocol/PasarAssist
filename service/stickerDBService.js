@@ -1022,7 +1022,7 @@ module.exports = {
                 { 
                     $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId"},
-                    pipeline: [{$match: { baseToken: baseToken, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
+                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$ttokenId","$tokenId"]}}, {baseToken: baseToken}]}}],
                     as: "token"}
                 },
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
