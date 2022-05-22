@@ -1041,7 +1041,7 @@ module.exports = {
             }
             collection = client.db(config.dbName).collection('pasar_order');
             let orderForMarketRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
+                {$and: [{tokenId: tokenId}, {baseToken: baseToken}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
             ).sort({'blockNumber': -1}).toArray();
             let priceRecord = await collection.find({$and: [{tokenId: tokenId}, {baseToken: baseToken}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
