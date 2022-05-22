@@ -3097,9 +3097,9 @@ module.exports = {
             let result = await collection.aggregate([
                 { $lookup: {
                     from: "pasar_token",
-                    let: {"ttokenId": "$tokenId"},
+                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                     pipeline: [
-                        {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}]} },
+                        {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}]} },
                     ],
                     as: "token"}
                 },
