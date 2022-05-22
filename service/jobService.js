@@ -56,15 +56,13 @@ module.exports = {
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
-            let tokenData;
-            try {
+            let tokenData = {};
+            if(token == config.stickerV2Contract) {
                 [tokenData] = await this.makeBatchRequest([
                     {method: tokenContract.methods.tokenInfo(tokenId).call, params: {}},
                 ], web3Rpc);
-            } catch(err) {
-                console.log(err);
-                tokenData = null;
             }
+            
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
         } else if(result.indexOf("Solana") != -1) {
             result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
