@@ -380,7 +380,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId)
                 } else {
-                    // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
             })
         });
