@@ -1584,12 +1584,12 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            if(minPrice) {
-                checkOrder.push({price: {$gte: minPrice.toString()}});
-            }
-            if(maxPrice) {
-                checkOrder.push({price: {$lte: maxPrice.toString()}});
-            }
+            // if(minPrice) {
+            //     checkOrder.push({price: {$gte: minPrice.toString()}});
+            // }
+            // if(maxPrice) {
+            //     checkOrder.push({price: {$lte: maxPrice.toString()}});
+            // }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
 
             let marketTokens = await collection.aggregate([
@@ -1686,14 +1686,15 @@ module.exports = {
                 else itemType_condition.push({type: ele});
             }
             itemType_condition = {$or: itemType_condition};
-            if(minPrice) {
-                checkOrder.push({price: {$gte: minPrice.toString()}});
-            }
-            if(maxPrice) {
-                checkOrder.push({price: {$lte: maxPrice.toString()}});
-            }
+        
+            // if(minPrice) {
+            //     checkOrder.push({price: {$gte: minPrice.toString()}});
+            // }
+            // if(maxPrice) {
+            //     checkOrder.push({price: {$lte: maxPrice.toString()}});
+            // }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
-
+            
             let marketTokens = await collection.aggregate([
                 { $lookup: {
                     from: "pasar_order",
