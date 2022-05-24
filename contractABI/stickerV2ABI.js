@@ -12,11 +12,6 @@ module.exports = [
         "type": "string"
       },
       {
-        "internalType": "string",
-        "name": "_contractUri",
-        "type": "string"
-      },
-      {
         "internalType": "address",
         "name": "_diaToken",
         "type": "address"
@@ -423,19 +418,6 @@ module.exports = [
     "name": "burnFrom",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "contractURI",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1028,19 +1010,6 @@ module.exports = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "series",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1054,19 +1023,6 @@ module.exports = [
       }
     ],
     "name": "setApprovalForAll",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
-      }
-    ],
-    "name": "setContractURI",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1116,19 +1072,6 @@ module.exports = [
       }
     ],
     "name": "setMinter",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_series",
-        "type": "uint256"
-      }
-    ],
-    "name": "setSeries",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
