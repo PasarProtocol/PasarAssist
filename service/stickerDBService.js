@@ -2817,6 +2817,17 @@ module.exports = {
                 } else {
                     cell.totalPrice = 0;
                 }
+
+                let uriInfo = await jobService.getInfoByIpfsUri(cell.uri);
+                cell.creatorDid = '';
+                cell.creatorName = '';
+                cell.creatorDescription = '';
+                if(uriInfo && uriInfo.creator) {
+                    cell.creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
+                    cell.creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
+                    cell.creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
+                }
+
                 result.push(cell);
             }));
             let returnValue = {}
