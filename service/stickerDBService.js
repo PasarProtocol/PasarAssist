@@ -2850,6 +2850,15 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let result = await token_collection.findOne({token: token});
+            let uriInfo = await jobService.getInfoByIpfsUri(result.uri);
+            result.creatorDid = '';
+            result.creatorName = '';
+            result.creatorDescription = '';
+            if(uriInfo && uriInfo.creator) {
+                result.creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
+                result.creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
+                result.creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
+            }
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
