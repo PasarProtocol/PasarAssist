@@ -3156,5 +3156,16 @@ module.exports = {
         })
 
         return response.data.data;
-    }
+    },
+    checkV1NFTByWallet: async function(address) {
+        let web3Rpc = new Web3(config.escRpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+        let sellerInfo = await pasarContract.methods.getSellerByAddr(address).call();
+        
+        if(sellerInfo && sellerInfo.openCount != '0') {
+            return {code: 200, message: 'success', data: true};
+        } else {
+            return {code: 200, message: 'success', data: false};
+        }
+    },
 }

@@ -608,4 +608,21 @@ router.get('/getRecentlySold', function(req, res) {
         res.json({code: 500, message: 'server error'});
     })
 });
+
+router.get('/checkV1NFTByWallet/:walletAddr', function(req, res) {
+    let walletAddr = req.params.walletAddr;
+
+    if(!walletAddr) {
+        res.json({code: 400, message: 'bad request'})
+        return;
+    }
+
+    stickerDBService.checkV1NFTByWallet(walletAddr).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 module.exports = router;
