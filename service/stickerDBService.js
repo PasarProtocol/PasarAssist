@@ -335,7 +335,10 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}, {$set: transferEvent}, {upsert: true});
+            let eventCount = await collection.find({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}).count();
+            if(eventCount == 0) {
+                await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}, {$set: transferEvent}, {upsert: true});
+            }
         } catch (err) {
             logger.error(err);
         } finally {
