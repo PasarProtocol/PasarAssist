@@ -287,8 +287,9 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
-                    price: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, reservePrice: {oldPrice: orderInfo._oldReservePrice, _newReservePrice: orderInfo._newPrice},
-                    buyoutPrice: {oldPrice: orderInfo._oldBuyoutPrice, newPrice: orderInfo._newBuyoutPrice}, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice, oldReservePrice: orderInfo._oldReservePrice, newReservePrice: orderInfo._newReservePrice,
+                    oldBuyoutPrice: orderInfo._oldBuyoutPrice, newBuyoutPrice: orderInfo._newBuyoutPrice, oldQuoteToken: orderInfo._oldQuoteToken, newQuoteToken: orderInfo._newQuoteToken},
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
                 result.price = orderInfo._newPrice;
