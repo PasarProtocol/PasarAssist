@@ -2356,13 +2356,13 @@ module.exports = {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
                     pipeline: [
-                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}},, {orderType: "2"}, {orderState: "1"}]} },
+                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {orderType: "2"}, {orderState: "1"}]} },
                     ],
                     as: "tokenOrder"}
                 },
                 { $lookup: {from: "pasar_order_event",
                     let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {"$expr": {"$eq":["$$torderId","$orderId"]}}, {$sort: {timestamp: -1}}],
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]} }},  {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}]}},
