@@ -2351,33 +2351,6 @@ module.exports = {
                     sort = {marketTime: -1}
             }
 
-            // let tokens = await token_collection.aggregate([
-            //     { $lookup: {
-            //         from: "pasar_order",
-            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-            //         pipeline: [
-            //             {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {orderType: "2"}, {orderState: "1"}]} },
-            //         ],
-            //         as: "tokenOrder"}
-            //     },
-            //     { $lookup: {from: "pasar_order_event",
-            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-            //         pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, buyerAddr: address }},  {$sort: {timestamp: -1}}],
-            //         as: "myBid"}},
-            //     { $lookup: {from: "pasar_order_event",
-            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-            //         pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]} }},  {$sort: {timestamp: -1}}],
-            //         as: "currentBid"}},
-            //     { $unwind: "$tokenOrder"},
-            //     { $unwind: "$myBid"},
-            //     // { $match: {$and: [{holder: address}]}},
-            //     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
-            //     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
-            //     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
-            //     marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-            //     baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
-            // ]).toArray();
-
             const event_collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             
 
@@ -2413,7 +2386,7 @@ module.exports = {
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
-            
+
             return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
@@ -2492,9 +2465,12 @@ module.exports = {
             }
         }
         
-        if(tokens.length > 0)
-            await temp_collection.insertMany(tokens);
-        
+        if(tokens.length > 0) {
+            for(var i = 0; i < tokens.length; i++) {
+                await temp_collection.updateOne({tokenId: tokens[i].tokenId, baseToken: tokens[i].baseToken}, {$set: tokens[i]}, {upsert: true});
+            }
+        }
+
         let result = await temp_collection.find().sort(sort).toArray();
 
         if(tokens.length > 0)
