@@ -1501,7 +1501,7 @@ module.exports = {
                     marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                    if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    if(marketTokens[i].quoteToken == config.diaTokenContract) {
                         marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                     } else {
                         marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
@@ -1620,7 +1620,7 @@ module.exports = {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                if(marketTokens[i].quoteToken == config.diaTokenContract) {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                 } else {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
@@ -1723,7 +1723,7 @@ module.exports = {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                if(marketTokens[i].quoteToken == config.diaTokenContract) {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                 } else {
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
@@ -1893,7 +1893,7 @@ module.exports = {
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
-                    if(marketTokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                    if(marketTokens[i].quoteToken == config.diaTokenContract) {
                         marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
                     } else {
                         marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
@@ -2435,7 +2435,7 @@ module.exports = {
             tokens[i].updateTime = tokens[i].createTime ? parseInt(tokens[i].updateTime) : 0;
 
             let rate = 1;
-            if(tokens[i].quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+            if(tokens[i].quoteToken == config.diaTokenContract) {
                 rate = rateDia.token.derivedELA;
             }
 
@@ -3000,7 +3000,7 @@ module.exports = {
 
             result.forEach(cell => {
                 let rate = 1;
-                if(cell.quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                if(cell.quoteToken == config.diaTokenContract) {
                     rate = rateDia.token.derivedELA;
                 }
                 let price = cell.filled * rate / 10 ** 18;
@@ -3030,7 +3030,7 @@ module.exports = {
 
             result.forEach(cell => {
                 let rate = 1;
-                if(cell.quoteToken == '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272') {
+                if(cell.quoteToken == config.diaTokenContract) {
                     rate = rateDia.token.derivedELA;
                 }
                 
