@@ -241,6 +241,20 @@ module.exports = {
                         methodCondition_order.push({$or: [{'sellerAddr': data}, {'buyerAddr': data}]});
                     }
                     break;
+                case 'CreateOrderForAuction':
+                    methodCondition_order.push({'event': 'OrderForAuction'});
+                    methodCondition_token.push({'from': 'OrderForAuction'});
+                    if(requestType == 'walletAddr') {
+                        methodCondition_order.push({$or: [{'sellerAddr': data}, {'buyerAddr': data}]});
+                    }
+                    break;
+                case 'BidForOrder':
+                    methodCondition_order.push({'event': 'OrderBid'});
+                    methodCondition_token.push({'from': 'OrderBid'});
+                    if(requestType == 'walletAddr') {
+                        methodCondition_order.push({$or: [{'sellerAddr': data}, {'buyerAddr': data}]});
+                    }
+                    break;
                 case 'CancelOrder':
                     methodCondition_order.push({'event': 'OrderCanceled'});
                     methodCondition_token.push({'from': 'OrderCanceled'});
