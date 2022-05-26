@@ -2332,7 +2332,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
+            // const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             let sort = {};
             switch (orderType) {
                 case '0':
@@ -2351,34 +2351,69 @@ module.exports = {
                     sort = {marketTime: -1}
             }
 
-            let tokens = await token_collection.aggregate([
+            // let tokens = await token_collection.aggregate([
+            //     { $lookup: {
+            //         from: "pasar_order",
+            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+            //         pipeline: [
+            //             {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {orderType: "2"}, {orderState: "1"}]} },
+            //         ],
+            //         as: "tokenOrder"}
+            //     },
+            //     { $lookup: {from: "pasar_order_event",
+            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+            //         pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, buyerAddr: address }},  {$sort: {timestamp: -1}}],
+            //         as: "myBid"}},
+            //     { $lookup: {from: "pasar_order_event",
+            //         let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+            //         pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]} }},  {$sort: {timestamp: -1}}],
+            //         as: "currentBid"}},
+            //     { $unwind: "$tokenOrder"},
+            //     { $unwind: "$myBid"},
+            //     // { $match: {$and: [{holder: address}]}},
+            //     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
+            //     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
+            //     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
+            //     marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+            //     baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+            // ]).toArray();
+
+            const event_collection = mongoClient.db(config.dbName).collection('pasar_order_event');
+            
+
+            let tokens = await event_collection.aggregate([
+                { $lookup: {
+                    from: "pasar_token",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [
+                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}]} },
+                    ],
+                    as: "token"}
+                },
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+                    let: {"torderId": "$orderId"},
                     pipeline: [
-                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {orderType: "2"}, {orderState: "1"}]} },
+                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {orderType: "2"}, {orderState: "1"}]} },
                     ],
                     as: "tokenOrder"}
                 },
                 { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, buyerAddr: address }},  {$sort: {timestamp: -1}}],
-                    as: "myBid"}},
-                { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]} }},  {$sort: {timestamp: -1}}],
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }},  {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
-                { $unwind: "$myBid"},
-                // { $match: {$and: [{holder: address}]}},
-                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
-                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
-                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
-                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                { $unwind: "$token"},
+                { $match: {$and: [{buyerAddr: address}, {event : "OrderBid"}]}},
+                { $project: {"_id": 0, blockNumber: "$token.blockNumber", tokenIndex: "$token.tokenIndex", tokenId: "$token.tokenId", quantity:"$token.quantity", royalties:"$token.royalties", royaltyOwner:"$token.royaltyOwner", holder: "$token.holder",
+                createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
+                data: "$token.data", asset: "$token.asset", adult: "$token.adult", price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
+                marketTime:"$token.marketTime", status: "$token.status", endTime:"$token.endTime", orderId: 1, priceCalculated: "$token.priceCalculated", orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
+                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
+            
             return { code: 200, message: 'sucess', data: result};
         } catch (err) {
             logger.error(err);
