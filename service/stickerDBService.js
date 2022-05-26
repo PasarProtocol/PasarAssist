@@ -3132,10 +3132,21 @@ module.exports = {
                 { $unwind: "$token"},
                 { $match: {$and: [{orderState: "2"}]}},
                 { $project: fields},
-                { $limit: count },
             ]).toArray();
 
-            return {code: 200, message: 'success', data: result};
+            let return_value = [];
+
+            if(result.length > 0) {
+                let temp_collection =  mongoClient.db(config.dbName).collection('token_temp_' + Date.now().toString());
+                for(var i = 0; i < result.length; i++) {
+                    await temp_collection.updateOne({tokenId: result[i].tokenId, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
+                }
+
+                return_value = await temp_collection.find().limit(count).toArray();
+                await temp_collection.drop();
+            }
+
+            return {code: 200, message: 'success', data: return_value};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
