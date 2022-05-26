@@ -2126,8 +2126,8 @@ module.exports = {
             let result = await collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
                 { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    let: {"torderId": "$orderId", "tbaseToken":"$baseToken"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]} }}, {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}, market_condition]} },
@@ -2176,8 +2176,8 @@ module.exports = {
             let tokens = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "tokenOrder"} },
                 { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}}}, {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
                 { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                 { $match: {$and: [{holder: address}]} },
@@ -2281,7 +2281,7 @@ module.exports = {
             for (let i = 0; i < tokens.length; i++) {
                 delete tokens[i]["_id"];
                 let record = await order_collection.aggregate([
-                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {orderState: {$ne: '3'}}]} },
+                    { $match: {$and: [{tokenId: tokens[i].tokenId}, {baseToken: tokens[i].baseToken},{orderState: {$ne: '3'}}]} },
                     { $project: {'_id': 0, price: 1, blockNumber: 1, orderId: 1, sellerAddr: 1} },
                     { $sort: {blockNumber: -1} }
                 ]).toArray();
@@ -2354,15 +2354,15 @@ module.exports = {
             let tokens = await token_collection.aggregate([
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId"},
+                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
                     pipeline: [
-                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {orderType: "2"}, {orderState: "1"}]} },
+                        {$match: {$and: [{"$expr": {"$eq":["$$torderId","$orderId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}},, {orderType: "2"}, {orderState: "1"}]} },
                     ],
                     as: "tokenOrder"}
                 },
                 { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
+                    let: {"torderId": "$orderId", "tbaseToken": "$baseToken"},
+                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {"$expr": {"$eq":["$$torderId","$orderId"]}}, {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: address}]}},
