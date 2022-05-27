@@ -744,12 +744,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id}
 
-                let tokenContract = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
+                let tokenContractWs = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
+                let tokenContract = new web3Rpc.eth.Contract(token721ABI, registeredTokenInfo._token);
+
                 let [is721, is1155, symbol] = await jobService.makeBatchRequest([
                     {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
                     {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
                     {method: tokenContract.methods.symbol().call, params: {}}
-                ], web3Ws)
+                ], web3Rpc)
 
                 let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
                 
@@ -758,7 +760,7 @@ module.exports = {
                 if(is721){
                     check721 = true;
 
-                    tokenContract.events.Transfer({
+                    tokenContractWs.events.Transfer({
                         fromBlock: lastHeight
                     }).on("error", function (error) {
                         logger.info(error);
@@ -770,8 +772,10 @@ module.exports = {
                 } else if(is1155) {
                     check721 = false;
                     
-                    tokenContract = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
-                    tokenContract.events.TransferSingle({
+                    tokenContractWs = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
+                    tokenContract = new web3Rpc.eth.Contract(token1155ABI, registeredTokenInfo._token);
+
+                    tokenContractWs.events.TransferSingle({
                         fromBlock: lastHeight
                     }).on("error", function (error) {
                         logger.info(error);
@@ -1021,7 +1025,5 @@ module.exports = {
             */
             jobService.startupUsersContractEvents(web3Ws, web3Rpc);
         })
-
-        
     }
 }

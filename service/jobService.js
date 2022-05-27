@@ -47,7 +47,7 @@ module.exports = {
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        
+        console.log("TokenInfo: " + JSON.stringify(tokenInfo));
         this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc);
         
     },
@@ -162,13 +162,14 @@ module.exports = {
 
         for(let x of data) {
 
-            let tokenContract = new web3Ws.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
+            let tokenContractWs = new web3Ws.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
+            let tokenContract = new web3Rpc.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
 
             let result = await stickerDBService.getLastRegisterCollectionEvent(x.token);
             let fromBlock = result === 0 ? x.blockNumber : result + 1;
 
             if(x.is721){
-                tokenContract.events.Transfer({
+                tokenContractWs.events.Transfer({
                     fromBlock
                 }).on("error", function (error) {
                     logger.info(error);
@@ -180,7 +181,7 @@ module.exports = {
                     jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
                 })
             } else {
-                tokenContract.events.TransferSingle({
+                tokenContractWs.events.TransferSingle({
                     fromBlock
                 }).on("error", function (error) {
                     logger.info(error);
@@ -201,11 +202,11 @@ module.exports = {
         returnValue.type = data.type;
         returnValue.name = data.name;
         returnValue.description = data.description;
-        returnValue.thumbnail = data.data.thumbnail;
-        returnValue.asset = data.data.image;
-        returnValue.kind = data.data.kind;
-        returnValue.size = data.data.size;
-        returnValue.adult = data.adult;
+        returnValue.thumbnail = data.data != null && data.data != undefined & data.data.thumbnail ? data.data.thumbnail : data.thumbnail;
+        returnValue.asset = data.data != null && data.data != undefined & data.data.image ? data.data.image : data.image;
+        returnValue.kind = data.data != null && data.data != undefined & data.data.kind ? data.data.kind : data.kind;
+        returnValue.size = data.data != null && data.data != undefined & data.data.size ? data.data.size: data.size;
+        returnValue.adult = data.adult ? data.adult : false;
         return returnValue;
     },
 
