@@ -150,6 +150,7 @@ module.exports = {
             await stickerDBService.replaceEvent(tokenEventDetail)
         } else if(tokenInfo._to == burnAddress) {
             await stickerDBService.burnToken(tokenId, token);
+            await stickerDBService.replaceEvent(tokenEventDetail)
         } else if(tokenEventDetail._to != config.pasarV2Contract && tokenEventDetail._to != config.pasarContract && tokenEventDetail._to != null
             && tokenEventDetail._from != config.pasarV2Contract && tokenEventDetail._from != config.pasarContract && tokenEventDetail._from != null){
             tokenDetail.holder = tokenInfo._to;

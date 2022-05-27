@@ -1617,7 +1617,7 @@ module.exports = {
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1720,7 +1720,7 @@ module.exports = {
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                     as: "currentBid"}},
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1889,7 +1889,7 @@ module.exports = {
                         pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}, {$limit: 1}],
                         as: "currentBid"}},
                     { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
-                    { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -2961,7 +2961,7 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
             let listAddress = [];
-            let tokens = await token_collection.find({baseToken: token}).toArray();
+            let tokens = await token_collection.find({baseToken: token, holder: {$ne: burnAddress}}).toArray();
 
             tokens.forEach(cell => {
                 if(listAddress.indexOf(cell.holder) == -1) {
@@ -2980,7 +2980,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const tokenDB = await mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await tokenDB.find({baseToken: token}).sort({createTime: -1}).toArray();
+            let result = await tokenDB.find({baseToken: token, holder: {$ne: burnAddress}}).sort({createTime: -1}).toArray();
             return {code: 200, message: 'success', data: {total: result.length, list: result}};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -3052,7 +3052,7 @@ module.exports = {
             let result = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$order"},
-                { $match: {baseToken: token, status: {$ne: "Not on sale"}}},
+                { $match: {baseToken: token, status: {$ne: "Not on sale"}}, holder: {$ne: burnAddress}},
                 { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
             ]).toArray();
 
