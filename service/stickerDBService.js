@@ -2217,7 +2217,6 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             let sort = {};
             switch (orderType) {
                 case '0':
@@ -2236,23 +2235,25 @@ module.exports = {
                     sort = {marketTime: -1}
             }
 
-            let tokens = await token_collection.aggregate([
-                { $lookup: {from: "pasar_order",
+            const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
+
+            let tokens = await order_collection.aggregate([
+                { $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { $and:[{orderState: "2"}, {sellerAddr: address}, {"$expr":{"$eq":["$$ttokenId","$tokenId"]}}, {"$expr":{"$eq":["$$tbaseToken","$baseToken"]}}] }}, {$sort: {timestamp: -1}}, {$limit: 1}],
-                    as: "tokenOrder"}
+                    pipeline: [{$match: { $and:[{"$expr":{"$eq":["$$ttokenId","$tokenId"]}}, {"$expr":{"$eq":["$$tbaseToken","$baseToken"]}}] }}],
+                    as: "token"}
                 },
                 { $lookup: {from: "pasar_order_event",
                     let: {"torderId": "$orderId"},
                     pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]} }}, {$sort: {timestamp: -1}}],
                     as: "currentBid"}},
-                { $unwind: "$tokenOrder"},
-                { $match: {$and: [{holder: {$ne:address}}]} },
-                { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
-                createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
-                data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
-                marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                { $unwind: "$token"},
+                { $match: {$and: [{sellerAddr: address, orderState: "2"}]} },
+                { $project: {"_id": 0, blockNumber: "$token.blockNumber", tokenIndex: "$token.tokenIndex", tokenId: "$token.tokenId", quantity:"$token.quantity", royalties:"$token.royalties", royaltyOwner:"$token.royaltyOwner", holder: "$token.holder",
+                createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
+                data: "$token.data", asset: "$token.asset", adult: "$token.adult", price: 1, buyoutPrice: 1, quoteToken: 1,
+                marketTime:"$token.marketTime", status: "$token.status", endTime:"$token.endTime", orderId: "$token.orderId", priceCalculated: "$token.priceCalculated", orderType: 1, amount: 1,
+                baseToken: "$token.baseToken", reservePrice: 1,currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
