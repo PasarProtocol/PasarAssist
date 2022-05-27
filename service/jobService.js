@@ -202,10 +202,10 @@ module.exports = {
         returnValue.type = data.type;
         returnValue.name = data.name;
         returnValue.description = data.description;
-        returnValue.thumbnail = data.data != null && data.data != undefined & data.data.thumbnail ? data.data.thumbnail : data.thumbnail;
-        returnValue.asset = data.data != null && data.data != undefined & data.data.image ? data.data.image : data.image;
-        returnValue.kind = data.data != null && data.data != undefined & data.data.kind ? data.data.kind : data.kind;
-        returnValue.size = data.data != null && data.data != undefined & data.data.size ? data.data.size: data.size;
+        returnValue.thumbnail = data.data != null && data.data != undefined && data.data.thumbnail ? data.data.thumbnail : data.thumbnail;
+        returnValue.asset = data.data != null && data.data != undefined && data.data.image ? data.data.image : data.image;
+        returnValue.kind = data.data != null && data.data != undefined && data.data.kind ? data.data.kind : data.kind;
+        returnValue.size = data.data != null && data.data != undefined && data.data.size ? data.data.size: data.size;
         returnValue.adult = data.adult ? data.adult : false;
         return returnValue;
     },
