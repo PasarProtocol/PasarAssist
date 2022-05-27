@@ -1,6 +1,6 @@
 module.exports = {
     mongodb: 'mongodb://localhost:27017',
-    dbName: 'feeds_sources',
+    dbName: 'feeds_sources_v2',
     dbUser: '',
     dbPass: '',
 
@@ -42,5 +42,5 @@ module.exports = {
     burnAddress: '0x0000000000000000000000000000000000000000',
     cmcApiKeys: [
     ],
-    curNetwork: 'testNet'
+    curNetwork: 'mainNet'
 }

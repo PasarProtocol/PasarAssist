@@ -3,8 +3,14 @@ let Web3 = require('web3');
 let config = require('./config');
 const token1155ABI = require("./contractABI/token1155ABI");
 const token721ABI = require("./contractABI/token721ABI");
+let pasarContractABI = require('./contractABI/pasarABI');
 
 let jobService = require('./service/jobService');
+
+const config_test = require("./config_test");
+const stickerDBService = require('./service/stickerDBService');
+config = config.curNetwork == 'testNet'? config_test : config;
+global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 let log4js = require('log4js');
 log4js.configure({
     appenders: {
@@ -16,9 +22,6 @@ log4js.configure({
     pm2InstanceVar: 'INSTANCE_ID'
 });
 global.logger = log4js.getLogger('default');
-const config_test = require("./config_test");
-config = config.curNetwork == 'testNet'? config_test : config;
-global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
     clientConfig: {
@@ -44,7 +47,14 @@ let is721 = false;
 let token = '0x020c7303664bc88ae92cE3D380BF361E03B78B81';
 let tokenContractWs = new web3Ws.eth.Contract(is721 ? token721ABI : token1155ABI, token);
 let tokenContract = new web3Rpc.eth.Contract(is721 ? token721ABI : token1155ABI, token);
-let conllectionJobCurrent = 7744408;
+
+let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarContract);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+
+let conllectionJobCurrent = 7744408,
+    orderForSaleJobCurrent = config.pasarContractDeploy,
+    orderForAuctionJobCurrent = config.pasarContractDeploy,
+    orderFilledJobCurrent = config.pasarContractDeploy;
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
@@ -70,6 +80,130 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         }).catch(error => {
             console.log(error);
             console.log("[Collection] Sync Ending ...")
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '20 * * * * *'}, async () => {
+        if(orderForSaleJobCurrent > currentHeight) {
+            console.log(`[OrderForSale] Sync ${orderForSaleJobCurrent} finished`)
+            return;
+        }
+        const tempBlockNumber = orderForSaleJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderForSale] Sync ${orderForSaleJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderForSale', {
+            fromBlock: orderForSaleJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let updateTokenInfo = {
+                    tokenId: orderInfo._tokenId,
+                    blockNumber: event.blockNumber,
+                    updateTime: event.updateTime,
+                    baseToken: token,
+                    v1State: 'listed'
+                };
+                console.log("OrderForSale Event: " + JSON.stringify(updateTokenInfo))
+                await stickerDBService.updateNormalToken(updateTokenInfo);
+            })
+            orderForSaleJobCurrent = toBlock + 1;
+        }).catch(error => {
+            console.log(error);
+            console.log("[OrderForSale] Sync Ending ...")
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+        if(orderForAuctionJobCurrent > currentHeight) {
+            console.log(`[OrderForAcution] Sync ${orderForAuctionJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderForAuctionJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderForAuction] Sync ${orderForAuctionJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderForAuction', {
+            fromBlock: orderForAuctionJobCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+                let updateTokenInfo = {
+                    tokenId: orderInfo._tokenId,
+                    blockNumber: event.blockNumber,
+                    updateTime: event.updateTime,
+                    baseToken: token,
+                    v1State: 'listed'
+                };
+                console.log("OrderForAuction Event: " + JSON.stringify(updateTokenInfo))
+                await stickerDBService.updateNormalToken(updateTokenInfo);
+            })
+            orderForAuctionJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderForAuction] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '50 * * * * *'}, async () => {
+        if(orderFilledJobCurrent > currentHeight) {
+            console.log(`[OrderFilled] Sync ${orderFilledJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderFilledJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderFilled] Sync ${orderFilledJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderFilled', {
+            fromBlock: orderFilledJobCurrent, toBlock
+        }).then(events => {
+            
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+                let updateTokenInfo = {
+                    tokenId: result.tokenId,
+                    blockNumber: event.blockNumber,
+                    updateTime: result.updateTime,
+                    baseToken: token,
+                    holder: orderInfo._buyer,
+                    v1State: null
+                };
+                let tokenEventDetail = {
+                    tokenId: result.tokenId,
+                    blockNumber: event.blockNumber,
+                    timestamp: result.updateTime,
+                    txHash: event.transactionHash,
+                    txIndex: event.transactionIndex,
+                    from: orderInfo._seller,
+                    to: orderInfo._buyer,
+                    value: 1,
+                    gasFee,
+                    token
+                };
+
+                console.log("OrderFilled Event: " + JSON.stringify(updateTokenInfo))
+
+                await stickerDBService.updateNormalToken(updateTokenInfo);
+                await stickerDBService.replaceEvent(tokenEventDetail)
+            })
+
+            orderFilledJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderFilled] Sync Ending ...");
         })
     });
 })
