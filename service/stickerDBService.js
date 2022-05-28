@@ -2487,7 +2487,8 @@ module.exports = {
             tokens[i].updateTime = tokens[i].createTime ? parseInt(tokens[i].updateTime) : 0;
 
             let rate = 1;
-            if(tokens[i].quoteToken != ELAToken) {
+            if(tokens[i].quoteToken && tokens[i].quoteToken != ELAToken) {
+                console.log(tokens[i]);
                 let convertToken = tokens[i].quoteToken;
                 if(tokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
@@ -3271,7 +3272,7 @@ module.exports = {
     getERC20TokenPrice: async function(tokenAddress) {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
-
+        console.log(tokenAddress);
         const graphQLParams = {
             query: `query tokenPriceData { token(id: "${tokenAddress.toLowerCase()}", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
             variables: null,

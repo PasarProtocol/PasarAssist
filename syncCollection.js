@@ -58,6 +58,7 @@ let conllectionJobCurrent = 7744408,
 
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
+    console.log(currentHeight);
     schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '0 * * * * *'}, async () => {
         console.log(currentHeight);
         console.log(conllectionJobCurrent);
