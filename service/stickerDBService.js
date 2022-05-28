@@ -14,6 +14,7 @@ let jobService = require('./jobService');
 const indexDBService = require('./indexDBService');
 
 const burnAddress = '0x0000000000000000000000000000000000000000';
+const ELAToken = '0x0000000000000000000000000000000000000000'
 
 module.exports = {
     getLastStickerSyncHeight: async function () {
@@ -1522,18 +1523,19 @@ module.exports = {
                     baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
                 ]).toArray();
 
-                let rateDia = await this.getDiaTokenPrice();
-                let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
-
                 for(var i = 0; i < marketTokens.length; i++) {
                     marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract) {
-                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
-                    } else {
-                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                    let rate = 1;
+                    if(marketTokens[i].quoteToken != ELAToken) {
+                        let convertToken = marketTokens[i].quoteToken;
+                        if(config.diaTokenContract == config.diaTokenContract)
+                            convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                        let rateToken = await this.getERC20TokenPrice(convertToken);
+                        rate = rateToken ? rateToken.token.derivedELA : 1;
                     }
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
                 }
 
                 if(marketTokens.length > 0)
@@ -1639,20 +1641,23 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
             ]).toArray();
 
-            let rateDia = await this.getDiaTokenPrice();
-            let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
-
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for(var i = 0; i < marketTokens.length; i++) {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                if(marketTokens[i].quoteToken == config.diaTokenContract) {
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
-                } else {
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                let rate = 1;
+                if(marketTokens[i].quoteToken != ELAToken) {
+                    let convertToken = marketTokens[i].quoteToken;
+                    if(config.diaTokenContract == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    let rateToken = await this.getERC20TokenPrice(convertToken);
+                    rate = rateToken ? rateToken.token.derivedELA : 1;
                 }
+
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+
                 marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
                     if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
@@ -1742,20 +1747,24 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid" },},
             ]).toArray();
 
-            let rateDia = await this.getDiaTokenPrice();
-            let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
-
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for(var i = 0; i < marketTokens.length; i++) {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                if(marketTokens[i].quoteToken == config.diaTokenContract) {
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
-                } else {
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+
+                let rate = 1;
+                if(marketTokens[i].quoteToken != ELAToken) {
+                    let convertToken = marketTokens[i].quoteToken;
+                    if(config.diaTokenContract == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    let rateToken = await this.getERC20TokenPrice(convertToken);
+                    rate = rateToken ? rateToken.token.derivedELA : 1;
                 }
+
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+
                 marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
                     if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
@@ -1910,10 +1919,7 @@ module.exports = {
                     marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
                     baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1, lastBid: "$tokenOrder.lastBid" },},
                 ]).toArray();
-                                
-                let rateDia = await this.getDiaTokenPrice();
-                let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
-
+                
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
                 for (let i = 0; i < marketTokens.length; i++) {
@@ -1921,11 +1927,17 @@ module.exports = {
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
-                    if(marketTokens[i].quoteToken == config.diaTokenContract) {
-                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
-                    } else {
-                        marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) / 10 ** 18; 
+                    let rate = 1;
+                    if(marketTokens[i].quoteToken != ELAToken) {
+                        let convertToken = marketTokens[i].quoteToken;
+                        if(config.diaTokenContract == config.diaTokenContract)
+                            convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                        let rateToken = await this.getERC20TokenPrice(convertToken);
+                        rate = rateToken ? rateToken.token.derivedELA : 1;
                     }
+
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+
                     marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                     if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
                         if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
@@ -2469,16 +2481,18 @@ module.exports = {
 
         let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
-        let rateDia = await this.getDiaTokenPrice();
-
         for (let i = 0; i < tokens.length; i++) {
             tokens[i].marketTime = tokens[i].marketTime ? parseInt(tokens[i].marketTime) : 0;
             tokens[i].createTime = tokens[i].createTime ? parseInt(tokens[i].createTime) : 0;
             tokens[i].updateTime = tokens[i].createTime ? parseInt(tokens[i].updateTime) : 0;
 
             let rate = 1;
-            if(tokens[i].quoteToken == config.diaTokenContract) {
-                rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
+            if(tokens[i].quoteToken != ELAToken) {
+                let convertToken = tokens[i].quoteToken;
+                if(config.diaTokenContract == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                let rateToken = await this.getERC20TokenPrice(convertToken);
+                rate = rateToken ? rateToken.token.derivedELA : 1;
             }
 
             tokens[i].priceCalculated = tokens[i].price ? tokens[i].price * rate / 10 ** 18 : 0;
@@ -3041,16 +3055,19 @@ module.exports = {
             ]).toArray();
 
             let total = 0;
-            let rateDia = await this.getDiaTokenPrice();
 
-            result.forEach(cell => {
+            for(var i = 0; i < result.length; i++) {
                 let rate = 1;
-                if(cell.quoteToken == config.diaTokenContract) {
-                    rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
+                if(result[i].quoteToken != ELAToken) {
+                    let convertToken = result[i].quoteToken;
+                    if(config.diaTokenContract == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    let rateToken = await this.getERC20TokenPrice(convertToken);
+                    rate = rateToken ? rateToken.token.derivedELA : 1;
                 }
-                let price = cell.filled * rate / 10 ** 18;
+                let price = result[i].filled * rate / 10 ** 18;
                 total = total + price;
-            })
+            }
             return {code: 200, message: 'success', data: {total}};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -3066,24 +3083,26 @@ module.exports = {
             let result = await token_collection.aggregate([
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
                 { $unwind: "$order"},
-                { $match: {baseToken: token, status: {$ne: "Not on sale"}}, holder: {$ne: burnAddress}},
-                { $project: {"_id": 0, price: "$order.price", quoteToken: 1}},
+                { $match: {baseToken: token, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
+                { $project: {"_id": 0, price: "$order.price", quoteToken: "$order.quoteToken"}},
             ]).toArray();
-
             let listPrice = [];
-            let rateDia = await this.getDiaTokenPrice();
 
-            result.forEach(cell => {
+            for(var i=0; i < result.length; i++) {
                 let rate = 1;
-                if(cell.quoteToken == config.diaTokenContract) {
-                    rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
+                if(result[i].quoteToken != ELAToken) {
+                    let convertToken = result[i].quoteToken;
+                    if(config.diaTokenContract == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    let rateToken = await this.getERC20TokenPrice(convertToken);
+                    rate = rateToken ? rateToken.token.derivedELA : 1;
                 }
                 
-                let price = cell.price * rate / 10 ** 18;
+                let price = result[i].price * rate / 10 ** 18;
                 if(price != 0) {
                     listPrice.push(price);
                 }
-            })
+            }
 
             return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
         } catch(err) {
@@ -3248,4 +3267,40 @@ module.exports = {
             return {code: 200, message: 'success', data: false};
         }
     },
+
+    getERC20TokenPrice: async function(tokenAddress, connectProvider = null) {
+        return new Promise((resolve, reject) => {
+        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        
+          walletConnectWeb3.eth
+            .getBlockNumber()
+            .then((blocknum) => {
+              const graphQLParams = {
+                query: `query tokenPriceData { token(id: "${tokenAddress.toLowerCase()}", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
+                variables: null,
+                operationName: 'tokenPriceData'
+              };
+              axios({
+                method: 'POST',
+                url: 'https://api.glidefinance.io/subgraphs/name/glide/exchange',
+                headers: {
+                  'content-type': 'application/json',
+                  // "x-rapidapi-host": "reddit-graphql-proxy.p.rapidapi.com",
+                  // "x-rapidapi-key": process.env.RAPIDAPI_KEY,
+                  accept: 'application/json'
+                },
+                data: graphQLParams
+              }).then((response) => {
+                try {
+                  resolve(response.data.data);
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            })
+            .catch((error) => {
+              reject(error);
+            });
+        });
+      }
 }
