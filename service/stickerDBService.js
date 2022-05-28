@@ -1114,14 +1114,19 @@ module.exports = {
             let result = await collection.aggregate([
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
                 { $sort: {updateTime: 1}},
-                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1} },
                 { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },
-                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "roaytly"} },
+                { 
+                    $lookup: {from: "pasar_order_event",
+                    let: {"torderId": "$orderId"},
+                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$torderId","$orderId"]}}, {event:"OrderFilled"}]}}],
+                    as: "roaytly"}
+                },
+                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1, platformFee: 1, roaytly: 1} },
             ]).toArray();
             result.forEach(x => {
                 // x.time = new Date(x.updateTime * 1000);
-                let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
                 console.log(x)
+                let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
                 let royalty = x.roaytly.length > 0 && x.roaytly[0].royaltyFee ? x.roaytly[0].royaltyFee: 0;
                 x.value = type == 0 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(x.royaltyFee)) : (parseInt(x.filled) - parseInt(royalty)) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
