@@ -1132,10 +1132,8 @@ module.exports = {
                 { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1, baseToken: 1, platformFee: 1, royatly: 1, royaltyOwner: "$token.royaltyOwner"} },
             ]).toArray();
             result.forEach(x => {
-                // x.time = new Date(x.updateTime * 1000);
-                console.log(x)
                 let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
-                let royalty = x.royaltyOwner != walletAddr && x.royatly > 0 && !x.royatly.royaltyFee ? x.royaltyFee : 0;
+                let royalty = x.royaltyOwner != walletAddr && x.royatly && x.royatly.royaltyFee ? x.royatly.royaltyFee : 0;
                 x.value = type == 0 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(royalty)) : (parseInt(x.filled) - parseInt(royalty)) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
             });
