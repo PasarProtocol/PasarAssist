@@ -1509,7 +1509,7 @@ module.exports = {
                 ]).toArray();
 
                 let rateDia = await this.getDiaTokenPrice();
-                let rate = parseFloat(rateDia.token.derivedELA);
+                let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
 
                 for(var i = 0; i < marketTokens.length; i++) {
                     marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
@@ -1626,7 +1626,7 @@ module.exports = {
             ]).toArray();
 
             let rateDia = await this.getDiaTokenPrice();
-            let rate = parseFloat(rateDia.token.derivedELA);
+            let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
@@ -1729,7 +1729,7 @@ module.exports = {
             ]).toArray();
 
             let rateDia = await this.getDiaTokenPrice();
-            let rate = parseFloat(rateDia.token.derivedELA);
+            let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
@@ -1898,7 +1898,7 @@ module.exports = {
                 ]).toArray();
                                 
                 let rateDia = await this.getDiaTokenPrice();
-                let rate = parseFloat(rateDia.token.derivedELA);
+                let rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
 
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
@@ -2464,7 +2464,7 @@ module.exports = {
 
             let rate = 1;
             if(tokens[i].quoteToken == config.diaTokenContract) {
-                rate = rateDia.token.derivedELA;
+                rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
             }
 
             tokens[i].priceCalculated = tokens[i].price ? tokens[i].price * rate / 10 ** 18 : 0;
@@ -3032,7 +3032,7 @@ module.exports = {
             result.forEach(cell => {
                 let rate = 1;
                 if(cell.quoteToken == config.diaTokenContract) {
-                    rate = rateDia.token.derivedELA;
+                    rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
                 }
                 let price = cell.filled * rate / 10 ** 18;
                 total = total + price;
@@ -3062,7 +3062,7 @@ module.exports = {
             result.forEach(cell => {
                 let rate = 1;
                 if(cell.quoteToken == config.diaTokenContract) {
-                    rate = rateDia.token.derivedELA;
+                    rate = rateDia ? parseFloat(rateDia.token.derivedELA) : 1;
                 }
                 
                 let price = cell.price * rate / 10 ** 18;
