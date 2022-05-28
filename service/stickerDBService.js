@@ -1135,7 +1135,7 @@ module.exports = {
                 // x.time = new Date(x.updateTime * 1000);
                 console.log(x)
                 let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
-                let royalty = x.royaltyOwner != walletAddr && x.royatly.length > 0 && !x.royatly[0].royaltyFee ? x.royaltyFee : 0;
+                let royalty = x.royaltyOwner != walletAddr && x.royatly > 0 && !x.royatly.royaltyFee ? x.royaltyFee : 0;
                 x.value = type == 0 ? (x.sellerAddr == x.royaltyOwner? 0: parseInt(royalty)) : (parseInt(x.filled) - parseInt(royalty)) * parseFloat(x.amount) - parseInt(platformFee);
                 rows.push(x);
             });
