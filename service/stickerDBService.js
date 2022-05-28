@@ -3268,39 +3268,28 @@ module.exports = {
         }
     },
 
-    getERC20TokenPrice: async function(tokenAddress, connectProvider = null) {
-        return new Promise((resolve, reject) => {
+    getERC20TokenPrice: async function(tokenAddress) {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let blocknum = await walletConnectWeb3.eth.getBlockNumber();
+
+        const graphQLParams = {
+            query: `query tokenPriceData { token(id: "${tokenAddress.toLowerCase()}", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
+            variables: null,
+            operationName: 'tokenPriceData'
+        };
         
-          walletConnectWeb3.eth
-            .getBlockNumber()
-            .then((blocknum) => {
-              const graphQLParams = {
-                query: `query tokenPriceData { token(id: "${tokenAddress.toLowerCase()}", block: {number: ${blocknum}}) { derivedELA } bundle(id: "1", block: {number: ${blocknum}}) { elaPrice } }`,
-                variables: null,
-                operationName: 'tokenPriceData'
-              };
-              axios({
-                method: 'POST',
-                url: 'https://api.glidefinance.io/subgraphs/name/glide/exchange',
-                headers: {
-                  'content-type': 'application/json',
-                  // "x-rapidapi-host": "reddit-graphql-proxy.p.rapidapi.com",
-                  // "x-rapidapi-key": process.env.RAPIDAPI_KEY,
-                  accept: 'application/json'
-                },
-                data: graphQLParams
-              }).then((response) => {
-                try {
-                  resolve(response.data.data);
-                } catch (error) {
-                  reject(error);
-                }
-              });
-            })
-            .catch((error) => {
-              reject(error);
-            });
-        });
+        let response = await axios({
+            method: 'POST',
+            url: 'https://api.glidefinance.io/subgraphs/name/glide/exchange',
+            headers: {
+              'content-type': 'application/json',
+              // "x-rapidapi-host": "reddit-graphql-proxy.p.rapidapi.com",
+              // "x-rapidapi-key": process.env.RAPIDAPI_KEY,
+              accept: 'application/json'
+            },
+            data: graphQLParams
+        })
+
+        return response.data.data;
       }
 }
