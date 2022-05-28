@@ -65,10 +65,12 @@ module.exports = {
             
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
         } else if(result.indexOf("Solana") != -1) {
-            result = result.replace("https://gateway.pinata.cloud", "https://cloudflare-ipfs.com");
+            console.log(result);
+            result = result.replace("https://gateway.pinata.cloud", "https://ipfs.pasarprotocol.io");
             fetch(result)
             .then(res => res.text())
             .then(async data => {
+                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseSolana(jsonData, token);
 
