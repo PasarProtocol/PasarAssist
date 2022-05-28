@@ -920,8 +920,8 @@ module.exports = {
             let result = await collection.aggregate([
                 // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
                 { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
-                { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", price:1} },
+                { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp", quoteToken: "$quoteToken"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1} },
                 { $sort: {timestamp: 1} }
             ]).toArray();
             if(result.length > 0)
@@ -1114,7 +1114,7 @@ module.exports = {
             let result = await collection.aggregate([
                 { $match: {$and : [{$or :[...addressCondition]}, { 'orderState': '2'}]} },
                 { $sort: {updateTime: 1}},
-                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1} },
+                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1} },
                 { $lookup: {from: "pasar_order_platform_fee", localField: "orderId", foreignField: "orderId", as: "platformFee"} },
             ]).toArray();
             result.forEach(x => {
@@ -1130,8 +1130,8 @@ module.exports = {
                 await collection.insertMany(rows);
                 result = await collection.aggregate([
                     // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$time'}}} },
-                    { $group: { "_id"  : { onlyDate: "$updateTime"}, "value": {$sum: "$value"}} },
-                    { $project: {_id: 0, onlyDate: "$_id.onlyDate", value:1} },
+                    { $group: { "_id"  : { onlyDate: "$updateTime", quoteToken: "$quoteToken"}, "value": {$sum: "$value"}} },
+                    { $project: {_id: 0, onlyDate: "$_id.onlyDate", quoteToken: "$_id.quoteToken",value:1} },
                     { $sort: {onlyDate: 1} },
                 ]).toArray();
                 await collection.drop();
