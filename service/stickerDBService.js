@@ -1530,7 +1530,7 @@ module.exports = {
                     let rate = 1;
                     if(marketTokens[i].quoteToken != ELAToken) {
                         let convertToken = marketTokens[i].quoteToken;
-                        if(config.diaTokenContract == config.diaTokenContract)
+                        if(marketTokens[i].quoteToken == config.diaTokenContract)
                             convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                         let rateToken = await this.getERC20TokenPrice(convertToken);
                         rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -1650,7 +1650,7 @@ module.exports = {
                 let rate = 1;
                 if(marketTokens[i].quoteToken != ELAToken) {
                     let convertToken = marketTokens[i].quoteToken;
-                    if(config.diaTokenContract == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                     let rateToken = await this.getERC20TokenPrice(convertToken);
                     rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -1757,7 +1757,7 @@ module.exports = {
                 let rate = 1;
                 if(marketTokens[i].quoteToken != ELAToken) {
                     let convertToken = marketTokens[i].quoteToken;
-                    if(config.diaTokenContract == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                     let rateToken = await this.getERC20TokenPrice(convertToken);
                     rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -1930,7 +1930,7 @@ module.exports = {
                     let rate = 1;
                     if(marketTokens[i].quoteToken != ELAToken) {
                         let convertToken = marketTokens[i].quoteToken;
-                        if(config.diaTokenContract == config.diaTokenContract)
+                        if(marketTokens[i].quoteToken == config.diaTokenContract)
                             convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                         let rateToken = await this.getERC20TokenPrice(convertToken);
                         rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -2489,7 +2489,7 @@ module.exports = {
             let rate = 1;
             if(tokens[i].quoteToken != ELAToken) {
                 let convertToken = tokens[i].quoteToken;
-                if(config.diaTokenContract == config.diaTokenContract)
+                if(tokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 let rateToken = await this.getERC20TokenPrice(convertToken);
                 rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -3060,7 +3060,7 @@ module.exports = {
                 let rate = 1;
                 if(result[i].quoteToken != ELAToken) {
                     let convertToken = result[i].quoteToken;
-                    if(config.diaTokenContract == config.diaTokenContract)
+                    if(result[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                     let rateToken = await this.getERC20TokenPrice(convertToken);
                     rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -3092,7 +3092,7 @@ module.exports = {
                 let rate = 1;
                 if(result[i].quoteToken != ELAToken) {
                     let convertToken = result[i].quoteToken;
-                    if(config.diaTokenContract == config.diaTokenContract)
+                    if(result[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                     let rateToken = await this.getERC20TokenPrice(convertToken);
                     rate = rateToken ? rateToken.token.derivedELA : 1;
