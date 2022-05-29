@@ -1528,7 +1528,7 @@ module.exports = {
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     let rate = 1;
-                    if(marketTokens[i].quoteToken != ELAToken) {
+                    if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
                         let convertToken = marketTokens[i].quoteToken;
                         if(marketTokens[i].quoteToken == config.diaTokenContract)
                             convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
@@ -1648,7 +1648,7 @@ module.exports = {
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                 let rate = 1;
-                if(marketTokens[i].quoteToken != ELAToken) {
+                if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
                     let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
@@ -1755,7 +1755,7 @@ module.exports = {
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
                 let rate = 1;
-                if(marketTokens[i].quoteToken != ELAToken) {
+                if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
                     let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
@@ -1928,7 +1928,7 @@ module.exports = {
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
                     let rate = 1;
-                    if(marketTokens[i].quoteToken != ELAToken) {
+                    if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
                         let convertToken = marketTokens[i].quoteToken;
                         if(marketTokens[i].quoteToken == config.diaTokenContract)
                             convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
