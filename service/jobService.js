@@ -76,6 +76,16 @@ module.exports = {
 
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
+        } else if(result.indexOf('ela.city') != -1) {
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                console.log(data);
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parsePrimates(jsonData);
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+            })
+
         }
     },
 
@@ -254,6 +264,20 @@ module.exports = {
             await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
         }
 
+        return returnValue;
+    },
+
+    parsePrimates: function(data) {
+        let returnValue = {};
+        returnValue.tokenJsonVersion = 2;
+        returnValue.type = 'image';
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image;
+        returnValue.asset = data.image;
+        returnValue.kind = 'image';
+        returnValue.size = 0;
+        returnValue.adult = false;
         return returnValue;
     },
 }
