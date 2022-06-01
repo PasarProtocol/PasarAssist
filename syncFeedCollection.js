@@ -42,7 +42,7 @@ let web3Rpc = new Web3(config.escRpcUrl);
 
 let now = Date.now();
 
-let token = '0x020c7303664bc88ae92cE3D380BF361E03B78B81';
+let token = config.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
 let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerContract);
