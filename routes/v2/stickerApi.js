@@ -520,8 +520,8 @@ router.get('/getLatestElaPrice', function(req, res) {
 
 router.get('/getCollection', function(req, res) {
     let sort = req.query.sort;
-    
-    stickerDBService.getCollections(sort).then(result => {
+    let onMarket = req.query.onMarket ? req.query.onMarket : false;
+    stickerDBService.getCollections(sort, onMarket).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

@@ -454,6 +454,19 @@ module.exports = {
         }
     },
 
+    updateRoyaltiesOfToken: async function (tokenId, royalties, baseToken) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token');
+            await collection.updateOne({tokenId, baseToken}, {$set: {royalties}});
+        } catch (err) {
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     updateNormalToken: async function (token) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2794,7 +2807,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function(sort = 0) {
+    getCollections: async function(sort = 0, onMarket=false) {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2849,7 +2862,7 @@ module.exports = {
             await Promise.all(collections.map(async cell => {
                 let diaBalance = await indexDBService.diaBalance([cell.owner]);
                 cell.diaBalance = diaBalance[cell.owner] / (10 ** 18);
-                let reponse = await this.getTotalCountCollectibles(cell.token);
+                let reponse = await this.getTotalCountCollectibles(cell.token, onMarket);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalCount = reponse.data.total;
@@ -3004,12 +3017,17 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getTotalCountCollectibles: async function(token) {
+    getTotalCountCollectibles: async function(token, onMarket=false) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
+            let checkCondition = [{baseToken: token}, {holder: {$ne: burnAddress}}];
+            if(onMarket) {
+                checkCondition.push({status: {$ne: "Not on sale"}})
+            }
+            let condition = {$and: checkCondition};
             const tokenDB = await mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await tokenDB.find({baseToken: token, holder: {$ne: burnAddress}}).sort({createTime: -1}).toArray();
+            let result = await tokenDB.find(condition).sort({createTime: -1}).toArray();
             return {code: 200, message: 'success', data: {total: result.length, list: result}};
         } catch(err) {
             return {code: 500, message: 'server error'};
