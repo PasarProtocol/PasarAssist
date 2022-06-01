@@ -1,8 +1,7 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 let config = require('./config');
-const token1155ABI = require("./contractABI/token1155ABI");
-const token721ABI = require("./contractABI/token721ABI");
+let stickerContractABI = require('./contractABI/stickerABI');
 let pasarContractABI = require('./contractABI/pasarABI');
 
 let jobService = require('./service/jobService');
@@ -43,15 +42,16 @@ let web3Rpc = new Web3(config.escRpcUrl);
 
 let now = Date.now();
 
-let is721 = false;
 let token = '0x020c7303664bc88ae92cE3D380BF361E03B78B81';
-let tokenContractWs = new web3Ws.eth.Contract(is721 ? token721ABI : token1155ABI, token);
-let tokenContract = new web3Rpc.eth.Contract(is721 ? token721ABI : token1155ABI, token);
+
+let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerContractDeploy);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContractDeploy);
 
 let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarContract);
 let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
 
-let conllectionJobCurrent = 7744408,
+let transferSingleCurrent = config.stickerContractDeploy,
+    royaltiesCurrent = config.stickerContractDeploy,
     orderForSaleJobCurrent = config.pasarContractDeploy,
     orderForAuctionJobCurrent = config.pasarContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy;
@@ -59,32 +59,144 @@ let conllectionJobCurrent = 7744408,
 const step = 20000;
 web3Rpc.eth.getBlockNumber().then(currentHeight => {
     console.log(currentHeight);
+
+    async function dealWithNewToken(blockNumber,tokenId) {
+        try {
+            let [result, extraInfo] = await jobService.makeBatchRequest([
+                {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
+                {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
+            ], web3Rpc);
+
+            let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
+                royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
+                createTime: result.createTime, updateTime: result.updateTime}
+
+            token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
+            let data = await jobService.getInfoByIpfsUri(result.tokenUri);
+            token.tokenJsonVersion = data.version;
+            token.type = data.type;
+            token.name = data.name;
+            token.description = data.description;
+            token.properties = data.properties;
+            token.baseToken = config.stickerContract;
+
+            if(extraInfo.didUri !== '') {
+                token.didUri = extraInfo.didUri;
+                token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
+                await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
+                if(token.did.KYCedProof != undefined) {
+                    await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
+                }
+            }
+
+            if(token.type === 'feeds-channel') {
+                token.tippingAddress = data.tippingAddress;
+                token.entry = data.entry;
+                token.avatar = data.avatar;
+                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+                await stickerDBService.replaceGalleriaToken(token);
+                return;
+            }
+
+            if(token.type === 'video' || data.version === "2") {
+                token.data = data.data;
+            } else {
+                token.thumbnail = data.thumbnail;
+                token.asset = data.image;
+                token.kind = data.kind;
+                token.size = data.size;
+            }
+
+            token.adult = data.adult ? data.adult : false;
+            token.price = 0;
+            token.marketTime = null;
+            token.status = "Not on sale";
+            token.endTime = null;
+            token.orderId = null;
+            logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
+            await stickerDBService.replaceToken(token);
+        } catch (e) {
+            logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
+            logger.info(e);
+        }
+    }
+
     schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '0 * * * * *'}, async () => {
         console.log(currentHeight);
-        console.log(conllectionJobCurrent);
-        if(conllectionJobCurrent > currentHeight) {
-            console.log(`[Collection] Sync ${conllectionJobCurrent} finished`)
+        console.log(transferSingleCurrent);
+        if(transferSingleCurrent > currentHeight) {
+            console.log(`[Collection] Sync ${transferSingleCurrent} finished`)
             return;
         }
-        const tempBlockNumber = conllectionJobCurrent + step
+        const tempBlockNumber = transferSingleCurrent + step
         const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
 
-        console.log(`[Collection] Sync ${conllectionJobCurrent} ~ ${toBlock} ...`)
+        console.log(`[Collection] Sync ${transferSingleCurrent} ~ ${toBlock} ...`)
 
-        tokenContractWs.getPastEvents('TransferSingle', {
-            fromBlock: conllectionJobCurrent, toBlock
+        stickerContractWs.getPastEvents('TransferSingle', {
+            fromBlock: transferSingleCurrent, toBlock
         }).then(events => {
             events.forEach(async event => {
-                jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc)
+                let blockNumber = event.blockNumber;
+                let txHash = event.transactionHash;
+                let txIndex = event.transactionIndex;
+                let from = event.returnValues._from;
+                let to = event.returnValues._to;
+
+                let tokenId = event.returnValues._id;
+                let value = event.returnValues._value;
+
+                let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+                    {method: web3Rpc.eth.getBlock, params: blockNumber},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+                let timestamp = blockInfo.timestamp;
+
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract};
+                logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
+                await stickerDBService.replaceEvent(transferEvent);
+
+                if(to === burnAddress) {
+                    await stickerDBService.burnToken(tokenId, config.stickerContract);
+                } else if(from === burnAddress) {
+                    await dealWithNewToken(blockNumber, tokenId)
+                } else {
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);
+                }
             })
-            conllectionJobCurrent = toBlock + 1;
+            orderForSaleJobCurrent = toBlock + 1;
         }).catch(error => {
             console.log(error);
-            console.log("[Collection] Sync Ending ...")
+            console.log("[OrderForSale] Sync Ending ...")
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '20 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '0 * * * * *'}, async () => {
+        console.log(currentHeight);
+        console.log(royaltiesCurrent);
+        if(conllectionJobCurrent > currentHeight) {
+            console.log(`[Collection] Sync ${royaltiesCurrent} finished`)
+            return;
+        }
+        const tempBlockNumber = royaltiesCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[Collection] Sync ${royaltiesCurrent} ~ ${toBlock} ...`)
+
+        stickerContractWs.getPastEvents('RoyaltyFee', {
+            fromBlock: royaltiesCurrent, toBlock
+        }).then(events => {
+            events.forEach(async event => {
+                let tokenId = event.returnValues._id;
+                let fee = event.returnValues._fee;
+
+                await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerContract);
+            });
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '0 * * * * *'}, async () => {
         if(orderForSaleJobCurrent > currentHeight) {
             console.log(`[OrderForSale] Sync ${orderForSaleJobCurrent} finished`)
             return;
@@ -116,7 +228,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '30 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 4 * 60 * 1000), rule: '0 * * * * *'}, async () => {
         if(orderForAuctionJobCurrent > currentHeight) {
             console.log(`[OrderForAcution] Sync ${orderForAuctionJobCurrent} finished`)
             return;
@@ -149,7 +261,7 @@ web3Rpc.eth.getBlockNumber().then(currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '50 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 6 * 60 * 1000), rule: '0 * * * * *'}, async () => {
         if(orderFilledJobCurrent > currentHeight) {
             console.log(`[OrderFilled] Sync ${orderFilledJobCurrent} finished`)
             return;
