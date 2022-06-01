@@ -78,7 +78,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
             fromBlock: conllectionJobCurrent, toBlock
         }).then(events => {
             events.forEach(async event => {
-                jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc)
+                await jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc)
             })
             conllectionJobCurrent = toBlock + 1;
         }).catch(error => {

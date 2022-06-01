@@ -37,6 +37,9 @@ module.exports = {
     },
 
     dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc) {
+        if(token == config.stickerContract)
+            return;
+            
         let tokenInfo = event.returnValues;
         let tokenId = check721 ? tokenInfo._tokenId : tokenInfo._id;
         
