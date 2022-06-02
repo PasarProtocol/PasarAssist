@@ -3,7 +3,7 @@ let Web3 = require('web3');
 let config = require('./config');
 let stickerContractABI = require('./contractABI/stickerABI');
 let pasarContractABI = require('./contractABI/pasarABI');
-
+let syncFeedNewToken = require('./syncFeedNewToken');
 let jobService = require('./service/jobService');
 
 const config_test = require("./config_test");
@@ -57,73 +57,16 @@ let transferSingleCurrent = config.stickerContractDeploy,
     orderForAuctionJobCurrent = config.pasarContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy;
 
-const step = 20000;
+const step = 10000;
 web3Rpc.eth.getBlockNumber().then(async currentHeight => {
     console.log(currentHeight);
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+    let stickerCountContract1 = parseInt(await stickerContract.methods.tokenSupply('9959445386171081097567086144420016528863170236411580689097210615340840644524').call());
+    let stickerCountContract2 = parseInt(await stickerContract.methods.tokenSupply('44265190402317202241816486831785618932300113835833157177555403685205569224657').call());
 
     console.log("Total Count: " + stickerCountContract);
-
-    async function dealWithNewToken(blockNumber,tokenId) {
-        try {
-            let [result, extraInfo] = await jobService.makeBatchRequest([
-                {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
-                {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
-            ], web3Rpc);
-
-            let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
-                royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                createTime: result.createTime, updateTime: result.updateTime}
-
-            token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
-            let data = await jobService.getInfoByIpfsUri(result.tokenUri);
-            token.tokenJsonVersion = data.version;
-            token.type = data.type;
-            token.name = data.name;
-            token.description = data.description;
-            token.properties = data.properties;
-            token.baseToken = config.stickerContract;
-
-            if(extraInfo.didUri !== '') {
-                token.didUri = extraInfo.didUri;
-                token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                if(token.did.KYCedProof != undefined) {
-                    await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
-                }
-            }
-
-            if(token.type === 'feeds-channel') {
-                token.tippingAddress = data.tippingAddress;
-                token.entry = data.entry;
-                token.avatar = data.avatar;
-                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-                await stickerDBService.replaceGalleriaToken(token);
-                return;
-            }
-
-            if(token.type === 'video' || data.version === "2") {
-                token.data = data.data;
-            } else {
-                token.thumbnail = data.thumbnail;
-                token.asset = data.image;
-                token.kind = data.kind;
-                token.size = data.size;
-            }
-
-            token.adult = data.adult ? data.adult : false;
-            token.price = 0;
-            token.marketTime = null;
-            token.status = "Not on sale";
-            token.endTime = null;
-            token.orderId = null;
-            logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-            await stickerDBService.replaceToken(token);
-        } catch (e) {
-            logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
-            logger.info(e);
-        }
-    }
+    console.log("Total Count1: " + stickerCountContract1);
+    console.log("Total Count2: " + stickerCountContract2);
 
     schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '0 * * * * *'}, async () => {
         console.log(currentHeight);
@@ -165,7 +108,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     await stickerDBService.burnToken(tokenId, config.stickerContract);
                 } else if(from === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
-                    await dealWithNewToken(blockNumber, tokenId)
+                    await syncFeedNewToken.dealWithNewToken(blockNumber, tokenId)
                 } else if(to != config.stickerContract && from != config.stickerContract){
                     await stickerDBService.replaceEvent(transferEvent);
                     await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);

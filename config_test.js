@@ -1,6 +1,6 @@
 module.exports = {
     mongodb: 'mongodb://localhost:27017',
-    dbName: 'feeds_sources_test',
+    dbName: 'feeds_sources_test12',
     dbUser: '',
     dbPass: '',
 
