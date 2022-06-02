@@ -58,8 +58,11 @@ let transferSingleCurrent = config.stickerContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy;
 
 const step = 20000;
-web3Rpc.eth.getBlockNumber().then(currentHeight => {
+web3Rpc.eth.getBlockNumber().then(async currentHeight => {
     console.log(currentHeight);
+    let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+
+    console.log("Total Count: " + stickerCountContract);
 
     async function dealWithNewToken(blockNumber,tokenId) {
         try {
