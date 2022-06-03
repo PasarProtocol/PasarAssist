@@ -3286,7 +3286,27 @@ module.exports = {
             return {code: 200, message: 'success', data: false};
         }
     },
-
+    test: async function(baseToken) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            let result = [];
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_token_event');
+            let events = await collection.find({token: baseToken, from: burnAddress}).toArray();
+            for(var i = 0; i < events.length; i++) {
+                if(result.indexOf(events[i].tokenId) == -1) {
+                    result.push(events[i].tokenId);
+                }
+            }
+            
+            return {code: 200, message: 'success', data: {total: result.length, tokenId: result}};
+        } catch(err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getERC20TokenPrice: async function(tokenAddress) {
         let walletConnectWeb3 = new Web3(config.escRpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();

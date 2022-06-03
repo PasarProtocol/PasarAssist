@@ -609,6 +609,17 @@ router.get('/getRecentlySold', function(req, res) {
     })
 });
 
+router.get('/test/:baseToken', function(req, res) {
+    let baseToken = req.params.baseToken;
+
+    stickerDBService.test(baseToken).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+});
+
 router.get('/checkV1NFTByWallet/:walletAddr', function(req, res) {
     let walletAddr = req.params.walletAddr;
 
