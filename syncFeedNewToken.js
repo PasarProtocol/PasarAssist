@@ -4,6 +4,7 @@ let config = require('./config');
 let stickerContractABI = require('./contractABI/stickerABI');
 let pasarDBService = require('./service/pasarDBService');
 let jobService = require('./service/jobService');
+let authService  = require('./service/authService')
 
 const config_test = require("./config_test");
 const stickerDBService = require('./service/stickerDBService');
@@ -32,7 +33,7 @@ module.exports = {
                 {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
                 {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
             ], web3Rpc);
-    
+
             let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                 royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                 createTime: result.createTime, updateTime: result.updateTime}
@@ -45,26 +46,13 @@ module.exports = {
             token.description = data.description ? data.description : '';
             token.properties = data.properties ? data.properties : '';
             token.baseToken = config.stickerContract;
-    
-            if(extraInfo.didUri !== '') {
-                token.didUri = extraInfo.didUri;
-                token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                if(token.did.KYCedProof != undefined) {
-                    await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
-                }
-            }
-    
+
             if(token.type === 'feeds-channel') {
                 token.tippingAddress = data.tippingAddress;
                 token.entry = data.entry;
+                token.data = data.avatar;
                 token.avatar = data.avatar;
-                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-                await stickerDBService.replaceGalleriaToken(token);
-                return;
-            }
-    
-            if(token.type === 'video' || data.version === "2") {
+            }else if(token.type === 'video' || data.version == "2") {
                 token.data = data.data;
             } else {
                 token.thumbnail = data.thumbnail;
