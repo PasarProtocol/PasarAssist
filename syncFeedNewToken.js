@@ -2,7 +2,7 @@ const schedule = require('node-schedule');
 let Web3 = require('web3');
 let config = require('./config');
 let stickerContractABI = require('./contractABI/stickerABI');
-
+let pasarDBService = require('./service/pasarDBService');
 let jobService = require('./service/jobService');
 
 const config_test = require("./config_test");
@@ -39,11 +39,11 @@ module.exports = {
     
             token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
             let data = await jobService.getInfoByIpfsUri(result.tokenUri);
-            token.tokenJsonVersion = data.version;
-            token.type = data.type;
-            token.name = data.name;
-            token.description = data.description;
-            token.properties = data.properties;
+            token.tokenJsonVersion = data.version ? data.version : 1;
+            token.type = data.type ? data.type : 'image';
+            token.name = data.name ? data.name : '';
+            token.description = data.description ? data.description : '';
+            token.properties = data.properties ? data.properties : '';
             token.baseToken = config.stickerContract;
     
             if(extraInfo.didUri !== '') {
