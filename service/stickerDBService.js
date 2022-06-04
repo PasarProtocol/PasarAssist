@@ -3289,17 +3289,27 @@ module.exports = {
     test: async function(baseToken) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
-            let result = [];
+            let result = [], tokenlist = [];
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_token_event');
-            let events = await collection.find({token: baseToken, from: burnAddress}).toArray();
-            for(var i = 0; i < events.length; i++) {
-                if(result.indexOf(events[i].tokenId) == -1) {
-                    result.push(events[i].tokenId);
+            let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
+            let tokens = await collection_token.find({baseToken: baseToken}).toArray();
+            
+            console.log(tokens);
+            for(var i = 0; i < tokens.length; i++) {
+                if(tokenlist.indexOf(tokens[i].tokenId) == -1) {
+                    tokenlist.push(tokens[i].tokenId)
                 }
             }
-            
-            return {code: 200, message: 'success', data: {total: result.length, tokenId: result}};
+            console.log(tokenlist);
+            let missToken = await collection.find({token: baseToken, tokenId: {$nin: tokenlist}}).toArray();
+
+            for(var i = 0; i < missToken.length; i++) {
+                if(result.indexOf(missToken[i].tokenId) == -1) {
+                    result.push(missToken[i].tokenId);
+                }
+            }
+            return {code: 200, message: 'success', data: {missLength: result.length, missToken: result}};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
