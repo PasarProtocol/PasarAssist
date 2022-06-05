@@ -138,6 +138,7 @@ module.exports = {
             tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
+            tokenDetail.properties = data.properties ? data.properties : null;
 
             let creator = data.creator ? data.creator : null;
             if(creator) {
@@ -219,6 +220,7 @@ module.exports = {
         returnValue.tokenJsonVersion = data.version;
         returnValue.type = data.type;
         returnValue.name = data.name;
+        returnValue.properties = data.properties ? data.properties : null;
         returnValue.description = data.description;
         returnValue.thumbnail = data.data != null && data.data != undefined && data.data.thumbnail ? data.data.thumbnail : data.thumbnail;
         returnValue.asset = data.data != null && data.data != undefined && data.data.image ? data.data.image : data.image;
