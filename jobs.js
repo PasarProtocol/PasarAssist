@@ -161,43 +161,43 @@ module.exports = {
         //     })
         // });
 
-        // let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-        //     let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
-        //     // if(isGetForOrderPriceChangedJobRun == false) {
-        //     //     //initial state
-        //     //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
-        //     // } else {
-        //     //     lastHeight += 1;
-        //     // }
-        //     isGetForOrderPriceChangedJobRun = true;
+        let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
+            // if(isGetForOrderPriceChangedJobRun == false) {
+            //     //initial state
+            //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
+            // } else {
+            //     lastHeight += 1;
+            // }
+            isGetForOrderPriceChangedJobRun = true;
 
-        //     logger.info(`[OrderPriceChanged] Sync start from height: ${lastHeight + 1}`);
+            logger.info(`[OrderPriceChanged] Sync start from height: ${lastHeight + 1}`);
 
-        //     pasarContractWs.events.OrderPriceChanged({
-        //         fromBlock: lastHeight + 1
-        //     }).on("error", function (error) {
-        //         isGetForOrderPriceChangedJobRun = false;
-        //         logger.info(error);
-        //         logger.info("[OrderPriceChanged] Sync Ending ...");
-        //     }).on("data", async function (event) {
-        //         let orderInfo = event.returnValues;
-        //         let [result, txInfo] = await jobService.makeBatchRequest([
-        //             {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
-        //             {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
-        //         ], web3Rpc)
-        //         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        //         let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
-        //             tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        //             logIndex: event.logIndex, removed: event.removed, id: event.id,
-        //             data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-        //             royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
+            pasarContractWs.events.OrderPriceChanged({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                isGetForOrderPriceChangedJobRun = false;
+                logger.info(error);
+                logger.info("[OrderPriceChanged] Sync Ending ...");
+            }).on("data", async function (event) {
+                let orderInfo = event.returnValues;
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id,
+                    data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._newPrice, timestamp: result.updateTime, gasFee}
 
-        //         logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
-        //         await pasarDBService.insertOrderEvent(orderEventDetail);
-        //         await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-        //         await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged', result.sellerAddr, event.blockNumber);
-        //     })
-        // });
+                logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._newPrice, orderEventDetail.orderId, result.createTime, result.endTime, 'MarketPriceChanged', result.sellerAddr, event.blockNumber);
+            })
+        });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
@@ -591,8 +591,8 @@ module.exports = {
             //         panelRemovedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
             //     }
             // }
-            // if(!isGetForOrderPriceChangedJobRun)
-            //     orderPriceChangedJobId.reschedule(new Date(now + 20 * 1000));
+            if(!isGetForOrderPriceChangedJobRun)
+                orderPriceChangedJobId.reschedule(new Date(now + 20 * 1000));
             if(!isGetForOrderFilledJobRun)
                 orderFilledJobId.reschedule(new Date(now + 30 * 1000));
             if(!isGetForOrderCancelledJobRun)

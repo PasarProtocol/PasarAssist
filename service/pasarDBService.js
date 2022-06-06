@@ -45,12 +45,12 @@ module.exports = {
     },
 
     updateOrInsert: async function (pasarOrder) {
-        let {orderId, ...rest} = pasarOrder;
+        let {orderId, tokenId, baseToken, ...rest} = pasarOrder;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.updateOne({orderId}, {$set: rest}, {upsert: true});
+            await collection.updateOne({orderId, tokenId, baseToken}, {$set: rest}, {upsert: true});
             redisService.clearCache();
             return true;
         } catch (err) {
