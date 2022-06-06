@@ -6,16 +6,20 @@ const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
-    getLastPasarOrderSyncHeight: async function (event) {
+    getLastPasarOrderSyncHeight: async function (event, v1Event=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            let doc = await collection.findOne({event}, {sort:{blockNumber:-1}})
+            let doc = await collection.findOne({event, v1Event}, {sort:{blockNumber:-1}})
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.pasarContractDeploy;
+                if(v1Event) {
+                    return config.pasarContractDeploy;
+                } else {
+                    return config.pasarV2ContractDeploy
+                }
             }
         } catch (err) {
             logger.error(err);

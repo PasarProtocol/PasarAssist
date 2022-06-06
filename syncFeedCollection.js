@@ -57,6 +57,7 @@ let transferSingleCurrent = config.stickerContractDeploy,
     orderForSaleJobCurrent = config.pasarContractDeploy,
     priceChangeJobCurrent = config.pasarContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy;
+    orderCanceledJobCurrent =  config.pasarContractDeploy;
 
 const step = 10000;
 web3Rpc.eth.getBlockNumber().then(async currentHeight => {
@@ -167,7 +168,8 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
 
                 result.sellerAddr = orderInfo._seller;
                 result.tokenId = orderInfo._tokenId;
@@ -207,14 +209,14 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
 
     schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(priceChangeJobCurrent > currentHeight) {
-            console.log(`[OrderFilled] Sync ${priceChangeJobCurrent} finished`)
+            console.log(`[OrderPriceChanged] Sync ${priceChangeJobCurrent} finished`)
             return;
         }
 
         const tempBlockNumber = priceChangeJobCurrent + step
         const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
 
-        console.log(`[OrderFilled] Sync ${priceChangeJobCurrent} ~ ${toBlock} ...`)
+        console.log(`[OrderPriceChanged] Sync ${priceChangeJobCurrent} ~ ${toBlock} ...`)
 
         pasarContractWs.getPastEvents('OrderPriceChanged', {
             fromBlock: priceChangeJobCurrent, toBlock
@@ -233,7 +235,8 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
                 result.sellerAddr = orderInfo._seller;
                 result.quoteToken = quoteToken;
@@ -245,7 +248,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     baseToken: config.stickerContract
                 };
 
-                logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
@@ -254,7 +257,66 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
             priceChangeJobCurrent = toBlock + 1;
         }).catch( error => {
             console.log(error);
-            console.log("[OrderFilled] Sync Ending ...");
+            console.log("[OrderPriceChanged] Sync Ending ...");
+        })
+    });
+
+    schedule.scheduleJob({start: new Date(now + 8 * 60 * 1000), rule: '40 * * * * *'}, async () => {
+        if(orderCanceledJobCurrent > currentHeight) {
+            console.log(`[OrderCanceled] Sync ${orderCanceledJobCurrent} finished`)
+            return;
+        }
+
+        const tempBlockNumber = orderCanceledJobCurrent + step
+        const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
+
+        console.log(`[OrderCanceled] Sync ${orderCanceledJobCurrent} ~ ${toBlock} ...`)
+
+        pasarContractWs.getPastEvents('OrderCanceled', {
+            fromBlock: orderCanceledJobCurrent, toBlock
+        }).then(events => {
+            
+            events.forEach(async event => {
+                let orderInfo = event.returnValues;
+
+                let [result, txInfo] = await jobService.makeBatchRequest([
+                    {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+                    {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+                ], web3Rpc)
+                let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+                let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
+                
+                result.sellerAddr = orderInfo._seller;
+                result.quoteToken = quoteToken;
+                result.baseToken = config.stickerContract;
+
+                let updateTokenInfo = {
+                    tokenId: result.tokenId,
+                    orderId: null,
+                    marketTime: result.updateTime,
+                    endTime: null,
+                    status: 'Not on sale',
+                    blockNumber: event.blockNumber,
+                    updateTime: event.updateTime,
+                    baseToken: config.stickerContract,
+                    v1State: false,
+                };
+
+                logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+                await pasarDBService.insertOrderEvent(orderEventDetail);
+                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateNormalToken(updateTokenInfo);
+            })
+
+            orderCanceledJobCurrent = toBlock + 1;
+        }).catch( error => {
+            console.log(error);
+            console.log("[OrderCanceled] Sync Ending ...");
         })
     });
 
@@ -285,7 +347,8 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee, baseToken: config.stickerContract}
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
                 result.sellerAddr = orderInfo._seller;
                 result.buyerAddr = orderInfo._buyer;

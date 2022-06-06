@@ -17,16 +17,20 @@ const burnAddress = '0x0000000000000000000000000000000000000000';
 const ELAToken = '0x0000000000000000000000000000000000000000'
 
 module.exports = {
-    getLastStickerSyncHeight: async function () {
+    getLastStickerSyncHeight: async function (token=config.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let doc = await collection.findOne({}, {sort:{blockNumber: -1}});
+            let doc = await collection.findOne({token}, {sort:{blockNumber: -1}});
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.stickerContractDeploy;
+                if(token == config.stickerV2Contract) {
+                    return config.stickerV2ContractDeploy;
+                } else if(token == config.stickerContract){
+                    return config.stickerContractDeploy;
+                }
             }
         } catch (err) {
             logger.error(err);
@@ -73,14 +77,14 @@ module.exports = {
             return false;
         }
     },
-    removeTokenInfoByHeight: async function(lastHeight) {
+    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection_event = mongoClient.db(config.dbName).collection('pasar_token_event');
-            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight} ]});
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}, {token: baseToken} ]});
             collection_event = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}]});
+            await collection_event.deleteMany({$and: [ {blockNumber: lastHeight}, {baseToken: baseToken}]});
             return true;
         } catch (err) {
             logger.error(err);
