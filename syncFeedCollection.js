@@ -70,13 +70,13 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         console.log(currentHeight);
         console.log(transferSingleCurrent);
         if(transferSingleCurrent > currentHeight) {
-            console.log(`[Collection] Sync ${transferSingleCurrent} finished`)
+            console.log(`[TokenInfo] Sync ${transferSingleCurrent} finished`)
             return;
         }
         const tempBlockNumber = transferSingleCurrent + step
         const toBlock = tempBlockNumber > currentHeight ? currentHeight : tempBlockNumber;
 
-        console.log(`[Collection] Sync ${transferSingleCurrent} ~ ${toBlock} ...`)
+        console.log(`[TokenInfo] Sync ${transferSingleCurrent} ~ ${toBlock} ...`)
 
         stickerContractWs.getPastEvents('TransferSingle', {
             fromBlock: transferSingleCurrent, toBlock
@@ -115,7 +115,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
             transferSingleCurrent = toBlock + 1;
         }).catch(error => {
             console.log(error);
-            console.log("[OrderForSale] Sync Ending ...")
+            console.log("[TokenInfo] Sync Ending ...")
         })
     });
 
@@ -170,15 +170,13 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
-
-                result.sellerAddr = orderInfo._seller;
-                result.tokenId = orderInfo._tokenId;
-                result.amount = orderInfo._amount;
-                result.price = orderInfo._price;
-                result.reservePrice = 0;
-                result.buyoutPrice = 0;
-                result.baseToken = config.stickerContract;
-                result.quoteToken = quoteToken;
+                
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: orderInfo._tokenId, amount: orderInfo._amount, price:orderInfo._price, priceNumber: parseInt(orderInfo._price), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
                     tokenId: orderInfo._tokenId,
@@ -196,8 +194,9 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
 
                 logger.info(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 logger.info(`[OrderForSale] updateTokenDetail: ${JSON.stringify(updateTokenInfo)}`)
+                logger.info(`[OrderForSale] result: ${JSON.stringify(resultData)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);                
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);                
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
             orderForSaleJobCurrent = toBlock + 1;
@@ -238,9 +237,13 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+                
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, priceNumber: parseInt(orderInfo._newPrice), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
                     tokenId: orderInfo._tokenId,
@@ -250,7 +253,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
 
@@ -291,9 +294,12 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -309,7 +315,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
 
@@ -350,17 +356,18 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.buyerAddr = orderInfo._buyer;
-                result.price = orderInfo._price;
-                result.royaltyOwner = orderInfo._royaltyOwner;
-                result.royaltyFee = orderInfo._royalty;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, priceNumber: parseInt(orderInfo._price), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
-                    tokenId: orderInfo._tokenId,
+                    tokenId: result.tokenId,
                     price: orderInfo._price,
+                    holder: orderInfo._buyer,
                     orderId: null,
                     marketTime: result.updateTime,
                     endTime: null,
@@ -373,7 +380,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
 
                 logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
 

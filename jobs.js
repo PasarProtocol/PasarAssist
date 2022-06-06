@@ -70,39 +70,26 @@ module.exports = {
                     {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
                     {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
                 ], web3Rpc);
-
+    
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
                     createTime: result.createTime, updateTime: result.updateTime}
-
+        
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
-                token.tokenJsonVersion = data.version;
-                token.type = data.type;
-                token.name = data.name;
-                token.description = data.description;
-                token.properties = data.properties;
+                token.tokenJsonVersion = data.version ? data.version : 1;
+                token.type = data.type ? data.type : 'image';
+                token.name = data.name ? data.name : '';
+                token.description = data.description ? data.description : '';
+                token.properties = data.properties ? data.properties : '';
                 token.baseToken = config.stickerContract;
-
-                if(extraInfo.didUri !== '') {
-                    token.didUri = extraInfo.didUri;
-                    token.did = await jobService.getInfoByIpfsUri(extraInfo.didUri);
-                    await pasarDBService.replaceDid({address: result.royaltyOwner, did: token.did});
-                    if(token.did.KYCedProof != undefined) {
-                        await authService.verifyKyc(token.did.KYCedProof, token.did.did. result.royaltyOwner);
-                    }
-                }
-
+    
                 if(token.type === 'feeds-channel') {
                     token.tippingAddress = data.tippingAddress;
                     token.entry = data.entry;
+                    token.data = data.avatar;
                     token.avatar = data.avatar;
-                    logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
-                    await stickerDBService.replaceGalleriaToken(token);
-                    return;
-                }
-
-                if(token.type === 'video' || data.version === "2") {
+                }else if(token.type === 'video' || data.version == "2") {
                     token.data = data.data;
                 } else {
                     token.thumbnail = data.thumbnail;
@@ -110,10 +97,10 @@ module.exports = {
                     token.kind = data.kind;
                     token.size = data.size;
                 }
-
+        
                 token.adult = data.adult ? data.adult : false;
                 token.price = 0;
-                token.marketTime = null;
+                token.marketTime = result.createTime;
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
@@ -196,9 +183,12 @@ module.exports = {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, priceNumber: parseInt(orderInfo._newPrice), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
                     tokenId: orderInfo._tokenId,
@@ -208,7 +198,7 @@ module.exports = {
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
         });
@@ -246,17 +236,17 @@ module.exports = {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.buyerAddr = orderInfo._buyer;
-                result.price = orderInfo._price;
-                result.royaltyOwner = orderInfo._royaltyOwner;
-                result.royaltyFee = orderInfo._royalty;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, priceNumber: parseInt(orderInfo._price), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
-                    tokenId: orderInfo._tokenId,
+                    tokenId: result.tokenId,
                     price: orderInfo._price,
+                    holder: orderInfo._buyer,
                     orderId: null,
                     marketTime: result.updateTime,
                     endTime: null,
@@ -269,7 +259,7 @@ module.exports = {
 
                 logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
         });
@@ -307,9 +297,12 @@ module.exports = {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
-                result.sellerAddr = orderInfo._seller;
-                result.quoteToken = quoteToken;
-                result.baseToken = config.stickerContract;
+                let resultData = {orderType: result.orderType, orderState: result.orderState,
+                    tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
+                    lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
+                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -325,7 +318,7 @@ module.exports = {
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
-                await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
+                await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
             })
         });
@@ -427,7 +420,7 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: baseToken};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract};
                 logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
 
                 if(to === burnAddress) {
