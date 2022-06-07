@@ -42,8 +42,8 @@ let web3Rpc = new Web3(config.escRpcUrl);
 
 let now = Date.now();
 
-let token = '0xE27934fB3683872e35b8d9E57c30978e1260c614';
-let conllectionJobCurrent = 10745025;
+let token = '0x26b2341d10dC4118110825719BF733a571AB6EC5';
+let conllectionJobCurrent = 11793633;
 
 let tokenContractWs = new web3Ws.eth.Contract(token721ABI, token);
 let tokenContract = new web3Rpc.eth.Contract(token721ABI, token);

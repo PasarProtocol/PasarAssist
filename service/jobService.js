@@ -56,6 +56,7 @@ module.exports = {
     },
 
     parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, tokenContract, check721) {
+        console.log(result);
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
@@ -89,6 +90,17 @@ module.exports = {
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
 
+        } else if(token == '0x26b2341d10dC4118110825719BF733a571AB6EC5') {
+            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                console.log(data);
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parseVitrim(jsonData, token);
+
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+            })
         }
     },
 
@@ -283,6 +295,49 @@ module.exports = {
         returnValue.kind = 'image';
         returnValue.size = 0;
         returnValue.adult = false;
+        return returnValue;
+    },
+
+    parseVitrim: async function(data, token) {
+        let returnValue = {};
+
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = data.type;
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
+        returnValue.asset = data.image.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
+        returnValue.kind = data.type;
+        returnValue.size = 0;
+        returnValue.adult = false;
+        returnValue.attribute={};
+        let listAttributes = data.attributes;
+
+        let stickerDBService = require("./stickerDBService");
+        let collection = await stickerDBService.getCollection(token);
+        let attributeOfCollection = {};
+        if(collection && collection.attribute) {
+            attributeOfCollection = collection.attribute;
+        }
+
+        listAttributes.forEach(element => {
+            console.log(element)
+            let type = element.trait_type;
+            let value = element.value;
+            returnValue.attribute[type] = value;
+            if(attributeOfCollection[type]) {
+                let listParams = attributeOfCollection[type];
+                if(listParams.indexOf(value) == -1) {
+                    attributeOfCollection[type].push(value);
+                }
+            } else {
+                attributeOfCollection[type] = [value];
+            }
+        });
+        if(attributeOfCollection) {
+            await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+        }
+        console.log(returnValue);
         return returnValue;
     },
 }
