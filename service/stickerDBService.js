@@ -1006,7 +1006,11 @@ module.exports = {
                     pipeline: [{$match: { baseToken: baseToken, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
                     as: "token"}
                 },
-                { $lookup: {from: 'pasar_order', localField: 'orderId', foreignField: 'orderId', as: 'order'} },
+                { $lookup: {
+                    from: "pasar_order",
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
+                as: "order"}},
                 { $unwind: "$token" },
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
                 { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
