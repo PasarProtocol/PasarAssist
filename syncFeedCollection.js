@@ -239,14 +239,14 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
                 
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
-                    tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, priceNumber: parseInt(orderInfo._newPrice), startTime: result.startTime, endTime: result.endTime,
+                    tokenId: result.tokenId, amount: result.amount, price:orderInfo._newPrice, priceNumber: parseInt(orderInfo._newPrice), startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
                     minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
 
                 let updateTokenInfo = {
-                    tokenId: orderInfo._tokenId,
+                    tokenId: result.tokenId,
                     price: orderInfo._newPrice,
                     baseToken: config.stickerContract
                 };
