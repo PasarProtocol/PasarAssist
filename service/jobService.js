@@ -80,7 +80,7 @@ module.exports = {
 
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
-        } else if(result.indexOf('ela.city') != -1) {
+        } else if(token.toLocaleLowerCase() == '0xcB262A92e2E3c8C3590b72A1fDe3c6768EE08B7e'.toLocaleLowerCase()) {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
@@ -90,7 +90,7 @@ module.exports = {
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
 
-        } else if(token == '0x26b2341d10dC4118110825719BF733a571AB6EC5') {
+        } else if(token.toLocaleLowerCase() == '0x26b2341d10dC4118110825719BF733a571AB6EC5'.toLocaleLowerCase()) {
             result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
             fetch(result)
             .then(res => res.text())
@@ -101,6 +101,17 @@ module.exports = {
 
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
+        } else if(token.toLocaleLowerCase() == '0xef5f768618139d0f5fa3bcbbbcaaf09fe9d7a07d'.toLocaleLowerCase()) {
+            result = result.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.ela.city/ipfs");
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                console.log(data);
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parseBella(jsonData);
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+            })
+
         }
     },
 
@@ -140,7 +151,7 @@ module.exports = {
             tokenDetail.createTime = blockInfo.timestamp;
             tokenDetail.quantity = check721 ? 1 : parseInt(tokenInfo._value);
             tokenDetail.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
-            tokenDetail.tokenJsonVersion = data.version;
+            tokenDetail.tokenJsonVersion = data.tokenJsonVersion;
             tokenDetail.type = data.type;
             tokenDetail.name = data.name;
             tokenDetail.description = data.description;
@@ -286,7 +297,7 @@ module.exports = {
 
     parsePrimates: function(data) {
         let returnValue = {};
-        returnValue.tokenJsonVersion = 2;
+        returnValue.tokenJsonVersion = 1;
         returnValue.type = 'image';
         returnValue.name = data.name;
         returnValue.description = data.description;
@@ -338,6 +349,20 @@ module.exports = {
             await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
         }
         console.log(returnValue);
+        return returnValue;
+    },
+
+    parseBella: function(data) {
+        let returnValue = {};
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = 'image';
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.pasarprotocol.io/ipfs");;
+        returnValue.asset = data.image.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.pasarprotocol.io/ipfs");;
+        returnValue.kind = 'image';
+        returnValue.size = 0;
+        returnValue.adult = false;
         return returnValue;
     },
 }
