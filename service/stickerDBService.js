@@ -771,7 +771,7 @@ module.exports = {
             let rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_order] }},
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
-                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1} },
+                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1, v1Event: 1} },
             ]).toArray();
             if(rows.length > 0)
                 await temp_collection.insertMany(rows);
@@ -817,6 +817,7 @@ module.exports = {
                     result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                     result[i]['quoteToken'] = res['quoteToken'];
                     result[i]['baseToken'] = res['baseToken'];
+                    result[i]['v1Event'] = res['v1Event'] ? res['v1Event'] : null;
                 }
                 if(result[i]['event'] == 'OrderFilled') {
                     let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
@@ -1014,7 +1015,7 @@ module.exports = {
                 { $unwind: "$token" },
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
                 { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
-                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: "$order.quoteToken"} },
+                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: "$order.quoteToken"}, v1Event: true },
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
@@ -1250,7 +1251,7 @@ module.exports = {
                       pipeline: [
                         { $match : {$and: [methodCondition_order]} },
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1, baseToken: 1} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1, baseToken: 1, v1Event: 1} }
                       ],
                       "as": "collection1"
                     }}
