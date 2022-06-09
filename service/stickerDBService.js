@@ -972,7 +972,7 @@ module.exports = {
                       from: "pasar_order_event",
                       pipeline: [
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, baseToken:1, royaltyFee: 1, quoteToken: 1} },
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, baseToken:1, royaltyFee: 1, quoteToken: 1, v1Event: 1} },
                         { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_order, {baseToken: baseToken}]} }
                       ],
                       "as": "collection1"
