@@ -70,7 +70,7 @@ module.exports = {
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
         } else if(result.indexOf("Solana") != -1) {
             console.log(result);
-            result = result.replace("https://gateway.pinata.cloud", "https://ipfs.pasarprotocol.io");
+            result = result.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
             fetch(result)
             .then(res => res.text())
             .then(async data => {
