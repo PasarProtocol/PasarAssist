@@ -55,10 +55,10 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
         {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
     ], web3Rpc)
-    let stickerCountContract = parseInt(await tokenContract.methods.totalSupply().call());
+    // let stickerCountContract = parseInt(await tokenContract.methods.totalSupply().call());
 
     console.log(is721);
-    console.log("Total Count: " + stickerCountContract);
+    // console.log("Total Count: " + stickerCountContract);
     
     if(!is721 && is1155) {
         tokenContractWs = new web3Ws.eth.Contract(token1155ABI, token);
