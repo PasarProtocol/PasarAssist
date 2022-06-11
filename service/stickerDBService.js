@@ -3208,6 +3208,9 @@ module.exports = {
                 marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail"}
 
             let result = await collection.aggregate([
+                { $match: {$and: [{orderState: "2"}]}},
+                { $sort: {blockNumber: -1}},
+                { $limit :count},
                 { $lookup: {
                     from: "pasar_token",
                     let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -3217,25 +3220,11 @@ module.exports = {
                     as: "token"}
                 },
                 { $addFields: {saleType: 'Not on sale'}},
-                { $sort: {blockNumber: -1}},
                 { $unwind: "$token"},
-                { $match: {$and: [{orderState: "2"}]}},
                 { $project: fields},
             ]).toArray();
 
-            let return_value = [];
-
-            if(result.length > 0) {
-                let temp_collection =  mongoClient.db(config.dbName).collection('token_temp_' + Date.now().toString());
-                for(var i = 0; i < result.length; i++) {
-                    await temp_collection.updateOne({tokenId: result[i].tokenId, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
-                }
-
-                return_value = await temp_collection.find().limit(count).toArray();
-                await temp_collection.drop();
-            }
-
-            return {code: 200, message: 'success', data: return_value};
+            return {code: 200, message: 'success', data: result};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
