@@ -1563,7 +1563,7 @@ module.exports = {
                 if(marketTokens.length > 0)
                     await temp_collection.insertMany(marketTokens);
             }
-            
+
             let dataNotMet = [], dataBuyNow = [];
 
             if(statusArr.indexOf('Not Met') != -1) {
@@ -1677,6 +1677,7 @@ module.exports = {
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
+                let convertToken = marketTokens[i].quoteToken;
                 if(marketTokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
@@ -1782,6 +1783,7 @@ module.exports = {
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
+                let convertToken = marketTokens[i].quoteToken;
                 if(marketTokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
@@ -1954,6 +1956,7 @@ module.exports = {
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
+                    let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                     marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
