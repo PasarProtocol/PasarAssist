@@ -1468,6 +1468,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
             let status_condition = [];
             let statusArr = status.split(',');
             let tokenTypeCheck = {};
@@ -1525,18 +1526,17 @@ module.exports = {
                     else itemType_condition.push({type: ele});
                 }
                 itemType_condition = {$or: itemType_condition};
-                
+                await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+                await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
                 let marketTokens = await collection.aggregate([
+                    { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    {$addFields: {"currentBid": [{price: "$price"}], createTime: {$toInt:"$createTime"}, updateTime: {$toInt:"$updateTime"}, marketTime: {$toInt:"$marketTime"}}},
                     { $lookup: {
                         from: "pasar_order",
                         let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
-                    {$addFields: {
-                        "currentBid": [{price: "$price"}]
-                    }},
                     { $unwind: "$tokenOrder"},
-                    { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1551,9 +1551,6 @@ module.exports = {
                 }
                 
                 for(var i = 0; i < marketTokens.length; i++) {
-                    marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
-                    marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
-                    marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
