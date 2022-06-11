@@ -1641,8 +1641,12 @@ module.exports = {
             //     checkOrder.push({price: {$lte: maxPrice.toString()}});
             // }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
+            let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
 
             let marketTokens = await collection.aggregate([
+                { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -1652,7 +1656,6 @@ module.exports = {
                     "currentBid": [{price: "$price"}]
                 }},
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1747,8 +1750,11 @@ module.exports = {
             //     checkOrder.push({price: {$lte: maxPrice.toString()}});
             // }
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
-            
+            let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
             let marketTokens = await collection.aggregate([
+                { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -1758,7 +1764,6 @@ module.exports = {
                     "currentBid": [{price: "$price"}]
                 }}, 
                 { $unwind: "$tokenOrder"},
-                { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
@@ -1919,7 +1924,12 @@ module.exports = {
                 }
                 
                 let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}, {status: 'Not on sale'}] };
+                let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
+                await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+                await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+
                 let marketTokens = await collection.aggregate([
+                    { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $lookup: {
                         from: "pasar_order",
                         let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -1929,7 +1939,6 @@ module.exports = {
                         "currentBid": [{price: "$price"}]
                     }},
                     { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
-                    { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
