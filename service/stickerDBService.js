@@ -1533,7 +1533,7 @@ module.exports = {
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
                     {$addFields: {
-                        "currentBid": "$price"
+                        "currentBid": [{price: "$price"}]
                     }},
                     { $unwind: "$tokenOrder"},
                     { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
@@ -1652,7 +1652,7 @@ module.exports = {
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 {$addFields: {
-                    "currentBid": "$price"
+                    "currentBid": [{price: "$price"}]
                 }},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
@@ -1758,7 +1758,7 @@ module.exports = {
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 {$addFields: {
-                    "currentBid": "$price"
+                    "currentBid": [{price: "$price"}]
                 }}, 
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
@@ -1929,7 +1929,7 @@ module.exports = {
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
                     {$addFields: {
-                        "currentBid": "$price"
+                        "currentBid": [{price: "$price"}]
                     }},
                     { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                     { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
