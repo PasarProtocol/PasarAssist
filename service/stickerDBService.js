@@ -14,7 +14,8 @@ let jobService = require('./jobService');
 const indexDBService = require('./indexDBService');
 
 const burnAddress = '0x0000000000000000000000000000000000000000';
-const ELAToken = '0x0000000000000000000000000000000000000000'
+
+const ELAToken = '0x0000000000000000000000000000000000000000';
 
 module.exports = {
     getLastStickerSyncHeight: async function (token=config.stickerV2Contract) {
@@ -1525,7 +1526,6 @@ module.exports = {
                 itemType_condition = {$or: itemType_condition};
                 
                 let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
-
                 let marketTokens = await collection.aggregate([
                     { $lookup: {
                         from: "pasar_order",
@@ -1544,25 +1544,26 @@ module.exports = {
                     marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
                     baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1},},
                 ]).toArray();
-
+                let rates = await this.getPriceRate();
+                let listRate = [];
+                for(var i=0; i < rates.length; i++) {
+                    listRate[rates[i].type] = rates[i].rate;
+                }
+                
                 for(var i = 0; i < marketTokens.length; i++) {
                     marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                    let rate = 1;
-                    if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
-                        let convertToken = marketTokens[i].quoteToken;
-                        if(marketTokens[i].quoteToken == config.diaTokenContract)
-                            convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                        let rateToken = await this.getERC20TokenPrice(convertToken);
-                        rate = rateToken ? rateToken.token.derivedELA : 1;
-                    }
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
+                    let convertToken = marketTokens[i].quoteToken;
+                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
                 }
 
                 if(marketTokens.length > 0)
                     await temp_collection.insertMany(marketTokens);
             }
+            
             let dataNotMet = [], dataBuyNow = [];
 
             if(statusArr.indexOf('Not Met') != -1) {
@@ -1663,22 +1664,22 @@ module.exports = {
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
 
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
+
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for(var i = 0; i < marketTokens.length; i++) {
                 marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
-                let rate = 1;
-                if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
-                    let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
-                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    let rateToken = await this.getERC20TokenPrice(convertToken);
-                    rate = rateToken ? rateToken.token.derivedELA : 1;
-                }
 
-                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
 
                 marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
@@ -1768,7 +1769,12 @@ module.exports = {
                 marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
                 baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
-
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
+                
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
 
             for(var i = 0; i < marketTokens.length; i++) {
@@ -1776,16 +1782,9 @@ module.exports = {
                 marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
-                let rate = 1;
-                if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
-                    let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
-                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    let rateToken = await this.getERC20TokenPrice(convertToken);
-                    rate = rateToken ? rateToken.token.derivedELA : 1;
-                }
-
-                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
 
                 marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
@@ -1943,22 +1942,21 @@ module.exports = {
                 ]).toArray();
                 
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
+                
+                let rates = await this.getPriceRate();
+                let listRate = [];
+                for(var i=0; i < rates.length; i++) {
+                    listRate[rates[i].type] = rates[i].rate;
+                }
 
                 for (let i = 0; i < marketTokens.length; i++) {
                     marketTokens[i].createTime = marketTokens[i].createTime ? parseInt(marketTokens[i].createTime) : 0;
                     marketTokens[i].updateTime = marketTokens[i].updateTime ? parseInt(marketTokens[i].updateTime) : 0;
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
-                    let rate = 1;
-                    if(marketTokens[i].quoteToken && marketTokens[i].quoteToken != ELAToken) {
-                        let convertToken = marketTokens[i].quoteToken;
-                        if(marketTokens[i].quoteToken == config.diaTokenContract)
-                            convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                        let rateToken = await this.getERC20TokenPrice(convertToken);
-                        rate = rateToken ? rateToken.token.derivedELA : 1;
-                    }
-
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18; 
+                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
 
                     marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                     if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
@@ -2510,7 +2508,6 @@ module.exports = {
 
             let rate = 1;
             if(tokens[i].quoteToken && tokens[i].quoteToken != ELAToken) {
-                console.log(tokens[i]);
                 let convertToken = tokens[i].quoteToken;
                 if(tokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
@@ -3349,5 +3346,32 @@ module.exports = {
         })
 
         return response.data.data;
-      }
+    },
+
+    updatePriceRate: async function(token, rate) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_price_rate');
+            await collection.updateOne({type: token}, {$set: {rate: rate}}, {upsert: true});                                   
+        } catch(err) {
+            logger.error(err);
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getPriceRate: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_price_rate');
+            let rates = await collection.find().toArray();                                   
+            return rates;
+        } catch(err) {
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
+    }
 }

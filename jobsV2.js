@@ -1025,5 +1025,22 @@ module.exports = {
             */
             jobService.startupUsersContractEvents(web3Ws, web3Rpc);
         })
+
+        schedule.scheduleJob('0 * * * * *', async () => {
+            /**
+                *  Get the rate of token for ela
+            */
+             for(var i = 0; i < config.listToken.length; i++) {
+                if(config.listToken[i] == config.ELAToken) {
+                    stickerDBService.updatePriceRate(config.listToken[i], 1)
+                } else {
+                    let rateToken = await stickerDBService.getERC20TokenPrice(config.listToken[i]);
+                    if(rateToken) {
+                        let rate = rateToken.token.derivedELA;
+                        stickerDBService.updatePriceRate(config.listToken[i], parseFloat(rate))
+                    }
+                }
+            }
+        })
     }
 }
