@@ -1491,6 +1491,7 @@ module.exports = {
                     status_condition.push({status: 'MarketAuction'});
                     status_condition.push({status: 'MarketBid'});
                     status_condition.push({status: 'MarketSale'});
+                    status_condition.push({status: 'MarketPriceChanged'});
                 } else if(ele == 'Buy Now'){
                     status_condition.push({status: 'MarketSale'});
                 } else if(ele == 'On Auction') {
@@ -1525,25 +1526,24 @@ module.exports = {
                 }
                 itemType_condition = {$or: itemType_condition};
                 
-                let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
                 let marketTokens = await collection.aggregate([
                     { $lookup: {
                         from: "pasar_order",
                         let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
-                    { $lookup: {from: "pasar_order_event",
-                        let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                        pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$ttokenId","$tokenId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, }}, {$sort: {timestamp: -1}}, {$limit: 1}],
-                        as: "currentBid"}},
+                    {$addFields: {
+                        "currentBid": "$price"
+                    }},
                     { $unwind: "$tokenOrder"},
-                    { $match: {$and: [market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                     marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
                     baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1},},
                 ]).toArray();
+
                 let rates = await this.getPriceRate();
                 let listRate = [];
                 for(var i=0; i < rates.length; i++) {
@@ -1651,10 +1651,9 @@ module.exports = {
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
-                { $lookup: {from: "pasar_order_event",
-                let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$ttokenId","$tokenId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, }}, {$sort: {timestamp: -1}}, {$limit: 1}],
-                    as: "currentBid"}},
+                {$addFields: {
+                    "currentBid": "$price"
+                }},
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
@@ -1758,10 +1757,9 @@ module.exports = {
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
-                { $lookup: {from: "pasar_order_event",
-                let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$ttokenId","$tokenId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, }}, {$sort: {timestamp: -1}}, {$limit: 1}],
-                    as: "currentBid"}},
+                {$addFields: {
+                    "currentBid": "$price"
+                }}, 
                 { $unwind: "$tokenOrder"},
                 { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
@@ -1930,10 +1928,9 @@ module.exports = {
                         let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
-                    { $lookup: {from: "pasar_order_event",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                        pipeline: [{$match: { event: "OrderBid", "$expr":{"$eq":["$$torderId","$orderId"]}, "$expr":{"$eq":["$$ttokenId","$tokenId"]}, "$expr":{"$eq":["$$tbaseToken","$baseToken"]}, }}, {$sort: {timestamp: -1}}, {$limit: 1}],
-                        as: "currentBid"}},
+                    {$addFields: {
+                        "currentBid": "$price"
+                    }},
                     { $unwind: {path: "$tokenOrder", preserveNullAndEmptyArrays: true}},
                     { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $project: {"_id": 0, blockNumber: 1, tokenIndex: 1, tokenId: 1, quantity:1, royalties:1, royaltyOwner:1, holder: 1,
