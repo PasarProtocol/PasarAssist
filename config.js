@@ -53,5 +53,5 @@ module.exports = {
         "0x75740FC7058DA148752ef8a9AdFb73966DEb42a8",
         "0x9f1d0Ed4E041C503BD487E5dc9FC935Ab57F9a57",
     ],
-    curNetwork: 'mainNet'
+    curNetwork: 'testNet'
 }
