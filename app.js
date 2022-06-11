@@ -26,6 +26,20 @@ log4js.configure({
 global.logger = log4js.getLogger('default');
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+const corsOpts = {
+    origin: '*',
+  
+    methods: [
+      'GET',
+      'POST',
+    ],
+  
+    allowedHeaders: [
+      'Content-Type',
+    ],
+};
+  
+
 let app = express();
 
 app.use(bodyParser.json({limit: '50mb'}));
@@ -34,7 +48,14 @@ app.use(log4js.connectLogger(logger, { level: log4js.levels.INFO }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(cors());
+app.use(cors(corsOpts));
+app.use(function(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
 app.use('/feeds/api/v1', indexRouter);
 app.use('/pasar/api/v1', pasarApi);
 app.use('/sticker/api/v1', stickerApi);
