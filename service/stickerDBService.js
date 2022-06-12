@@ -9,6 +9,7 @@ const { ReplSet } = require('mongodb/lib/core');
 const config_test = require("../config_test");
 let Web3 = require('web3');
 let pasarContractABI = require('../contractABI/pasarABI');
+const diaContractABI = require('../contractABI/diaTokenABI');
 config = config.curNetwork == 'testNet'? config_test : config;
 let jobService = require('./jobService');
 const indexDBService = require('./indexDBService');
@@ -2870,10 +2871,13 @@ module.exports = {
                     sortData = {createdTime: -1}
                     break;
             }
-            
+
+            let web3 = new Web3(config.escRpcUrl);
+            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+
             await Promise.all(collections.map(async cell => {
-                let diaBalance = await indexDBService.diaBalance([cell.owner]);
-                cell.diaBalance = diaBalance[cell.owner] / (10 ** 18);
+                let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
+                cell.diaBalance = diaBalance / (10 ** 18);
                 let reponse = await this.getTotalCountCollectibles(cell.token, onMarket);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
@@ -2902,16 +2906,6 @@ module.exports = {
                     cell.totalPrice = reponse.data.total;
                 } else {
                     cell.totalPrice = 0;
-                }
-
-                let uriInfo = await jobService.getInfoByIpfsUri(cell.uri);
-                cell.creatorDid = '';
-                cell.creatorName = '';
-                cell.creatorDescription = '';
-                if(uriInfo && uriInfo.creator) {
-                    cell.creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
-                    cell.creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
-                    cell.creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
                 }
 
                 result.push(cell);
@@ -2967,9 +2961,12 @@ module.exports = {
 
             let result = [];
 
+            let web3 = new Web3(config.escRpcUrl);
+            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+
             await Promise.all(collections.map(async cell => {
-                let diaBalance = await indexDBService.diaBalance([cell.owner]);
-                cell.diaBalance = diaBalance[cell.owner] / (10 ** 18);
+                let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
+                cell.diaBalance = diaBalance / (10 ** 18);
                 let reponse = await this.getTotalCountCollectibles(cell.token);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
@@ -3087,16 +3084,19 @@ module.exports = {
 
             let total = 0;
 
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
+
             for(var i = 0; i < result.length; i++) {
-                let rate = 1;
-                if(result[i].quoteToken != ELAToken) {
-                    let convertToken = result[i].quoteToken;
-                    if(result[i].quoteToken == config.diaTokenContract)
-                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    let rateToken = await this.getERC20TokenPrice(convertToken);
-                    rate = rateToken ? rateToken.token.derivedELA : 1;
-                }
-                let price = result[i].filled * rate / 10 ** 18;
+
+                let convertToken = result[i].quoteToken;
+                if(result[i].quoteToken == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                
+                let price = result[i].filled * listRate[convertToken] / 10 ** 18;
                 total = total + price;
             }
             return {code: 200, message: 'success', data: {total}};
@@ -3111,25 +3111,30 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
+            await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
             let result = await token_collection.aggregate([
-                { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
+                { $lookup: {
+                    from: "pasar_order",
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    as: "order"}},
                 { $unwind: "$order"},
                 { $match: {baseToken: token, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
                 { $project: {"_id": 0, price: "$order.price", quoteToken: "$order.quoteToken"}},
             ]).toArray();
-            let listPrice = [];
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
 
             for(var i=0; i < result.length; i++) {
-                let rate = 1;
-                if(result[i].quoteToken != ELAToken) {
-                    let convertToken = result[i].quoteToken;
-                    if(result[i].quoteToken == config.diaTokenContract)
-                        convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    let rateToken = await this.getERC20TokenPrice(convertToken);
-                    rate = rateToken ? rateToken.token.derivedELA : 1;
-                }
+                let convertToken = result[i].quoteToken;
+                if(result[i].quoteToken == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
-                let price = result[i].price * rate / 10 ** 18;
+                let price = result[i].price * listRate[convertToken] / 10 ** 18;
                 if(price != 0) {
                     listPrice.push(price);
                 }
