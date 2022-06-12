@@ -3114,32 +3114,34 @@ module.exports = {
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
             await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
             await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+
             let result = await token_collection.aggregate([
+                { $match: {baseToken: token, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
                     as: "order"}},
                 { $unwind: "$order"},
-                { $match: {baseToken: token, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
                 { $project: {"_id": 0, price: "$order.price", quoteToken: "$order.quoteToken"}},
             ]).toArray();
+
             let rates = await this.getPriceRate();
             let listRate = [];
             for(var i=0; i < rates.length; i++) {
                 listRate[rates[i].type] = rates[i].rate;
             }
-
+            let listPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
                 if(result[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
-                let price = result[i].price * listRate[convertToken] / 10 ** 18;
+                let price = parseInt(result[i].price) * listRate[convertToken] / 10 ** 18;
                 if(price != 0) {
                     listPrice.push(price);
                 }
             }
-
             return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
         } catch(err) {
             return {code: 500, message: 'server error'};
