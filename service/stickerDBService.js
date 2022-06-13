@@ -452,7 +452,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, baseToken}, {$set: {holder, updateTime: timestamp, blockNumber}});
+            await collection.updateOne({tokenId, baseToken, holder: {$ne: burnAddress}}, {$set: {holder, updateTime: timestamp, blockNumber}});
         } catch (err) {
             throw new Error();
         } finally {
