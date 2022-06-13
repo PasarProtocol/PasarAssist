@@ -124,6 +124,16 @@ module.exports = {
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
 
+        } else if(token.toLocaleLowerCase() == '0xCc721C2A3a53c6f03c731252D98103963A9729E8'.toLocaleLowerCase()) {
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                console.log(data);
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parseLudmila(jsonData);
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+            })
+
         }
     },
 
@@ -418,6 +428,20 @@ module.exports = {
             await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
         }
         console.log(returnValue);
+        return returnValue;
+    },
+
+    parseLudmila: function(data) {
+        let returnValue = {};
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = 'image';
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image;
+        returnValue.asset = data.image;
+        returnValue.kind = 'image';
+        returnValue.size = 0;
+        returnValue.adult = false;
         return returnValue;
     },
 }
