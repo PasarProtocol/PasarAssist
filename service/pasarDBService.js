@@ -98,7 +98,11 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            await collection.insertOne(orderEventDetail);
+
+            let length = await collection.find({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, blockNumber: orderEventDetail.blockNumber}).count();
+            if(length == 0) {
+                await collection.updateOne({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, blockNumber: orderEventDetail.blockNumber}, {$set: orderEventDetail}, {upsert: true});
+            }
         } catch (err) {
             throw new Error();
         } finally {
