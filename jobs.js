@@ -150,7 +150,7 @@ module.exports = {
         // });
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', true);
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
@@ -204,7 +204,7 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', true);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -265,7 +265,7 @@ module.exports = {
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', true);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
