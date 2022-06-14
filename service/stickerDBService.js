@@ -3405,5 +3405,53 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    saveSyncTemp: async function(data) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let count = await collection.find({blockNumber: data.blockNumber, event: data.eventType}).count();
+            if(count == 0) {
+                await collection.updateOne({blockNumber: data.blockNumber, event: data.eventType}, {$set: data}, {upsert: true});    
+            }
+            
+        } catch(err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getCountSyncTemp: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let result = await collection.find().count();
+            return result;
+        } catch(err) {
+            logger.error(err);
+            return 0;
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
+    getSyncTemp: async function(index, size) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let result = await collection.find().sort({createdAt: 1, blockNumber: 1}).skip(index * size).limit(size).toArray();
+            return result;
+        } catch(err) {
+            logger.error(err);
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
     }
 }
