@@ -47,6 +47,8 @@ const quoteToken = '0x0000000000000000000000000000000000000000';
 let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
 
 const step = 100;
+let currentStep = 0;
+let runningSyncFunction = false;
 
 async function transferSingle(event) {
     let blockNumber = event.blockNumber;
@@ -254,38 +256,46 @@ async function importFeeds() {
     console.log(totalCount);
 
     let totalStep = Math.ceil(totalCount/100);
-    let currentStep = 0;
-    
-    while(currentStep < totalStep) {
-        let listDoc = await stickerDBService.getSyncTemp(currentStep, step);
-        if(listDoc == null) {
-            continue;
+    try {
+        runningSyncFunction = true;
+        while(currentStep < totalStep) {
+            let listDoc = await stickerDBService.getSyncTemp(currentStep, step);
+            if(listDoc == null) {
+                continue;
+            }
+            for(var i = 0; i < listDoc.length; i++) {
+                let cell = listDoc[i];
+                switch(cell.event) {
+                    case "TransferSingle":
+                        await transferSingle(cell.eventData);
+                        break;
+                    case "RoyaltyFee":
+                        await royaltyFee(cell.eventData);
+                        break;
+                    case "OrderForSale":
+                        await orderForSale(cell.eventData);
+                        break;
+                    case "OrderPriceChanged":
+                        await orderPriceChanged(cell.eventData);
+                        break;
+                    case "OrderCanceled":
+                        await orderCanceled(cell.eventData);
+                        break;
+                    case "OrderFilled":
+                        await orderFilled(cell.eventData);
+                        break;
+                } 
+            }
+            currentStep++;
         }
-        for(var i = 0; i < listDoc.length; i++) {
-            let cell = listDoc[i];
-            switch(cell.event) {
-                case "TransferSingle":
-                    await transferSingle(cell.eventData);
-                    break;
-                case "RoyaltyFee":
-                    await royaltyFee(cell.eventData);
-                    break;
-                case "OrderForSale":
-                    await orderForSale(cell.eventData);
-                    break;
-                case "OrderPriceChanged":
-                    await orderPriceChanged(cell.eventData);
-                    break;
-                case "OrderCanceled":
-                    await orderCanceled(cell.eventData);
-                    break;
-                case "OrderFilled":
-                    await orderFilled(cell.eventData);
-                    break;
-            } 
-        }
-        currentStep++;
+    } catch(err) {
+        console.log(err);
+        runningSyncFunction = false;
     }
 }
 
-importFeeds();
+schedule.scheduleJob('0 * * * * *', () => {
+    if(!runningSyncFunction) {
+        importFeeds();
+    }
+})
