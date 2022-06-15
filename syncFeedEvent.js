@@ -55,7 +55,7 @@ let transferSingleCurrent = config.stickerContractDeploy,
     orderFilledJobCurrent = config.pasarContractDeploy;
     orderCanceledJobCurrent =  config.pasarContractDeploy;
 
-const step = 20000;
+const step = 10000;
 
 web3Rpc.eth.getBlockNumber().then(async currentHeight => {
     console.log(currentHeight);
