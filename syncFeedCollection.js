@@ -68,7 +68,7 @@ async function transferSingle(event) {
     let timestamp = blockInfo.timestamp;
 
     let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract};
-    logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
+    // logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
@@ -257,6 +257,7 @@ async function importFeeds() {
     console.log(totalCount);
 
     let totalStep = Math.ceil(totalCount/100);
+    console.log(totalStep);
     try {
         runningSyncFunction = true;
         while(currentStep < totalStep) {

@@ -3329,25 +3329,34 @@ module.exports = {
         try {
             let result = [], tokenlist = [];
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_token_event');
+            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
             let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
-            let tokens = await collection_token.find({baseToken: baseToken}).toArray();
+            let tempTokenList = await collection.find({event: "TransferSingle", "eventData.returnValues._from": "0x0000000000000000000000000000000000000000"}).toArray();
+            // let tokens = await collection_token.find({baseToken: baseToken}).toArray();
             
-            console.log(tokens);
-            for(var i = 0; i < tokens.length; i++) {
-                if(tokenlist.indexOf(tokens[i].tokenId) == -1) {
-                    tokenlist.push(tokens[i].tokenId)
-                }
-            }
-            console.log(tokenlist);
-            let missToken = await collection.find({token: baseToken, tokenId: {$nin: tokenlist}}).toArray();
+            // console.log(tokens);
+            // for(var i = 0; i < tokens.length; i++) {
+            //     if(tokenlist.indexOf(tokens[i].tokenId) == -1) {
+            //         tokenlist.push(tokens[i].tokenId)
+            //     }
+            // }
+            // console.log(tokenlist);
+            // let missToken = await collection.find({token: baseToken, tokenId: {$nin: tokenlist}}).toArray();
 
-            for(var i = 0; i < missToken.length; i++) {
-                if(result.indexOf(missToken[i].tokenId) == -1) {
-                    result.push(missToken[i].tokenId);
+            // for(var i = 0; i < missToken.length; i++) {
+            //     if(result.indexOf(missToken[i].tokenId) == -1) {
+            //         result.push(missToken[i].tokenId);
+            //     }
+            // }
+            console.log(tempTokenList[0].eventData.returnValues._id)
+            for(var i = 0; i < tempTokenList.length; i++) {
+                
+                if(tokenlist.indexOf(tempTokenList[i].eventData.returnValues._id) == -1) {
+                    tokenlist.push(tempTokenList[i].eventData.returnValues._id);
                 }
             }
-            return {code: 200, message: 'success', data: {missLength: result.length, missToken: result}};
+
+            return {code: 200, message: 'success', data: {missLength: tokenlist.length}};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};

@@ -42,23 +42,23 @@ let web3Rpc = new Web3(config.escRpcUrl);
 
 let now = Date.now();
 
-let token = '0xef5f768618139d0f5fa3bcbbbcaaf09fe9d7a07d';
-let conllectionJobCurrent = 10653864;
+let token = '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961';
+let conllectionJobCurrent = 7744408;
 
 let tokenContractWs = new web3Ws.eth.Contract(token721ABI, token);
 let tokenContract = new web3Rpc.eth.Contract(token721ABI, token);
 
-const step = 10000;
+const step = 20000;
 web3Rpc.eth.getBlockNumber().then(async currentHeight => {
     console.log(currentHeight);
     let [is721, is1155] = await jobService.makeBatchRequest([
         {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
         {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
     ], web3Rpc)
-    // let stickerCountContract = parseInt(await tokenContract.methods.totalSupply().call());
+    let stickerCountContract = parseInt(await tokenContract.methods.totalSupply().call());
 
     console.log(is721);
-    // console.log("Total Count: " + stickerCountContract);
+    console.log("Total Count: " + stickerCountContract);
     
     if(!is721 && is1155) {
         tokenContractWs = new web3Ws.eth.Contract(token1155ABI, token);

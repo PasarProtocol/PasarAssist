@@ -384,7 +384,7 @@ module.exports = {
                 ], web3Rpc)
 
                 let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
-
+                console.log(token);
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -1023,7 +1023,7 @@ module.exports = {
             /**
                 *  Start to listen all user's contract events
             */
-            jobService.startupUsersContractEvents(web3Ws, web3Rpc);
+            // jobService.startupUsersContractEvents(web3Ws, web3Rpc);
         })
 
         schedule.scheduleJob('0 * * * * *', async () => {

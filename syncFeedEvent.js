@@ -100,7 +100,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '0 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 2 * 60 * 1000), rule: '20 * * * * *'}, async () => {
         console.log(currentHeight);
         console.log(royaltiesCurrent);
         if(royaltiesCurrent > currentHeight) {
@@ -134,7 +134,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 1 * 60 * 1000), rule: '0 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '30 * * * * *'}, async () => {
         if(orderForSaleJobCurrent > currentHeight) {
             console.log(`[OrderForSale] Sync ${orderForSaleJobCurrent} finished`)
             return;
@@ -169,7 +169,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 3 * 60 * 1000), rule: '0 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 4 * 60 * 1000), rule: '40 * * * * *'}, async () => {
         if(priceChangeJobCurrent > currentHeight) {
             console.log(`[OrderPriceChanged] Sync ${priceChangeJobCurrent} finished`)
             return;
@@ -207,7 +207,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 4 * 60 * 1000), rule: '0 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '50 * * * * *'}, async () => {
         if(orderCanceledJobCurrent > currentHeight) {
             console.log(`[OrderCanceled] Sync ${orderCanceledJobCurrent} finished`)
             return;
@@ -245,7 +245,7 @@ web3Rpc.eth.getBlockNumber().then(async currentHeight => {
         })
     });
 
-    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '40 * * * * *'}, async () => {
+    schedule.scheduleJob({start: new Date(now + 5 * 60 * 1000), rule: '50 * * * * *'}, async () => {
         if(orderFilledJobCurrent > currentHeight) {
             console.log(`[OrderFilled] Sync ${orderFilledJobCurrent} finished`)
             return;
