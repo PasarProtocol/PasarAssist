@@ -7,7 +7,7 @@ let stickerContractABI = require('../contractABI/stickerABI');
 
 let stickerDBService = require('../service/stickerDBService');
 
-let syncFeedNewToken = require('../syncFeedNewToken');
+let {dealWithNewToken} = require('./syncFeedNewToken');
 let jobService = require('../service/jobService');
 
 const { scanEvents, saveEvent } = require("./utils");
@@ -49,7 +49,7 @@ async function transferSingle(event) {
         await stickerDBService.burnToken(tokenId, config.stickerContract);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await syncFeedNewToken.dealWithNewToken(blockNumber, tokenId)
+        await dealWithNewToken(blockNumber, tokenId)
     } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
         to != config.pasarV2Contract && from != config.pasarV2Contract) {
         await stickerDBService.replaceEvent(transferEvent);
