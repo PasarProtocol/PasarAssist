@@ -3454,7 +3454,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
-            let result = await collection.find().sort({createdAt: 1, blockNumber: 1}).skip(index * size).limit(size).toArray();
+            let result = await collection.find().sort({blockNumber: 1}).skip(index * size).limit(size).toArray();
             return result;
         } catch(err) {
             logger.error(err);

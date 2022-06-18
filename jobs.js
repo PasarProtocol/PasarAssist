@@ -16,8 +16,6 @@ config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
     run: function() {
-        logger.info("========= Pasar Assist Service start =============")
-
         const burnAddress = '0x0000000000000000000000000000000000000000';
         const quoteToken = '0x0000000000000000000000000000000000000000';
 
@@ -104,7 +102,6 @@ module.exports = {
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
-                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                 await stickerDBService.replaceToken(token);
             } catch (e) {
                 logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
@@ -158,8 +155,6 @@ module.exports = {
             //     lastHeight += 1;
             // }
             isGetForOrderPriceChangedJobRun = true;
-
-            logger.info(`[OrderPriceChanged] Sync start from height: ${lastHeight + 1}`);
 
             pasarContractWs.events.OrderPriceChanged({
                 fromBlock: lastHeight + 1
@@ -257,7 +252,6 @@ module.exports = {
                     v1State: false,
                 };
 
-                logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);

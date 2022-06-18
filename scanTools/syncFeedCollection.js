@@ -1,54 +1,29 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let config = require('./config');
-let pasarDBService = require('./service/pasarDBService');
-let pasarContractABI = require('./contractABI/pasarABI');
-let syncFeedNewToken = require('./syncFeedNewToken');
-let jobService = require('./service/jobService');
+let config = require('../config');
+let pasarDBService = require('../service/pasarDBService');
+let pasarContractABI = require('../contractABI/pasarABI');
+let stickerContractABI = require('../contractABI/stickerABI');
 
-const config_test = require("./config_test");
-const stickerDBService = require('./service/stickerDBService');
+let stickerDBService = require('../service/stickerDBService');
+
+let syncFeedNewToken = require('../syncFeedNewToken');
+let jobService = require('../service/jobService');
+
+const { scanEvents, saveEvent } = require("./utils");
+const config_test = require("../config_test");
+
 config = config.curNetwork == 'testNet'? config_test : config;
-global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-let log4js = require('log4js');
-log4js.configure({
-    appenders: {
-        file: { type: 'dateFile', filename: 'logs/pasar.log', pattern: ".yyyy-MM-dd.log", compress: true, },
-        console: { type: 'stdout'}
-    },
-    categories: { default: { appenders: ['file', 'console'], level: 'info' } },
-    pm2: true,
-    pm2InstanceVar: 'INSTANCE_ID'
-});
-global.logger = log4js.getLogger('default');
-
-let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
-    clientConfig: {
-        // Useful if requests are large
-        maxReceivedFrameSize: 100000000,   // bytes - default: 1MiB
-        maxReceivedMessageSize: 100000000, // bytes - default: 8MiB
-        keepalive: true, // Useful to keep a connection alive
-        keepaliveInterval: 60000 // ms
-    },
-    reconnect: {
-        auto: true,
-        delay: 5000,
-        maxAttempts: 5,
-        onTimeout: false,
-    },
-})
-let web3Rpc = new Web3(config.escRpcUrl);
-
-
 let token = config.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';
 const quoteToken = '0x0000000000000000000000000000000000000000';
 
+let web3Rpc = new Web3(config.escRpcUrl);
 let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
 
 const step = 100;
 let currentStep = 0;
-let runningSyncFunction = false;
 
 async function transferSingle(event) {
     let blockNumber = event.blockNumber;
@@ -68,7 +43,6 @@ async function transferSingle(event) {
     let timestamp = blockInfo.timestamp;
 
     let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract};
-    // logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
@@ -87,7 +61,6 @@ async function royaltyFee(event) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    console.log("RoayltyFee Event: " + JSON.stringify({tokenId, fee}));
     await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerContract);
 }
 
@@ -125,9 +98,6 @@ async function orderForSale(event) {
         v1State: true,
     };
 
-    logger.info(`[OrderForSale] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
-    logger.info(`[OrderForSale] updateTokenDetail: ${JSON.stringify(updateTokenInfo)}`)
-    logger.info(`[OrderForSale] result: ${JSON.stringify(resultData)}`)
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);                
     await stickerDBService.updateNormalToken(updateTokenInfo);
@@ -163,7 +133,6 @@ async function orderPriceChanged(event) {
         baseToken: config.stickerContract
     };
 
-    logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateNormalToken(updateTokenInfo);
@@ -203,7 +172,6 @@ async function orderCanceled(event) {
         v1State: false,
     };
 
-    logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateNormalToken(updateTokenInfo);
@@ -245,8 +213,7 @@ async function orderFilled(event) {
         baseToken: config.stickerContract,
         v1State: false,
     };
-
-    logger.info(`[OrderFilled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
+    
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateNormalToken(updateTokenInfo);
@@ -296,8 +263,54 @@ async function importFeeds() {
     }
 }
 
-schedule.scheduleJob('0 * * * * *', () => {
-    if(!runningSyncFunction) {
-        importFeeds();
+const getTotalEvents = async (startBlock, endBlock) => {
+    let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
     }
-})
+    console.log(`collectible count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
+    }
+    console.log(`royalty count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
+    }
+    console.log(`listed count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
+    }
+    console.log(`changed count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
+    }
+    console.log(`canceled count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item);
+    }
+    console.log(`filled count: ${getAllEvents.length}`);
+
+    await importFeeds();
+};
+
+if (require.main == module) {
+    (async () => {
+      await getTotalEvents();
+    })();
+}

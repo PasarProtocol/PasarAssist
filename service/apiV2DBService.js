@@ -204,7 +204,7 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_order');
 
             let query = {orderState, [types]: keyword}
-            logger.info(`------------- ${JSON.stringify(query)}`)
+            
             let result = await collection.find(query).project({"_id": 0}).toArray();
 
             return {code: 200, message: 'success', data: result};

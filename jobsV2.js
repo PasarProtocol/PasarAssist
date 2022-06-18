@@ -92,7 +92,6 @@ module.exports = {
                     token.tippingAddress = data.tippingAddress;
                     token.entry = data.entry;
                     token.avatar = data.avatar;
-                    logger.info(`[TokenInfo2] New token info: ${JSON.stringify(token)}`)
                     await stickerDBService.replaceGalleriaToken(token);
                     return;
                 }
@@ -118,7 +117,6 @@ module.exports = {
                     await pasarDBService.updateDid({address: result.royaltyOwner, did: creator});
                 }
 
-                logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                 await stickerDBService.replaceToken(token);
             } catch (e) {
                 logger.info(`[TokenInfo2] Sync error at ${blockNumber} ${tokenId}`);
@@ -149,7 +147,6 @@ module.exports = {
                         token.tippingAddress = data.tippingAddress;
                         token.entry = data.entry;
                         token.avatar = data.avatar;
-                        logger.info(`[TokenInfo2] New token info: ${JSON.stringify(token)}`)
                         await stickerDBService.replaceGalleriaToken(token);
                         return;
                     }
@@ -170,7 +167,6 @@ module.exports = {
                     token.orderId = null;
                     token.baseToken = config.stickerV2Contract;
                     tokens.push(token);
-                    logger.info(`[TokenInfo] New token info: ${JSON.stringify(token)}`)
                     await stickerDBService.replaceToken(tokens);
                 })
             } catch (e) {
@@ -249,7 +245,6 @@ module.exports = {
                 result.createTime = orderInfo._startTime;
                 result.endTime = 0;
 
-                logger.info(`[OrderForSale2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
@@ -298,7 +293,6 @@ module.exports = {
                 result.price = orderInfo._newPrice;
                 result.quoteToken = orderInfo._newQuoteToken;
 
-                logger.info(`[OrderPriceChanged2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken);
@@ -350,7 +344,6 @@ module.exports = {
                 result.quoteToken = orderInfo._quoteToken;
                 result.baseToken = orderInfo._baseToken;
 
-                logger.info(`[OrderFilled2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
@@ -470,7 +463,7 @@ module.exports = {
                 let timestamp = blockInfo.timestamp;
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
-                logger.info(`[TokenInfo2] tokenEvent: ${JSON.stringify(transferEvent)}`)
+
                 if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != null
                     && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != null) {
                     await stickerDBService.replaceEvent(transferEvent);
@@ -619,7 +612,6 @@ module.exports = {
                     let value = values[i];
                     let tokenId = tokenIds[i];
                     transferEvents.push({tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee});
-                    logger.info(`[TokenInfoWithBatchMemo2] transferToken: ${JSON.stringify({tokenId, blockNumber, timestamp, txHash, txIndex, from, to, value, memo, gasFee})}`)
                 }
                 // await stickerDBService.replaceEvent(transferEvents);
 
@@ -716,7 +708,6 @@ module.exports = {
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, 
                     quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
                 
-                logger.info(`[OrderForBid2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken);
@@ -738,7 +729,6 @@ module.exports = {
                 isTokenRegisteredJobRun = false;
             }).on("data", async function (event) {
                 let registeredTokenInfo = event.returnValues;
-                logger.info(`[TokenRegistered] : ${JSON.stringify(registeredTokenInfo)}`);
 
                 let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -781,7 +771,6 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract1155] Sync Ending ...")
                     }).on("data", async function (event) {
-                        console.log("[Contract1155] Data: " + JSON.stringify(event));
                         await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
                     })
                 } else {
@@ -817,7 +806,6 @@ module.exports = {
 
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                logger.info(`[TokenRoyaltyChanged] : ${JSON.stringify(orderInfo)}`);
 
                 let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -844,7 +832,6 @@ module.exports = {
 
             }).on("data", async function (event) {
                 let updatedTokenInfo = event.returnValues;
-                logger.info(`[TokenRegistered] : ${JSON.stringify(updatedTokenInfo)}`);
 
                 let updatedTokenDetail = {token: updatedTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -921,7 +908,7 @@ module.exports = {
             let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
 
             let totalDbCount = stickerCount + stickerGalleriaCount;
-            logger.info(`[Token Count Check] DbCount: ${totalDbCount}   ContractCount: ${stickerCountContract}`)
+
             if(stickerCountContract !== totalDbCount) {
                 await sendMail(`Sticker Sync [${config.serviceName}]`,
                     `pasar assist sync service sync failed!\nDbCount: ${totalDbCount}   ContractCount: ${stickerCountContract}`,

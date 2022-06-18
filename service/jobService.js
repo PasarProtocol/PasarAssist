@@ -50,7 +50,7 @@ module.exports = {
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        console.log("TokenInfo: " + JSON.stringify(tokenInfo));
+
         this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc);
         
     },
@@ -74,7 +74,6 @@ module.exports = {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
-                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseSolana(jsonData, token);
 
@@ -84,7 +83,6 @@ module.exports = {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
-                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parsePrimates(jsonData);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
@@ -95,7 +93,6 @@ module.exports = {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
-                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseVitrim(jsonData, token);
 
@@ -106,7 +103,6 @@ module.exports = {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
-                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseBella(jsonData);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
@@ -118,7 +114,6 @@ module.exports = {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
-                console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parsePhantz(jsonData);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
@@ -150,7 +145,7 @@ module.exports = {
             gasFee,
             token
         };
-        logger.info(`[Contract721] : ${JSON.stringify(tokenEventDetail)}`);
+        
         let stickerDBService = require("./stickerDBService");
         
         let tokenDetail = {
