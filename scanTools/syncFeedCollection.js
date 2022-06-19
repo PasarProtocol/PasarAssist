@@ -7,10 +7,9 @@ let stickerContractABI = require('../contractABI/stickerABI');
 
 let stickerDBService = require('../service/stickerDBService');
 
-let {dealWithNewToken} = require('./syncFeedNewToken');
 let jobService = require('../service/jobService');
 
-const { scanEvents, saveEvent } = require("./utils");
+const { scanEvents, saveEvent, dealWithNewToken } = require("./utils");
 const config_test = require("../config_test");
 
 config = config.curNetwork == 'testNet'? config_test : config;
@@ -24,6 +23,7 @@ let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.sticke
 
 const step = 100;
 let currentStep = 0;
+const db = 'pasar_sync_temp1';
 
 async function transferSingle(event) {
     let blockNumber = event.blockNumber;
@@ -49,7 +49,7 @@ async function transferSingle(event) {
         await stickerDBService.burnToken(tokenId, config.stickerContract);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(blockNumber, tokenId)
+        await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerContract)
     } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
         to != config.pasarV2Contract && from != config.pasarV2Contract) {
         await stickerDBService.replaceEvent(transferEvent);
@@ -220,38 +220,33 @@ async function orderFilled(event) {
 }
 
 async function importFeeds() {
-    let totalCount = await stickerDBService.getCountSyncTemp();
+    let totalCount = await stickerDBService.getCountSyncTemp(db);
     console.log(totalCount);
 
     let totalStep = Math.ceil(totalCount/100);
     console.log(totalStep);
     try {
-        runningSyncFunction = true;
         while(currentStep < totalStep) {
-            let listDoc = await stickerDBService.getSyncTemp(currentStep, step);
-            if(listDoc == null) {
-                continue;
-            }
-            for(var i = 0; i < listDoc.length; i++) {
-                let cell = listDoc[i];
-                switch(cell.event) {
+            let listDoc = await stickerDBService.getSyncTemp(db, currentStep, step);
+            for(var i = 0; i < listDoc.length; i++) {   
+                switch(listDoc[i].eventType) {
                     case "TransferSingle":
-                        await transferSingle(cell.eventData);
+                        await transferSingle(listDoc[i].eventData);
                         break;
                     case "RoyaltyFee":
-                        await royaltyFee(cell.eventData);
+                        await royaltyFee(listDoc[i].eventData);
                         break;
                     case "OrderForSale":
-                        await orderForSale(cell.eventData);
+                        await orderForSale(listDoc[i].eventData);
                         break;
                     case "OrderPriceChanged":
-                        await orderPriceChanged(cell.eventData);
+                        await orderPriceChanged(listDoc[i].eventData);
                         break;
                     case "OrderCanceled":
-                        await orderCanceled(cell.eventData);
+                        await orderCanceled(listDoc[i].eventData);
                         break;
                     case "OrderFilled":
-                        await orderFilled(cell.eventData);
+                        await orderFilled(listDoc[i].eventData);
                         break;
                 } 
             }
@@ -259,7 +254,6 @@ async function importFeeds() {
         }
     } catch(err) {
         console.log(err);
-        runningSyncFunction = false;
     }
 }
 
@@ -267,14 +261,14 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
@@ -283,28 +277,28 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item);
+        await saveEvent(item, db);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 

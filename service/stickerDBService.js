@@ -3412,11 +3412,11 @@ module.exports = {
         }
     },
 
-    saveSyncTemp: async function(data) {
+    saveSyncTemp: async function(data, db) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let collection = await mongoClient.db(config.dbName).collection(db);
             let count = await collection.find({blockNumber: data.blockNumber, event: data.eventType}).count();
             if(count == 0) {
                 await collection.insertOne(data);    
@@ -3429,11 +3429,11 @@ module.exports = {
         }
     },
 
-    getCountSyncTemp: async function() {
+    getCountSyncTemp: async function(db) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let collection = await mongoClient.db(config.dbName).collection(db);
             let result = await collection.find().count();
             return result;
         } catch(err) {
@@ -3444,11 +3444,11 @@ module.exports = {
         }
     },
 
-    getSyncTemp: async function(index, size) {
+    getSyncTemp: async function(db, index, size) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
+            let collection = await mongoClient.db(config.dbName).collection(db);
             let result = await collection.find().sort({blockNumber: 1}).skip(index * size).limit(size).toArray();
             return result;
         } catch(err) {
