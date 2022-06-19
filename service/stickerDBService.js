@@ -3331,32 +3331,28 @@ module.exports = {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
             let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
-            let tempTokenList = await collection.find({event: "TransferSingle", "eventData.returnValues._from": "0x0000000000000000000000000000000000000000"}).toArray();
-            // let tokens = await collection_token.find({baseToken: baseToken}).toArray();
-            
-            // console.log(tokens);
-            // for(var i = 0; i < tokens.length; i++) {
-            //     if(tokenlist.indexOf(tokens[i].tokenId) == -1) {
-            //         tokenlist.push(tokens[i].tokenId)
-            //     }
-            // }
-            // console.log(tokenlist);
-            // let missToken = await collection.find({token: baseToken, tokenId: {$nin: tokenlist}}).toArray();
-
-            // for(var i = 0; i < missToken.length; i++) {
-            //     if(result.indexOf(missToken[i].tokenId) == -1) {
-            //         result.push(missToken[i].tokenId);
-            //     }
-            // }
-            console.log(tempTokenList[0].eventData.returnValues._id)
+            let mintCount = await collection.find({event: "TransferSingle", "eventData.returnValues._from": "0x0000000000000000000000000000000000000000"}).toArray();
+            let tempTokenList = await collection.find({event: "TransferSingle"}).toArray();
+            let missingNFT = [];
+            let mintedNFT = [];
             for(var i = 0; i < tempTokenList.length; i++) {
-                
                 if(tokenlist.indexOf(tempTokenList[i].eventData.returnValues._id) == -1) {
                     tokenlist.push(tempTokenList[i].eventData.returnValues._id);
+                    if(tempTokenList[i].eventData.returnValues._from != "0x0000000000000000000000000000000000000000") {
+                        missingNFT.push({
+                            id: tempTokenList[i].eventData.returnValues._id,
+                        })
+                    }
                 }
             }
 
-            return {code: 200, message: 'success', data: {missLength: tokenlist.length}};
+            for(var i = 0; i < mintCount.length; i++) {
+                if(mintedNFT.indexOf(mintCount[i].eventData.returnValues._id) == -1) {
+                    mintedNFT.push(mintCount[i].eventData.returnValues._id);
+                }
+            }
+
+            return {code: 200, message: 'success', data: {minted: mintedNFT.length, total: tokenlist.length, missingNFT: {count: missingNFT.length, list: missingNFT}}};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
@@ -3423,9 +3419,8 @@ module.exports = {
             let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
             let count = await collection.find({blockNumber: data.blockNumber, event: data.eventType}).count();
             if(count == 0) {
-                await collection.updateOne({blockNumber: data.blockNumber, event: data.eventType}, {$set: data}, {upsert: true});    
+                await collection.insertOne(data);    
             }
-            
         } catch(err) {
             logger.error(err);
             throw new Error();

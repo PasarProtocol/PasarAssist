@@ -263,7 +263,7 @@ async function importFeeds() {
     }
 }
 
-const getTotalEvents = async (startBlock, endBlock) => {
+const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
@@ -277,8 +277,10 @@ const getTotalEvents = async (startBlock, endBlock) => {
         await saveEvent(item);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
+};
 
-    getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
+const getTotalEventsOfPasar = async (startBlock, endBlock) => {
+    let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
         await saveEvent(item);
@@ -306,11 +308,26 @@ const getTotalEvents = async (startBlock, endBlock) => {
     }
     console.log(`filled count: ${getAllEvents.length}`);
 
-    await importFeeds();
 };
 
 if (require.main == module) {
-    (async () => {
-      await getTotalEvents();
-    })();
+    web3Rpc.eth.getBlockNumber().then(async lastBlock => {
+        let startBlock = config.stickerContractDeploy;
+        
+        let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+        console.log(stickerCountContract);
+
+        while(startBlock < lastBlock) {
+            await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
+            startBlock = startBlock + 1000000;
+        };
+        
+        startBlock = config.pasarContractDeploy;
+        while(startBlock < lastBlock) {
+            await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
+            startBlock = startBlock + 1000000;
+        };
+
+        await importFeeds()
+    });
 }
