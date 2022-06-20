@@ -57,9 +57,8 @@ const saveEvent = async(event, db) => {
 
 const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken) => {
   try {
-      let [result, extraInfo] = await jobService.makeBatchRequest([
+      let [result] = await jobService.makeBatchRequest([
           {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
-          {method: stickerContract.methods.tokenExtraInfo(tokenId).call, params: {}},
       ], web3Rpc);
 
       let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,

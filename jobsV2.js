@@ -377,7 +377,7 @@ module.exports = {
                 ], web3Rpc)
 
                 let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
-                console.log(token);
+                
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -387,7 +387,6 @@ module.exports = {
 
                 result.sellerAddr = orderInfo._seller
 
-                logger.info(`[OrderCanceled2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken);
@@ -665,7 +664,6 @@ module.exports = {
                 result.createTime = orderInfo._startTime;
                 result.endTime = orderInfo._endTime;
 
-                logger.info(`[OrderForAuction2] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
@@ -692,7 +690,6 @@ module.exports = {
                 isGetOrderBidJobRun = false;
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                console.log('OrderBid event data is ', event);
 
                 let [result, txInfo] = await jobService.makeBatchRequest([
                     {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
