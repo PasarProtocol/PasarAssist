@@ -4,10 +4,11 @@ const { syncFeedCollection, transferSingleV1, royaltyFeeV1, orderPriceChangedV1,
 const { syncPasarCollection, transferSingleV2, transferBatchV2, royaltyFeeV2, orderPriceChangedV2, orderForSaleV2, orderForAuctionV2, orderFilledV2, orderCanceledV2, orderBidV2 } = require('./syncPasarCollection');
 
 let stickerDBService = require('../service/stickerDBService');
+let currentStep = 0;
 
 const importDataInDB = async () => {
     console.log("======= Start Importing Data ==========")
-    let currentStep = 0;
+    
     let step = 100;
     
     let totalCount = await stickerDBService.getCountSyncTemp(DB_SYNC);
@@ -95,12 +96,13 @@ const importDataInDB = async () => {
                 } 
                 console.log("Current Step: " + (currentStep * step + i) + " / " + totalCount);
             }
-            
             currentStep++;
         }
         console.log("======= End Importing Data ==========")
     } catch(err) {
-        console.log(err);
+        logger.info(err);
+        currentStep--;
+        await importDataInDB();
     }
 }
 

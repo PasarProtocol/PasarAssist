@@ -3275,7 +3275,7 @@ module.exports = {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let collection = await mongoClient.db(config.dbName).collection('pasar_order');
             let result = await collection.findOne({tokenId, orderId});
             return result;
         } catch(err) {
