@@ -56,7 +56,6 @@ module.exports = {
     },
 
     parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, tokenContract, check721) {
-        console.log(result);
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
@@ -69,7 +68,6 @@ module.exports = {
             
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
         } else if(result.indexOf("Solana") != -1) {
-            console.log(result);
             result = result.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
             fetch(result)
             .then(res => res.text())
@@ -110,7 +108,6 @@ module.exports = {
 
         } else if(token.toLocaleLowerCase() == '0xfDdE60866508263e30C769e8592BB0f8C3274ba7'.toLocaleLowerCase()) {
             result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            console.log(result);
             fetch(result)
             .then(res => res.text())
             .then(async data => {

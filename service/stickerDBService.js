@@ -508,16 +508,12 @@ module.exports = {
                 updateData.endTime = endTime;
             }
 
-            await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: updateData});
+            await collection.updateOne({tokenId, baseToken}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
-                await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {holder}});
+                await collection.updateOne({tokenId, baseToken}, {$set: {holder}});
             }
             if(status != null) {
-                if(status == 'MarketBid') {
-                    await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}, status: {$ne: 'Not on sale'}}, {$set: {status}});
-                } else {
-                    await collection.updateOne({tokenId, baseToken, blockNumber: {$lte: blockNumber}, holder: {$ne: config.burnAddress}}, {$set: {status}});
-                }
+                await collection.updateOne({tokenId, baseToken}, {$set: {status}});
             }
 
         } catch (err) {
