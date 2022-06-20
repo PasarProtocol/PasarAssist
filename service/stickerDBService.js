@@ -3457,5 +3457,20 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
+    },
+
+    getImportedCollection: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
+            let result = await collection.find({$and: [{token: {$ne: config.stickerContract}}, {token: {$ne: config.stickerV2Contract}}]}).toArray();
+            return result;
+        } catch(err) {
+            logger.error(err);
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
     }
 }

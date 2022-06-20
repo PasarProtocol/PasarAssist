@@ -39,7 +39,7 @@ const scanEvents = async(conObj, evName, startBlock, endBlock) => {
   }
 };
 
-const saveEvent = async(event, db) => {
+const saveEvent = async(event, db, baseToken) => {
   let blockNumber = event.blockNumber;
   let eventType = event.event;
   let info = event.returnValues;
@@ -49,7 +49,8 @@ const saveEvent = async(event, db) => {
     eventType,
     info,
     eventData: event,
-    createdAt: new Date()
+    createdAt: new Date(),
+    baseToken: baseToken
   }
 
   await stickerDBService.saveSyncTemp(data, db);
@@ -105,5 +106,6 @@ const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken)
 module.exports = {
   scanEvents,
   saveEvent,
-  dealWithNewToken
+  dealWithNewToken,
+  config,
 };

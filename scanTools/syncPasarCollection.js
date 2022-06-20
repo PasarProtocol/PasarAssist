@@ -1,6 +1,5 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let config = require('../config');
 let pasarDBService = require('../service/pasarDBService');
 let pasarContractABI = require('../contractABI/pasarV2ABI');
 let stickerContractABI = require('../contractABI/stickerV2ABI');
@@ -9,10 +8,9 @@ let stickerDBService = require('../service/stickerDBService');
 
 let jobService = require('../service/jobService');
 
-const { scanEvents, saveEvent, dealWithNewToken} = require("./utils");
-const config_test = require("../config_test");
+const { scanEvents, saveEvent, dealWithNewToken, config} = require("./utils");
+const { syncRegisterCollection } = require('./syncImportCollection');
 
-config = config.curNetwork == 'testNet'? config_test : config;
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
 let web3Rpc = new Web3(config.escRpcUrl);
@@ -87,7 +85,7 @@ async function transferBatch(event) {
         } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
             to != config.pasarV2Contract && from != config.pasarV2Contract) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract);
         }
     }
 }
@@ -392,22 +390,23 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
 
 if (require.main == module) {
     web3Rpc.eth.getBlockNumber().then(async lastBlock => {
-        let startBlock = config.stickerV2ContractDeploy;
         
-        let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
-        console.log(stickerCountContract);
+        await syncRegisterCollection();
 
-        while(startBlock < lastBlock) {
-            await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
-            startBlock = startBlock + 1000000;
-        };
+        // let startBlock = config.stickerV2ContractDeploy;
+        // let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+        // console.log("Total Pasar Collection: " + stickerCountContract);
+        // while(startBlock < lastBlock) {
+        //     await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
+        //     startBlock = startBlock + 1000000;
+        // };
         
-        startBlock = config.pasarV2ContractDeploy;
-        while(startBlock < lastBlock) {
-            await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
-            startBlock = startBlock + 1000000;
-        };
+        // startBlock = config.pasarV2ContractDeploy;
+        // while(startBlock < lastBlock) {
+        //     await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
+        //     startBlock = startBlock + 1000000;
+        // };
 
-        await importPasar()
+        // await importPasar()
     });
 }
