@@ -99,7 +99,7 @@ module.exports = {
 
             let length = await collection.find({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, blockNumber: orderEventDetail.blockNumber}).count();
             if(length == 0) {
-                await collection.insert(orderEventDetail);
+                await collection.insertOne(orderEventDetail);
             }
         } catch (err) {
             throw new Error();

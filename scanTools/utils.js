@@ -7,6 +7,8 @@ config = config.curNetwork == 'testNet'? config_test : config;
 
 let web3Rpc = new Web3(config.escRpcUrl);
 
+let DB_SYNC = 'pasar_sync_temp';
+
 global.fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 let log4js = require('log4js');
 log4js.configure({
@@ -108,4 +110,5 @@ module.exports = {
   saveEvent,
   dealWithNewToken,
   config,
+  DB_SYNC,
 };

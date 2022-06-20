@@ -1,18 +1,13 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let config = require('../config');
 let pasarDBService = require('../service/pasarDBService');
 let pasarContractABI = require('../contractABI/pasarABI');
 let stickerContractABI = require('../contractABI/stickerABI');
-
 let stickerDBService = require('../service/stickerDBService');
-
 let jobService = require('../service/jobService');
 
-const { scanEvents, saveEvent, dealWithNewToken } = require("./utils");
-const config_test = require("../config_test");
+const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("./utils");
 
-config = config.curNetwork == 'testNet'? config_test : config;
 let token = config.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';
 const quoteToken = '0x0000000000000000000000000000000000000000';
@@ -21,11 +16,7 @@ let web3Rpc = new Web3(config.escRpcUrl);
 let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
 let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
 
-const step = 100;
-let currentStep = 0;
-const db = 'pasar_sync_temp1';
-
-async function transferSingle(event) {
+async function transferSingleV1(event) {
     let blockNumber = event.blockNumber;
     let txHash = event.transactionHash;
     let txIndex = event.transactionIndex;
@@ -57,14 +48,14 @@ async function transferSingle(event) {
     }
 }
 
-async function royaltyFee(event) {
+async function royaltyFeeV1(event) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
     await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerContract);
 }
 
-async function orderForSale(event) {
+async function orderForSaleV1(event) {
     let orderInfo = event.returnValues;
     let [result, txInfo] = await jobService.makeBatchRequest([
         {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
@@ -103,7 +94,7 @@ async function orderForSale(event) {
     await stickerDBService.updateNormalToken(updateTokenInfo);
 }
 
-async function orderPriceChanged(event) {
+async function orderPriceChangedV1(event) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -138,7 +129,7 @@ async function orderPriceChanged(event) {
     await stickerDBService.updateNormalToken(updateTokenInfo);
 }
 
-async function orderCanceled(event) {
+async function orderCanceledV1(event) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -177,7 +168,7 @@ async function orderCanceled(event) {
     await stickerDBService.updateNormalToken(updateTokenInfo);
 }
 
-async function orderFilled(event) {
+async function orderFilledV1(event) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -219,109 +210,75 @@ async function orderFilled(event) {
     await stickerDBService.updateNormalToken(updateTokenInfo);
 }
 
-async function importFeeds() {
-    let totalCount = await stickerDBService.getCountSyncTemp(db);
-    console.log(totalCount);
-
-    let totalStep = Math.ceil(totalCount/100);
-    console.log(totalStep);
-    try {
-        while(currentStep < totalStep) {
-            let listDoc = await stickerDBService.getSyncTemp(db, currentStep, step);
-            for(var i = 0; i < listDoc.length; i++) {   
-                switch(listDoc[i].eventType) {
-                    case "TransferSingle":
-                        await transferSingle(listDoc[i].eventData);
-                        break;
-                    case "RoyaltyFee":
-                        await royaltyFee(listDoc[i].eventData);
-                        break;
-                    case "OrderForSale":
-                        await orderForSale(listDoc[i].eventData);
-                        break;
-                    case "OrderPriceChanged":
-                        await orderPriceChanged(listDoc[i].eventData);
-                        break;
-                    case "OrderCanceled":
-                        await orderCanceled(listDoc[i].eventData);
-                        break;
-                    case "OrderFilled":
-                        await orderFilled(listDoc[i].eventData);
-                        break;
-                } 
-            }
-            currentStep++;
-        }
-    } catch(err) {
-        console.log(err);
-    }
-}
-
 const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.stickerContract);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.stickerContract);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
 
-const getTotalEventsOfPasar = async (startBlock, endBlock) => {
+const getTotalEventsOfFeeds = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.pasarContract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.pasarContract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.pasarContract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, db);
+        await saveEvent(item, DB_SYNC, config.pasarContract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
-
 };
 
-if (require.main == module) {
-    web3Rpc.eth.getBlockNumber().then(async lastBlock => {
-        let startBlock = config.stickerContractDeploy;
-        
-        let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
-        console.log(stickerCountContract);
+const syncFeedCollection = async () => {
+    let lastBlock = await web3Rpc.eth.getBlockNumber();
+    let startBlock = config.stickerContractDeploy;        
+    let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+    console.log("Feeds Collection Count:" + stickerCountContract);
+    while(startBlock < lastBlock) {
+        await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
+        startBlock = startBlock + 1000000;
+    };
+    
+    startBlock = config.pasarContractDeploy;
+    while(startBlock < lastBlock) {
+        await getTotalEventsOfFeeds(startBlock, startBlock + 1000000);
+        startBlock = startBlock + 1000000;
+    };
+}
 
-        while(startBlock < lastBlock) {
-            await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
-            startBlock = startBlock + 1000000;
-        };
-        
-        startBlock = config.pasarContractDeploy;
-        while(startBlock < lastBlock) {
-            await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
-            startBlock = startBlock + 1000000;
-        };
-
-        await importFeeds()
-    });
+module.exports = {
+    syncFeedCollection,
+    transferSingleV1,
+    royaltyFeeV1,
+    orderForSaleV1,
+    orderFilledV1,
+    orderCanceledV1,
+    orderPriceChangedV1,
 }

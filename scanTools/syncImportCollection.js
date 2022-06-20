@@ -5,7 +5,7 @@ const token1155ABI = require("../contractABI/token1155ABI");
 const token721ABI = require("../contractABI/token721ABI");
 const pasarRegisterContractABI = require('../contractABI/pasarRegisterABI');
 
-const { scanEvents, saveEvent, config } = require("./utils");
+const { scanEvents, saveEvent, config, DB_SYNC } = require("./utils");
 let jobService = require('../service/jobService');
 let stickerDBService = require('../service/stickerDBService');
 let pasarDBService = require('../service/pasarDBService');
@@ -13,42 +13,24 @@ let pasarDBService = require('../service/pasarDBService');
 let web3Rpc = new Web3(config.escRpcUrl);
 let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register";
-let DB_SYNC = 'pasar_sync_temp';
 
-let listCollection = [                       
-    {name: "Bunny", address: '0xE27934fB3683872e35b8d9E57c30978e1260c614'},
-    {name: "Samurai", address: '0x26b2341d10dC4118110825719BF733a571AB6EC5'},
-    {name: "Bella", address: '0xef5f768618139d0f5Fa3bcbbBcaAf09Fe9d7A07d'},
-    {name: "Meta", address: '0xcB262A92e2E3c8C3590b72A1fDe3c6768EE08B7e'},
-    {name: "Phantz", address: '0xfDdE60866508263e30C769e8592BB0f8C3274ba7'},
-];
+const transferCustomCollection = async (event, token) => {
+    let tokenContract = new web3Rpc.eth.Contract(token721ABI, token);
 
-const getTotalEvents = async (startBlock, endBlock) => {
+    let [is721, is1155] = await jobService.makeBatchRequest([
+        {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
+        {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
+    ], web3Rpc)
 
-    for(let collection of listCollection) {
-        let tokenContract = new web3Rpc.eth.Contract(token721ABI, collection.address);
-
-        let [is721, is1155] = await jobService.makeBatchRequest([
-            {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
-            {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
-        ], web3Rpc)
-    
-        if(!is721 && is1155) {
-            tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
-        }
-    
-        let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
-        console.log(`collection name: ${collection.name} collectible count: ${getAllEvents.length}`);
-
-        for (let item of getAllEvents) {
-            await jobService.dealWithUsersToken(item, collection.address, is721, tokenContract, web3Rpc)
-        }
+    if(!is721 && is1155) {
+        tokenContract = new web3Rpc.eth.Contract(token1155ABI, token);
     }
+
+    await jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc)
 };
 
 async function tempCollectiblesOfCollection() {
     let collections = await stickerDBService.getImportedCollection();
-    console.log(collections);
     for(let collection of collections) {
         if(collection.is721) {
             let tokenContract = new web3Rpc.eth.Contract(token721ABI, collection.token);
@@ -183,20 +165,20 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
     console.log(`collection info update count: ${getAllEvents.length}`);
 };
 
-const syncRegisterCollection = () => {
-    web3Rpc.eth.getBlockNumber().then(async lastBlock => {
-        let startBlock = config.pasarRegisterContractDeploy;
+const syncRegisterCollection = async () => {
+    let lastBlock = await web3Rpc.eth.getBlockNumber();
+    let startBlock = config.pasarRegisterContractDeploy;
 
-        while(startBlock < lastBlock) {
-            await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
-            startBlock = startBlock + 1000000;
-        };
+    while(startBlock < lastBlock) {
+        await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
+        startBlock = startBlock + 1000000;
+    };
 
-        await importCollectionRegister();
-        await tempCollectiblesOfCollection();
-    });
+    await importCollectionRegister();
+    await tempCollectiblesOfCollection();
 }
 
 module.exports = {
     syncRegisterCollection,
+    transferCustomCollection
 }

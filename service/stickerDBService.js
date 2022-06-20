@@ -342,7 +342,7 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            await collection.insert(transferEvents);
+            await collection.insertOne(transferEvents);
         } catch (err) {
             logger.error(err);
         } finally {
