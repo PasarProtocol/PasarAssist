@@ -179,7 +179,7 @@ module.exports = {
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
-                    tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, priceNumber: parseInt(orderInfo._newPrice), startTime: result.startTime, endTime: result.endTime,
+                    tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
@@ -232,7 +232,7 @@ module.exports = {
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
-                    tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, priceNumber: parseInt(orderInfo._price), startTime: result.startTime, endTime: result.endTime,
+                    tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
@@ -292,7 +292,7 @@ module.exports = {
                     baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
-                    tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
+                    tokenId: result.tokenId, amount: result.amount, price:result.price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,

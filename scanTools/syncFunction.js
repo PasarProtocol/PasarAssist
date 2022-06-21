@@ -94,7 +94,7 @@ const importDataInDB = async () => {
                         }
                         break;
                 } 
-                console.log("Current Step: " + (currentStep * step + i) + " / " + totalCount);
+                logger.info("Current Step: " + (currentStep * step + i) + " / " + totalCount);
             }
             currentStep++;
         }
