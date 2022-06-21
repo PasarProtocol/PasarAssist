@@ -5,24 +5,25 @@ const { syncPasarCollection, transferSingleV2, transferBatchV2, royaltyFeeV2, or
 
 let stickerDBService = require('../service/stickerDBService');
 let currentStep = 0;
-
+let i = 0;
+let totalCount;
 const importDataInDB = async () => {
     console.log("======= Start Importing Data ==========")
     
     let step = 100;
     
-    let totalCount = await stickerDBService.getCountSyncTemp(DB_SYNC);
+    totalCount = await stickerDBService.getCountSyncTemp(DB_SYNC);
     console.log(totalCount);
 
     let totalStep = Math.ceil(totalCount/step);
-    console.log(totalStep);
+    
     try {
         while(currentStep < totalStep) {
             let listDoc = await stickerDBService.getSyncTemp(DB_SYNC, currentStep, step);
             if(listDoc == null) {
                 continue;
             }
-            for(var i = 0; i < listDoc.length; i++) {
+            for(; i < listDoc.length; i++) {
                 let cell = listDoc[i];
                 switch(cell.eventType) {
                     case "TransferSingle":
@@ -97,11 +98,17 @@ const importDataInDB = async () => {
                 logger.info("Current Step: " + (currentStep * step + i) + " / " + totalCount);
             }
             currentStep++;
+            i = 0;
         }
         console.log("======= End Importing Data ==========")
     } catch(err) {
+        logger.info("Error happened Step: " + (currentStep * step + i) + " / " + totalCount);
         logger.info(err);
-        currentStep--;
+        if(i == step - 1) {
+            currentStep++
+        } else {
+            i++;
+        }
         await importDataInDB();
     }
 }
