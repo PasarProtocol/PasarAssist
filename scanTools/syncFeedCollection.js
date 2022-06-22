@@ -41,7 +41,7 @@ async function transferSingleV1(event) {
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
         await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerContract)
-    } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
+    } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != config.pasarContract &&
         to != config.pasarV2Contract && from != config.pasarV2Contract) {
         await stickerDBService.replaceEvent(transferEvent);
         await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);
