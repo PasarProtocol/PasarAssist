@@ -16,6 +16,9 @@ module.exports = {
     escWsUrl: 'wss://api-testnet.elastos.io/eth-ws',
     escRpcUrl: 'https://api-testnet.elastos.io/eth',
 
+    ethWsUrl: 'wss://ropsten.infura.io/ws/v3/8afb20a70e1047f19ed6f7419ba5381e',
+    ethRpcUrl: 'https://ropsten.infura.io/ws/v3/8afb20a70e1047f19ed6f7419ba5381e',
+
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     galleriaContract: '0x8b3c7Fc42d0501e0367d29426421D950f45F5041',
@@ -24,6 +27,10 @@ module.exports = {
     pasarRegisterContract: '0x2b304ffC302b402785294629674A8C2b64cEF897',
     diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
 
+    pasarEthContract: '0xC1c2f0f2b4A6e7aB99Bf588930Dcbb5dD6690F30',
+    stickerEthContract: '0xA4b6ca4c59F2FA0c122e702ED6830fea48e635f9',
+    pasarEthRegisterContract: '0x73c7fa921fE366aDcCC241E11A5A120198D2364c',
+
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
     pasarV2ContractDeploy: 12311847,
@@ -31,6 +38,10 @@ module.exports = {
     galleriaContractDeploy: 10242686,
     pasarRegisterContractDeploy: 12311838,
     
+    pasarEthContractDeploy: 12445478,
+    stickerEthContractDeploy: 12445467,
+    pasarEthRegisterContractDeploy: 12445472,
+
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
     serviceName: 'default',
@@ -54,4 +65,6 @@ module.exports = {
         "0x75740FC7058DA148752ef8a9AdFb73966DEb42a8",
         "0x9f1d0Ed4E041C503BD487E5dc9FC935Ab57F9a57",
     ],
+    elaChain: 1,
+    ethChain: 2
 }

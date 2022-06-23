@@ -32,6 +32,8 @@ module.exports = {
                     return config.stickerV2ContractDeploy;
                 } else if(token == config.stickerContract){
                     return config.stickerContractDeploy;
+                } else if(token == config.stickerEthContract) {
+                    return config.stickerEthContractDeploy;
                 }
             }
         } catch (err) {
@@ -356,9 +358,9 @@ module.exports = {
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            let eventCount = await collection.find({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}).count();
+            let eventCount = await collection.find({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token, marketPlace: transferEvent.marketPlace}).count();
             if(eventCount == 0) {
-                await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token}, {$set: transferEvent}, {upsert: true});
+                await collection.updateOne({tokenId: transferEvent.tokenId, blockNumber: transferEvent.blockNumber, token: transferEvent.token, marketPlace: transferEvent.marketPlace}, {$set: transferEvent}, {upsert: true});
             }
         } catch (err) {
             logger.error(err);
@@ -367,12 +369,12 @@ module.exports = {
         }
     },
 
-    burnToken: async function (tokenId, baseToken) {
+    burnToken: async function (tokenId, baseToken, marketPlace=config.elaChain) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, baseToken}, {$set: {
+            await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {
                     holder: config.burnAddress
             }});
         } catch (err) {
@@ -383,12 +385,12 @@ module.exports = {
         }
     },
 
-    burnTokenBatch: async function (tokenIds, baseToken) {
+    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elaChain) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.update({tokenId: {$in: tokenIds}, baseToken}, {$set: {
+            await collection.update({tokenId: {$in: tokenIds}, baseToken, marketPlace}, {$set: {
                     holder: config.burnAddress
             }});
         } catch (err) {
@@ -404,10 +406,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken}).count();
+            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace}).count();
             
             if(length == 0) {
-                await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken}, {$set: token}, {upsert: true});
+                await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace: token.marketPlace}, {$set: token}, {upsert: true});
             }
         } catch (err) {
             logger.error(err);
@@ -445,14 +447,14 @@ module.exports = {
         }
     },
 
-    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.stickerV2Contract) {
-        if(holder == config.pasarContract || holder == config.pasarV2Contract)
+    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.stickerV2Contract, marketPlace=config.elaChain) {
+        if(holder == config.pasarContract || holder == config.pasarV2Contract || holder == config.pasarEthContract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, baseToken, holder: {$ne: burnAddress}}, {$set: {holder, updateTime: timestamp, blockNumber}});
+            await collection.updateOne({tokenId, baseToken, marketPlace, holder: {$ne: burnAddress}}, {$set: {holder, updateTime: timestamp, blockNumber}});
         } catch (err) {
             throw new Error();
         } finally {
@@ -479,7 +481,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
 
-            await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, holder: {$ne: burnAddress}}, {$set: token});
+            await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace: token.marketPlace, holder: {$ne: burnAddress}}, {$set: token});
         } catch (err) {
             logger.error(err);
             throw new Error();
@@ -488,7 +490,7 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null) {
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null, marketPlace=config.elaChain) {
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -508,12 +510,12 @@ module.exports = {
                 updateData.endTime = endTime;
             }
 
-            await collection.updateOne({tokenId, baseToken}, {$set: updateData});
-            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != null) {
-                await collection.updateOne({tokenId, baseToken}, {$set: {holder}});
+            await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: updateData});
+            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != config.pasarEthContract && holder != null) {
+                await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {holder}});
             }
             if(status != null) {
-                await collection.updateOne({tokenId, baseToken}, {$set: {status}});
+                await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {status}});
             }
 
         } catch (err) {
@@ -2487,7 +2489,7 @@ module.exports = {
                 sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                 lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                 baseToken: result.baseToken, amount: result.amount, quoteToken: result.quoteToken, buyoutPrice: result.buyoutPrice, reservePrice: result.reservePrice,
-                minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, blockNumber}
+                minPrice: result.minPrice, createTime: result.createTime, marketPlace: result.marketPlace, updateTime: result.updateTime, blockNumber}
 
             if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
                 let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
@@ -2630,12 +2632,12 @@ module.exports = {
            await mongoClient.close();
         }
     },
-    getLastCollectionEventSyncHeight: async function (event) {
+    getLastCollectionEventSyncHeight: async function (event, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_collection_event');
-            let doc = await collection.findOne({event}, {sort:{blockNumber:-1}})
+            let doc = await collection.findOne({event, marketPlace}, {sort:{blockNumber:-1}})
             if(doc) {
                 return doc.blockNumber
             } else {
@@ -2666,7 +2668,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson) {
+    registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2681,6 +2683,7 @@ module.exports = {
                 is721,
                 blockNumber,
                 tokenJson,
+                marketPlace,
                 createdTime: (new Date()/1000).toFixed(),
                 updatedTime: (new Date()/1000).toFixed()
             }
@@ -2691,7 +2694,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    updateCollection: async function(token, name, uri, blockNumber) {
+    updateCollection: async function(token, name, uri, blockNumber, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2703,14 +2706,14 @@ module.exports = {
                 blockNumber,
                 updatedTime: (new Date()/1000).toFixed()
             }
-            await token_collection.updateOne({token}, {$set: data});
+            await token_collection.updateOne({token, marketPlace}, {$set: data});
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
             await mongoClient.close();
         }
     },
-    changeCollectionRoyalty: async function(token, royaltyOwners, royaltyRates) {
+    changeCollectionRoyalty: async function(token, royaltyOwners, royaltyRates, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2720,7 +2723,7 @@ module.exports = {
                 royaltyRates: royaltyRates
             }
 
-            await collection.updateOne({token}, {$set: data}, { upsert: true });
+            await collection.updateOne({token, marketPlace}, {$set: data}, { upsert: true });
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {

@@ -46,9 +46,16 @@ module.exports = {
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerV2Contract);
         let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarRegisterContract)
 
+        let pasarEthContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarEthContract);
+        let stickerEthContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerEthContract);
+        let pasarEthRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarEthRegisterContract)
+
         let web3Rpc = new Web3(config.escRpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Contract);
         let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerV2Contract);
+
+        let pasarEthContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
+        let stickerEthContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
 
         let isGetForSaleOrderJobRun = false;
         let isGetForOrderPriceChangedJobRun = false;
@@ -70,7 +77,7 @@ module.exports = {
         let recipients = [];
         recipients.push('lifayi2008@163.com');
         
-        async function dealWithNewToken(blockNumber,tokenId) {
+        async function dealWithNewToken(blockNumber, marketPlace) {
             try {
                 let [result] = await jobService.makeBatchRequest([
                     {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
@@ -78,7 +85,7 @@ module.exports = {
 
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                    createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime}
+                    createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime, marketPlace: marketPlace}
                 
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
@@ -124,7 +131,7 @@ module.exports = {
             }
         }
 
-        async function dealWithNewTokenBatch(blockNumber,tokenIds) {
+        async function dealWithNewTokenBatch(blockNumber,tokenIds, marketPlace) {
             try {
                 let [results] = await jobService.tokenInfoBatch([
                     {method: stickerContract.methods.tokenInfoBatch(tokenIds).call, params: {}},
@@ -134,7 +141,7 @@ module.exports = {
                 results.map(async result => {
                     let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                         royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                        createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime}
+                        createTime: result.createTime, updateTime: result.updateTime, marketTime: result.updateTime, marketPlace: marketPlace}
                     token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                     let data = await jobService.getInfoByIpfsUri(result.tokenUri);
                     token.tokenJsonVersion = data.version;
@@ -176,7 +183,7 @@ module.exports = {
         }
 
         let orderDidURIJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderDIDURI');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderDIDURI', config.elaChain);
 
             isOrderDidURIJobRun = true;
 
@@ -204,7 +211,7 @@ module.exports = {
         });
 
         let orderForSaleJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale', config.elaChain);
             // if(isGetForSaleOrderJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForSale');
@@ -232,7 +239,8 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
-                    royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
+                    royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken,
+                    price: result.price, timestamp: result.updateTime, gasFee, marketPlace: config.elaChain}
 
                 result.sellerAddr = orderInfo._seller;
                 result.tokenId = orderInfo._tokenId;
@@ -244,15 +252,16 @@ module.exports = {
                 result.buyoutPrice = 0;
                 result.createTime = orderInfo._startTime;
                 result.endTime = 0;
+                result.marketPlace = config.elaChain;
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, 1);
             })
         });
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', 1);
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
@@ -284,7 +293,7 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice, oldReservePrice: orderInfo._oldReservePrice, newReservePrice: orderInfo._newReservePrice,
                     oldBuyoutPrice: orderInfo._oldBuyoutPrice, newBuyoutPrice: orderInfo._newBuyoutPrice, oldQuoteToken: orderInfo._oldQuoteToken, newQuoteToken: orderInfo._newQuoteToken},
-                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace: config.elaChain,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
                 result.price = orderInfo._newPrice;
@@ -292,15 +301,16 @@ module.exports = {
                 result.buyoutPrice = orderInfo._newBuyoutPrice;
                 result.price = orderInfo._newPrice;
                 result.quoteToken = orderInfo._newQuoteToken;
+                result.marketPlace = config.elaChain;
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, 1);
             })
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', 1);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -330,10 +340,10 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
                     royaltyFee: orderInfo._royaltyFee, royaltyOwner:orderInfo._royaltyOwner, tokenId: result.tokenId, quoteToken:orderInfo._quoteToken,
-                    baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee}
+                    baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee, marketPlace: config.elaChain}
 
                 let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
-                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
+                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace: config.elaChain};
 
                 result.sellerAddr = orderInfo._seller;
                 result.buyerAddr = orderInfo._buyer;
@@ -343,16 +353,17 @@ module.exports = {
                 result.royaltyFee = orderInfo._royaltyFee;
                 result.quoteToken = orderInfo._quoteToken;
                 result.baseToken = orderInfo._baseToken;
+                result.marketPlace = config.elaChain;
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elaChain);
             })
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', 1);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
@@ -383,13 +394,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: token.baseToken, quoteToken: token.quoteToken};
+                    baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace: config.elaChain};
 
                 result.sellerAddr = orderInfo._seller
+                result.marketPlace = config.elaChain;
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.elaChain);
             })
         });
 
@@ -461,19 +473,19 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace: config.elaChain};
 
-                if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != null
-                    && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != null) {
+                if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != config.pasarEthContract && transferEvent.to != null
+                    && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != config.pasarEthContract && transferEvent.from != null) {
                     await stickerDBService.replaceEvent(transferEvent);
                 }
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnToken(tokenId, config.stickerV2Contract);
+                    await stickerDBService.burnToken(tokenId, config.stickerV2Contract, config.elaChain);
                 } else if(from === burnAddress) {
-                    await dealWithNewToken(blockNumber, tokenId)
+                    await dealWithNewToken(blockNumber, tokenId, config.elaChain)
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elaChain);
                 }
             })
         });
@@ -514,16 +526,19 @@ module.exports = {
                 for(var i = 0; i < tokenIds.length; i++) {
                     let tokenId = tokenIds[i];
                     let value = values[i];
-                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
+                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace: config.elaChain};
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
-                    await stickerDBService.replaceEvent(transferEvent);
+                    if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != config.pasarEthContract && transferEvent.to != null
+                        && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != config.pasarEthContract && transferEvent.from != null) {
+                        await stickerDBService.replaceEvent(transferEvent);
+                    }
                 }
 
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnTokenBatch(tokenIds, config.stickerV2Contract);
+                    await stickerDBService.burnTokenBatch(tokenIds, config.stickerV2Contract, config.elaChain);
                 } else if(from === burnAddress) {
-                    await dealWithNewTokenBatch(blockNumber, tokenIds)
+                    await dealWithNewTokenBatch(blockNumber, tokenIds, config.elaChain)
                 } else {
                     // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
@@ -619,7 +634,7 @@ module.exports = {
         });
 
         let orderForAuctionJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction', config.elaChain);
             // if(isGetOrderForAuctionJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForAuction');
@@ -650,7 +665,7 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
-                    quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice,
+                    quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace: config.elaChain,
                     buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
 
                 result.sellerAddr = orderInfo._seller;
@@ -663,15 +678,16 @@ module.exports = {
                 result.buyoutPrice = orderInfo._buyoutPrice;
                 result.createTime = orderInfo._startTime;
                 result.endTime = orderInfo._endTime;
+                result.marketPlace = config.elaChain;
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elaChain);
             })
         });
 
         let orderBidJobId = schedule.scheduleJob(new Date(now + 110 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid');
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid', config.elaChain);
             // if(isGetOrderBidJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderBid');
@@ -702,17 +718,19 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, 
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace: config.elaChain,
                     quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
                 
+                result.marketPlace=config.elaChain;
+
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken);
+                await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, config.elaChain);
             })
         });
 
         let tokenRegisteredJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered');
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered', config.elaChain);
 
             isTokenRegisteredJobRun = true;
 
@@ -729,7 +747,7 @@ module.exports = {
 
                 let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elaChain}
 
                 let tokenContractWs = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
                 let tokenContract = new web3Rpc.eth.Contract(token721ABI, registeredTokenInfo._token);
@@ -783,7 +801,7 @@ module.exports = {
 
                 await stickerDBService.collectionEvent(registeredTokenDetail);
                 await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
-                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
+                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data, config.elaChain);
             })
         });
 
@@ -806,10 +824,10 @@ module.exports = {
 
                 let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elaChain}
 
                 await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);
+                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates, config.elaChain);
             })
         });
 
@@ -832,7 +850,7 @@ module.exports = {
 
                 let updatedTokenDetail = {token: updatedTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elaChain}
 
                 await stickerDBService.collectionEvent(updatedTokenDetail);
                 await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber);

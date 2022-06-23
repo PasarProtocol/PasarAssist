@@ -5,16 +5,18 @@ const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
-    getLastPasarOrderSyncHeight: async function (event, v1Event=null) {
+    getLastPasarOrderSyncHeight: async function (event, marketPlace = config.elaChain, v1Event=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
-            let doc = await collection.findOne({event, v1Event}, {sort:{blockNumber:-1}})
+            let doc = await collection.findOne({event, marketPlace, v1Event}, {sort:{blockNumber:-1}})
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(v1Event) {
+                if(marketPlace == config.ethChain) {
+                    return config.pasarEthContractDeploy;
+                } else if(v1Event) {
                     return config.pasarContractDeploy;
                 } else {
                     return config.pasarV2ContractDeploy
@@ -48,12 +50,12 @@ module.exports = {
     },
 
     updateOrInsert: async function (pasarOrder) {
-        let {orderId, tokenId, baseToken, ...rest} = pasarOrder;
+        let {orderId, tokenId, baseToken, marketPlace, ...rest} = pasarOrder;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.updateOne({orderId, tokenId, baseToken}, {$set: rest}, {upsert: true});
+            await collection.updateOne({orderId, tokenId, baseToken, marketPlace}, {$set: rest}, {upsert: true});
             return true;
         } catch (err) {
             logger.error(err);
@@ -97,7 +99,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
 
-            let length = await collection.find({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, blockNumber: orderEventDetail.blockNumber}).count();
+            let length = await collection.find({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, marketPlace: orderEventDetail.marketPlace, blockNumber: orderEventDetail.blockNumber}).count();
             if(length == 0) {
                 await collection.insertOne(orderEventDetail);
             }

@@ -71,7 +71,7 @@ module.exports = {
     
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                    createTime: result.createTime, updateTime: result.updateTime}
+                    createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
         
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
@@ -147,7 +147,7 @@ module.exports = {
         // });
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.elaChain, true);
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
@@ -176,19 +176,20 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
 
                 let updateTokenInfo = {
                     tokenId: orderInfo._tokenId,
                     price: orderInfo._newPrice,
-                    baseToken: config.stickerContract
+                    baseToken: config.stickerContract,
+                    marketPlace: config.elaChain,
                 };
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
@@ -199,7 +200,7 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.elaChain, true);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -229,14 +230,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -250,6 +251,7 @@ module.exports = {
                     updateTime: event.updateTime,
                     baseToken: config.stickerContract,
                     v1State: false,
+                    marketPlace: config.elaChain
                 };
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -259,7 +261,7 @@ module.exports = {
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.elaChain, true);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
@@ -289,14 +291,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true}
+                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: result.tokenId, amount: result.amount, price:result.price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
                     baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime}
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -308,6 +310,7 @@ module.exports = {
                     updateTime: event.updateTime,
                     baseToken: config.stickerContract,
                     v1State: false,
+                    marketPlace: config.elaChain
                 };
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
@@ -414,19 +417,19 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract, marketPlace: config.elaChain};
                 logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
 
                 if(to === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
-                    await stickerDBService.burnToken(tokenId, config.stickerContract);
+                    await stickerDBService.burnToken(tokenId, config.stickerContract, config.elaChain);
                 } else if(from === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
                     await dealWithNewToken(blockNumber, tokenId)
-                } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
-                    to != config.pasarV2Contract && from != config.pasarV2Contract) {
+                } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && to != config.pasarEthContract && from != pasarContract &&
+                    to != config.pasarV2Contract && from != config.pasarV2Contract && from != config.pasarEthContract) {
                     await stickerDBService.replaceEvent(transferEvent);
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, config.elaChain);
                 }
             })
         });
