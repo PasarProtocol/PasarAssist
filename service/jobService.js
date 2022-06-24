@@ -36,7 +36,7 @@ module.exports = {
         return Promise.all(promises)
     },
 
-    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc) {
+    dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, marketPlace) {
         if(token == config.stickerContract)
             return;
             
@@ -51,7 +51,7 @@ module.exports = {
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc);
+        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace);
         
     },
 
@@ -66,7 +66,7 @@ module.exports = {
                 ], web3Rpc);
             }
             
-            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData)
+            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData, marketPlace)
         } else if(result.indexOf("Solana") != -1) {
             result = result.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
             fetch(result)
@@ -75,7 +75,7 @@ module.exports = {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseSolana(jsonData, token);
 
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         } else if(token.toLocaleLowerCase() == '0xcB262A92e2E3c8C3590b72A1fDe3c6768EE08B7e'.toLocaleLowerCase()) {
             fetch(result)
@@ -83,7 +83,7 @@ module.exports = {
             .then(async data => {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parsePrimates(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
 
         } else if(token.toLocaleLowerCase() == '0x26b2341d10dC4118110825719BF733a571AB6EC5'.toLocaleLowerCase()) {
@@ -94,7 +94,7 @@ module.exports = {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseVitrim(jsonData, token);
 
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         } else if(token.toLocaleLowerCase() == '0xef5f768618139d0f5fa3bcbbbcaaf09fe9d7a07d'.toLocaleLowerCase()) {
             result = result.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.ela.city/ipfs");
@@ -103,7 +103,7 @@ module.exports = {
             .then(async data => {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseBella(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
 
         } else if(token.toLocaleLowerCase() == '0xfDdE60866508263e30C769e8592BB0f8C3274ba7'.toLocaleLowerCase()) {
@@ -113,7 +113,7 @@ module.exports = {
             .then(async data => {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parsePhantz(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
 
         } else if(token.toLocaleLowerCase() == '0xCc721C2A3a53c6f03c731252D98103963A9729E8'.toLocaleLowerCase()) {
@@ -132,12 +132,12 @@ module.exports = {
             .then(async data => {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseEliens(jsonData, token);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         }
     },
 
-    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, data, tokenData=null) {
+    updateTokenInfo: async function(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, data, marketPlace, tokenData=null) {
         let tokenEventDetail = {
             tokenId: tokenId,
             blockNumber: event.blockNumber,
@@ -148,7 +148,8 @@ module.exports = {
             to: tokenInfo._to,
             value: check721 ? 1 : parseInt(tokenInfo._value),
             gasFee,
-            token
+            token,
+            marketPlace,
         };
         
         let stickerDBService = require("./stickerDBService");
@@ -156,6 +157,7 @@ module.exports = {
         let tokenDetail = {
             tokenId: tokenId,
             baseToken: token,
+            marketPlace,
             blockNumber: event.blockNumber,
             updateTime: blockInfo.timestamp,
             marketTime: blockInfo.timestamp,
@@ -192,7 +194,7 @@ module.exports = {
 
             await stickerDBService.replaceToken(tokenDetail);
 
-            let response = await stickerDBService.getEvents(tokenId, token);
+            let response = await stickerDBService.getEvents(tokenId, token, marketPlace);
             
             if(response.code == 200) {
                 await Promise.all(response.data.map(async event => {
@@ -203,6 +205,7 @@ module.exports = {
                             updateTime: event.updateTime,
                             holder: event.to,
                             baseToken: token,
+                            marketPlace,
                         };
                         await stickerDBService.updateNormalToken(updateTokenInfo);
                     }
@@ -210,10 +213,9 @@ module.exports = {
             }
             await stickerDBService.replaceEvent(tokenEventDetail)
         } else if(tokenInfo._to == burnAddress) {
-            await stickerDBService.burnToken(tokenId, token);
+            await stickerDBService.burnToken(tokenId, token, marketPlace);
             await stickerDBService.replaceEvent(tokenEventDetail)
-        } else if(tokenInfo._to != config.pasarV2Contract && tokenInfo._to != config.pasarContract && tokenInfo._to != null
-            && tokenInfo._from != config.pasarV2Contract && tokenInfo._from != config.pasarContract && tokenInfo._from != null){
+        } else if(stickerDBService.checkAddress(tokenInfo._from) && stickerDBService.checkAddress(tokenInfo._to)){
             tokenDetail.holder = tokenInfo._to;
             await stickerDBService.updateNormalToken(tokenDetail);
             await stickerDBService.replaceEvent(tokenEventDetail)
@@ -242,7 +244,7 @@ module.exports = {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`)
                 }).on("data", async function (event) {
                     let jobService = require('./jobService.js');
-                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
+                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
                 })
             } else {
                 tokenContractWs.events.TransferSingle({
@@ -254,7 +256,7 @@ module.exports = {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`);
                 }).on("data", async function (event) {
                     let jobService = require('./jobService.js');
-                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc)
+                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
                 })
             }
         }

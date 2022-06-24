@@ -26,7 +26,7 @@ const transferCustomCollection = async (event, token) => {
         tokenContract = new web3Rpc.eth.Contract(token1155ABI, token);
     }
 
-    await jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc)
+    await jobService.dealWithUsersToken(event, token, is721, tokenContract, web3Rpc, marketPlace)
 };
 
 async function tempCollectiblesOfCollection() {
@@ -55,7 +55,7 @@ async function tokenRegistered(event) {
 
     let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        logIndex: event.logIndex, removed: event.removed, id: event.id}
+        logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace}
 
     let tokenContract = new web3Rpc.eth.Contract(token721ABI, registeredTokenInfo._token);
 
@@ -88,21 +88,21 @@ async function tokenRoyaltyChanged(event) {
     let orderInfo = event.returnValues;
     let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        logIndex: event.logIndex, removed: event.removed, id: event.id}
+        logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace}
 
     await stickerDBService.collectionEvent(orderEventDetail);
     await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);
 }
 
-async function tokenInfoUpdated(event) {
+async function tokenInfoUpdated(event, marketPlace) {
     let updatedTokenInfo = event.returnValues;
 
     let updatedTokenDetail = {token: updatedTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        logIndex: event.logIndex, removed: event.removed, id: event.id}
+        logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace}
 
     await stickerDBService.collectionEvent(updatedTokenDetail);
-    await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber);
+    await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber, marketPlace);
 }
 
 const importCollectionRegister = async () => {

@@ -325,12 +325,12 @@ module.exports = {
             await client.close();
         }
     },
-    getEvents: async function(tokenId, token) {
+    getEvents: async function(tokenId, token, marketPlace) {
         let client = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token_event');
-            let result = await collection.find({tokenId, token}).sort({blockNumber: 1}).toArray();
+            let result = await collection.find({tokenId, token, marketPlace}).sort({blockNumber: 1}).toArray();
             return {code: 200, message: 'success', data: result};
         } catch (err) {
             return {code: 500, message: 'server error'};
@@ -406,7 +406,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace}).count();
+            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace:token.marketPlace}).count();
             
             if(length == 0) {
                 await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace: token.marketPlace}, {$set: token}, {upsert: true});
@@ -462,12 +462,12 @@ module.exports = {
         }
     },
 
-    updateRoyaltiesOfToken: async function (tokenId, royalties, baseToken) {
+    updateRoyaltiesOfToken: async function (tokenId, royalties, baseToken, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            await collection.updateOne({tokenId, baseToken}, {$set: {royalties}});
+            await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {royalties}});
         } catch (err) {
             throw new Error();
         } finally {
@@ -3351,6 +3351,21 @@ module.exports = {
             return null;
         } finally {
             await mongoClient.close();
+        }
+    },
+
+    checkAddress: function (address) {
+        let listCheckingAddress = [
+          config.stickerContract,
+          config.pasarContract,
+          config.pasarV2Contract,
+          config.pasarEthContract,
+          null,
+        ]
+        if(listCheckingAddress.indexOf(address) == -1) {
+          return true;
+        } else {
+          false;
         }
     }
 }

@@ -772,7 +772,7 @@ module.exports = {
                         logger.info("[Contract721] Sync Ending ...")
                     }).on("data", async function (event) {
                         console.log("[Contract721] Data: " + JSON.stringify(event))
-                        await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                        await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc, config.elaChain)
                     })
                 } else if(is1155) {
                     check721 = false;
@@ -786,7 +786,7 @@ module.exports = {
                         logger.info(error);
                         logger.info("[Contract1155] Sync Ending ...")
                     }).on("data", async function (event) {
-                        await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc)
+                        await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc, config.elaChain)
                     })
                 } else {
                     logger.error("unknown token type");
@@ -853,7 +853,7 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elaChain}
 
                 await stickerDBService.collectionEvent(updatedTokenDetail);
-                await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber);
+                await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber, config.elaChain);
             })
         });
 

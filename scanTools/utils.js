@@ -58,7 +58,7 @@ const saveEvent = async(event, db, baseToken) => {
   await stickerDBService.saveSyncTemp(data, db);
 }
 
-const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken) => {
+const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken, marketPlace) => {
   try {
       let [result] = await jobService.makeBatchRequest([
           {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
@@ -97,7 +97,8 @@ const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken)
       token.status = "Not on sale";
       token.endTime = null;
       token.orderId = null;
-      
+      token.marketPlace = marketPlace;
+
       await stickerDBService.replaceToken(token);
   } catch (e) {
       logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);

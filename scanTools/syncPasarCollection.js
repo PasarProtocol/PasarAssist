@@ -15,7 +15,7 @@ let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Con
 let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerV2Contract);
 
 
-async function transferSingleV2(event) {
+async function transferSingleV2(event, marketPlace) {
     let blockNumber = event.blockNumber;
     let txHash = event.transactionHash;
     let txIndex = event.transactionIndex;
@@ -32,7 +32,7 @@ async function transferSingleV2(event) {
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     let timestamp = blockInfo.timestamp;
 
-    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
+    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
@@ -40,14 +40,13 @@ async function transferSingleV2(event) {
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
         await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerV2Contract)
-    } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != config.pasarContract &&
-        to != config.pasarV2Contract && from != config.pasarV2Contract) {
+    } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
     }
 }
 
-async function transferBatchV2(event) {
+async function transferBatchV2(event, marketPlace) {
     let blockNumber = event.blockNumber;
     let txHash = event.transactionHash;
     let txIndex = event.transactionIndex;
@@ -68,30 +67,29 @@ async function transferBatchV2(event) {
     {
         let tokenId = tokenIds[i];
         let value = values[i];
-        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract};
+        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
 
         if(to === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.burnToken(tokenId, config.stickerV2Contract);
+            await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerV2Contract)
-        } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && from != pasarContract &&
-            to != config.pasarV2Contract && from != config.pasarV2Contract) {
+            await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
+        } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
         }
     }
 }
 
-async function royaltyFeeV2(event) {
+async function royaltyFeeV2(event, marketPlace) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerV2Contract);
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerV2Contract, marketPlace);
 }
 
-async function orderForSaleV2(event) {
+async function orderForSaleV2(event, marketPlace) {
     let orderInfo = event.returnValues;
     let [result, txInfo] = await jobService.makeBatchRequest([
         {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
@@ -100,7 +98,7 @@ async function orderForSaleV2(event) {
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
         royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
 
         result.sellerAddr = orderInfo._seller;
@@ -113,13 +111,14 @@ async function orderForSaleV2(event) {
         result.buyoutPrice = 0;
         result.createTime = orderInfo._startTime;
         result.endTime = 0;
+        result.marketPlace = marketPlace;
 
         await pasarDBService.insertOrderEvent(orderEventDetail);
         await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-        await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+        await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderPriceChangedV2(event) {
+async function orderPriceChangedV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -134,7 +133,7 @@ async function orderPriceChangedV2(event) {
         logIndex: event.logIndex, removed: event.removed, id: event.id,
         data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice, oldReservePrice: orderInfo._oldReservePrice, newReservePrice: orderInfo._newReservePrice,
         oldBuyoutPrice: orderInfo._oldBuyoutPrice, newBuyoutPrice: orderInfo._newBuyoutPrice, oldQuoteToken: orderInfo._oldQuoteToken, newQuoteToken: orderInfo._newQuoteToken},
-        sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+        sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
     result.price = orderInfo._newPrice;
@@ -142,13 +141,14 @@ async function orderPriceChangedV2(event) {
     result.buyoutPrice = orderInfo._newBuyoutPrice;
     result.price = orderInfo._newPrice;
     result.quoteToken = orderInfo._newQuoteToken;
+    result.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken);
+    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
 }
 
-async function orderCanceledV2(event) {
+async function orderCanceledV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -163,16 +163,17 @@ async function orderCanceledV2(event) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-        baseToken: token.baseToken, quoteToken: token.quoteToken};
+        baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace};
 
     result.sellerAddr = orderInfo._seller
+    result.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken);
+    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
 }
 
-async function orderFilledV2(event) {
+async function orderFilledV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -185,10 +186,10 @@ async function orderFilledV2(event) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
         royaltyFee: orderInfo._royaltyFee, royaltyOwner:orderInfo._royaltyOwner, tokenId: result.tokenId, quoteToken:orderInfo._quoteToken,
-        baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee}
+        baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee, marketPlace}
 
     let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
-        txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee};
+        txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace};
 
     result.sellerAddr = orderInfo._seller;
     result.buyerAddr = orderInfo._buyer;
@@ -198,14 +199,15 @@ async function orderFilledV2(event) {
     result.royaltyFee = orderInfo._royaltyFee;
     result.quoteToken = orderInfo._quoteToken;
     result.baseToken = orderInfo._baseToken;
+    result.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
     await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderForAuctionV2(event) {
+async function orderForAuctionV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -218,7 +220,7 @@ async function orderForAuctionV2(event) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
-        quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice,
+        quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace,
         buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
 
     result.sellerAddr = orderInfo._seller;
@@ -231,13 +233,14 @@ async function orderForAuctionV2(event) {
     result.buyoutPrice = orderInfo._buyoutPrice;
     result.createTime = orderInfo._startTime;
     result.endTime = orderInfo._endTime;
+    result.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken);
+    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderBidV2(event) {
+async function orderBidV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -251,12 +254,14 @@ async function orderBidV2(event) {
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
-        royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, 
+        royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace,
         quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
-    
+
+    result.marketPlace = marketPlace;
+
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken);
+    await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
 }
 
 const getTotalEventsOfSticker = async (startBlock, endBlock) => {

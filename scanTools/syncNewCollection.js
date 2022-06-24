@@ -14,7 +14,7 @@ let listCollection = [
     {name: "Eliens Of Xenora", address: '0xe88b8e977939A3f79e2B045b9cE4365A3512800F'},
 ];
 
-const getTotalEvents = async (startBlock, endBlock) => {
+const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
 
     for(let collection of listCollection) {
         let tokenContract = new web3Rpc.eth.Contract(token721ABI, collection.address);
@@ -32,7 +32,7 @@ const getTotalEvents = async (startBlock, endBlock) => {
 
         for (var i = 0; i < getAllEvents.length; i++) {
             try {
-                await jobService.dealWithUsersToken(getAllEvents[i], collection.address, is721, tokenContract, web3Rpc)
+                await jobService.dealWithUsersToken(getAllEvents[i], collection.address, is721, tokenContract, web3Rpc, marketPlace)
                 logger.info(`collection name: ${collection.name} - current step: ${i+1} / ${getAllEvents.length}`);
             } catch(err) {
                 logger.info(`collection name: ${collection.name} - failed step: ${i+1} / ${getAllEvents.length}`);
