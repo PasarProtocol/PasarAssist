@@ -426,8 +426,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
                     await dealWithNewToken(blockNumber, tokenId)
-                } else if(to != config.stickerContract && from != config.stickerContract && to != config.pasarContract && to != config.pasarEthContract && from != pasarContract &&
-                    to != config.pasarV2Contract && from != config.pasarV2Contract && from != config.pasarEthContract) {
+                } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
                     await stickerDBService.replaceEvent(transferEvent);
                     await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, config.elaChain);
                 }

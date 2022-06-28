@@ -106,10 +106,59 @@ const dealWithNewToken = async (stickerContract, blockNumber,tokenId, baseToken,
   }
 }
 
+const dealWithEthNewToken = async (stickerContract, blockNumber,tokenId, baseToken, marketPlace) => {
+  try {
+      let [result] = await jobService.makeBatchRequest([
+          {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},
+      ], web3Rpc);
+
+      let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
+          royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
+          createTime: result.createTime, updateTime: result.updateTime}
+
+      token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
+      let data = await jobService.getInfoByIpfsUri(result.tokenUri);
+      token.tokenJsonVersion = data.version ? data.version : 1;
+      token.type = data.type ? data.type : 'image';
+      token.name = data.name ? data.name : '';
+      token.description = data.description ? data.description : '';
+      token.properties = data.properties ? data.properties : '';
+      token.baseToken = baseToken;
+
+      if(token.type === 'feeds-channel') {
+          token.tippingAddress = data.tippingAddress;
+          token.entry = data.entry;
+          token.data = data.avatar;
+          token.avatar = data.avatar;
+      }else if(token.type === 'video' || data.version == "2") {
+          token.data = data.data;
+      } else {
+          token.thumbnail = data.thumbnail;
+          token.asset = data.image;
+          token.kind = data.kind;
+          token.size = data.size;
+      }
+
+      token.adult = data.adult ? data.adult : false;
+      token.price = 0;
+      token.marketTime = result.createTime;
+      token.status = "Not on sale";
+      token.endTime = null;
+      token.orderId = null;
+      token.marketPlace = marketPlace;
+
+      await stickerDBService.replaceToken(token);
+  } catch (e) {
+      logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
+      logger.info(e);
+  }
+}
+
 module.exports = {
   scanEvents,
   saveEvent,
   dealWithNewToken,
+  dealWithEthNewToken,
   config,
   DB_SYNC,
 };

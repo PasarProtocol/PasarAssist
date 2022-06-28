@@ -3298,6 +3298,20 @@ module.exports = {
         }
     },
 
+    deleteSyncTemp: async function(db) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection(db);
+            await collection.drop();
+        } catch(err) {
+            logger.error(err);
+            return 0;
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     getCountSyncTemp: async function(db) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

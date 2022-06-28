@@ -474,8 +474,7 @@ module.exports = {
 
                 let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace: config.ethChain};
 
-                if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != config.pasarEthContract && transferEvent.to != null
-                    && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != config.pasarEthContract && transferEvent.from != null) {
+                if(stickerDBService.checkAddress(transferEvent.to) && stickerDBService.checkAddress(transferEvent.from)) {
                     await stickerDBService.replaceEvent(transferEvent);
                 }
 
@@ -527,8 +526,7 @@ module.exports = {
                     let value = values[i];
                     let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace: config.ethChain};
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
-                    if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != config.pasarEthContract && transferEvent.to != null
-                        && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != config.pasarEthContract && transferEvent.from != null) {
+                    if(stickerDBService.checkAddress(transferEvent.to) && stickerDBService.checkAddress(transferEvent.from)) {
                         await stickerDBService.replaceEvent(transferEvent);
                     }
                 }

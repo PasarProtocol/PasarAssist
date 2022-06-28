@@ -46,16 +46,9 @@ module.exports = {
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerV2Contract);
         let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarRegisterContract)
 
-        let pasarEthContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarEthContract);
-        let stickerEthContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerEthContract);
-        let pasarEthRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarEthRegisterContract)
-
         let web3Rpc = new Web3(config.escRpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Contract);
         let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerV2Contract);
-
-        let pasarEthContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
-        let stickerEthContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
 
         let isGetForSaleOrderJobRun = false;
         let isGetForOrderPriceChangedJobRun = false;
@@ -534,8 +527,7 @@ module.exports = {
                     let value = values[i];
                     let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace: config.elaChain};
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
-                    if(transferEvent.to != config.pasarV2Contract && transferEvent.to != config.pasarContract && transferEvent.to != config.pasarEthContract && transferEvent.to != null
-                        && transferEvent.from != config.pasarV2Contract && transferEvent.from != config.pasarContract && transferEvent.from != config.pasarEthContract && transferEvent.from != null) {
+                    if(stickerDBService.checkAddress(transferEvent.to) && stickerDBService.checkAddress(transferEvent.from)) {
                         await stickerDBService.replaceEvent(transferEvent);
                     }
                 }

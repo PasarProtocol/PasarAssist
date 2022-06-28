@@ -1,0 +1,375 @@
+const schedule = require('node-schedule');
+let Web3 = require('web3');
+let pasarDBService = require('../service/pasarDBService');
+let pasarContractABI = require('../contractABI/pasarV2ABI');
+let stickerContractABI = require('../contractABI/stickerV2ABI');
+
+let stickerDBService = require('../service/stickerDBService');
+let jobService = require('../service/jobService');
+
+const { scanEvents, saveEvent, dealWithEthNewToken, config, DB_SYNC} = require("./utils");
+const burnAddress = '0x0000000000000000000000000000000000000000';
+
+let web3Rpc = new Web3(config.ethRpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
+
+
+async function transferSingleEth(event, marketPlace) {
+    let blockNumber = event.blockNumber;
+    let txHash = event.transactionHash;
+    let txIndex = event.transactionIndex;
+    let from = event.returnValues._from;
+    let to = event.returnValues._to;
+
+    let tokenId = event.returnValues._id;
+    let value = event.returnValues._value;
+
+    let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+        {method: web3Rpc.eth.getBlock, params: blockNumber},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+    let timestamp = blockInfo.timestamp;
+
+    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
+
+    if(to === burnAddress) {
+        await stickerDBService.replaceEvent(transferEvent);
+        await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+    } else if(from === burnAddress) {
+        await stickerDBService.replaceEvent(transferEvent);
+        await dealWithEthNewToken(stickerContract, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+    } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
+        await stickerDBService.replaceEvent(transferEvent);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
+    }
+}
+
+async function transferBatchEth(event, marketPlace) {
+    let blockNumber = event.blockNumber;
+    let txHash = event.transactionHash;
+    let txIndex = event.transactionIndex;
+    let from = event.returnValues._from;
+    let to = event.returnValues._to;
+
+    let tokenIds = event.returnValues._ids;
+    let values = event.returnValues._values;
+
+    let [blockInfo, txInfo] = await jobService.makeBatchRequest([
+        {method: web3Rpc.eth.getBlock, params: blockNumber},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+    let timestamp = blockInfo.timestamp;
+
+    for(var i = 0; i < tokenIds.length; i++)
+    {
+        let tokenId = tokenIds[i];
+        let value = values[i];
+        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace};
+
+        if(to === burnAddress) {
+            await stickerDBService.replaceEvent(transferEvent);
+            await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+        } else if(from === burnAddress) {
+            await stickerDBService.replaceEvent(transferEvent);
+            await dealWithEthNewToken(stickerContract, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+        } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
+            await stickerDBService.replaceEvent(transferEvent);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
+        }
+    }
+}
+
+async function royaltyFeeEth(event, marketPlace) {
+    let tokenId = event.returnValues._id;
+    let fee = event.returnValues._fee;
+    
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerEthContract, marketPlace);
+}
+
+async function orderForSaleEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
+        royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
+
+        let updateResult = {...result};
+
+        updateResult.sellerAddr = orderInfo._seller;
+        updateResult.tokenId = orderInfo._tokenId;
+        updateResult.amount = orderInfo._amount;
+        updateResult.price = orderInfo._price;
+        updateResult.quoteToken = orderInfo._quoteToken;
+        updateResult.baseToken = orderInfo._baseToken;
+        updateResult.reservePrice = 0;
+        updateResult.buyoutPrice = 0;
+        updateResult.createTime = orderInfo._startTime;
+        updateResult.endTime = 0;
+        updateResult.marketPlace = marketPlace;
+
+        await pasarDBService.insertOrderEvent(orderEventDetail);
+        await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+        await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+}
+
+async function orderPriceChangedEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId);
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id,
+        data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice, oldReservePrice: orderInfo._oldReservePrice, newReservePrice: orderInfo._newReservePrice,
+        oldBuyoutPrice: orderInfo._oldBuyoutPrice, newBuyoutPrice: orderInfo._newBuyoutPrice, oldQuoteToken: orderInfo._oldQuoteToken, newQuoteToken: orderInfo._newQuoteToken},
+        sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
+        royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
+
+    let updateResult = {...result};
+    
+    updateResult.price = orderInfo._newPrice;
+    updateResult.reservePrice = orderInfo._newReservePrice;
+    updateResult.buyoutPrice = orderInfo._newBuyoutPrice;
+    updateResult.price = orderInfo._newPrice;
+    updateResult.quoteToken = orderInfo._newQuoteToken;
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(orderEventDetail);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
+}
+
+async function orderCanceledEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+        royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
+        baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace};
+
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(orderEventDetail);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+}
+
+async function orderFilledEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
+        royaltyFee: orderInfo._royaltyFee, royaltyOwner:orderInfo._royaltyOwner, tokenId: result.tokenId, quoteToken:orderInfo._quoteToken,
+        baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee, marketPlace}
+
+    let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
+        txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace};
+
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller;
+    updateResult.buyerAddr = orderInfo._buyer;
+    updateResult.amount = orderInfo._amount;
+    updateResult.price = orderInfo._price;
+    updateResult.royaltyOwner = orderInfo._royaltyOwner;
+    updateResult.royaltyFee = orderInfo._royaltyFee;
+    updateResult.quoteToken = orderInfo._quoteToken;
+    updateResult.baseToken = orderInfo._baseToken;
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(orderEventDetail);
+    await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+}
+
+async function orderForAuctionEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
+        royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
+        quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace,
+        buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
+
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller;
+    updateResult.baseToken = orderInfo._baseToken;
+    updateResult.tokenId = orderInfo._tokenId;
+    updateResult.amount = orderInfo._amount;
+    updateResult.quoteToken = orderInfo._quoteToken;
+    updateResult.price = orderInfo._minPrice;
+    updateResult.reservePrice = orderInfo._reservePrice;
+    updateResult.buyoutPrice = orderInfo._buyoutPrice;
+    updateResult.createTime = orderInfo._startTime;
+    updateResult.endTime = orderInfo._endTime;
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(orderEventDetail);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+}
+
+async function orderBidEth(event, marketPlace) {
+    let orderInfo = event.returnValues;
+
+    let [result, txInfo] = await jobService.makeBatchRequest([
+        {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
+        {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
+    ], web3Rpc)
+    let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
+    
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+
+    let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
+        tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+        logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
+        royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace,
+        quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
+
+    let updateResult = {...result}
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(orderEventDetail);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+}
+
+const getTotalEventsOfSticker = async (startBlock, endBlock) => {
+    let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+    }
+    console.log(`collectible count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(stickerContract, "TransferBatch", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+    }
+    console.log(`collectible batch count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+    }
+    console.log(`royalty count: ${getAllEvents.length}`);
+};
+
+const getTotalEventsOfPasar = async (startBlock, endBlock) => {
+    let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`listed count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderForAuction", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`auction count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`changed count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderBid", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`bid count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`canceled count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+    }
+    console.log(`filled count: ${getAllEvents.length}`);
+};
+
+const syncPasarCollection = async () => {
+    let lastBlock;
+    if(config.curNetwork && config.curNetwork == "mainNet") {
+        lastBlock = await web3Rpc.eth.getBlockNumber();
+    } else {
+        lastBlock = 10930305
+    }
+    let startBlock = config.stickerEthContractDeploy;
+    let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
+    console.log("Total Pasar Collection: " + stickerCountContract);
+    while(startBlock < lastBlock) {
+        await getTotalEventsOfSticker(startBlock, startBlock + 1000000);
+        startBlock = startBlock + 1000000;
+    };
+    
+    startBlock = config.pasarEthContractDeploy;
+    while(startBlock < lastBlock) {
+        await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
+        startBlock = startBlock + 1000000;
+    };
+}
+
+module.exports = {
+    syncPasarCollection,
+    transferSingleEth,
+    transferBatchEth,
+    royaltyFeeEth,
+    orderForSaleEth,
+    orderForAuctionEth,
+    orderBidEth,
+    orderPriceChangedEth,
+    orderCanceledEth,
+    orderFilledEth
+}
