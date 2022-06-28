@@ -55,7 +55,7 @@ module.exports = {
         
     },
 
-    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, tokenContract, check721) {
+    parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace) {
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
@@ -222,7 +222,7 @@ module.exports = {
         }
     },
 
-    startupUsersContractEvents: async function (web3Ws, web3Rpc) {
+    startupUsersContractEvents: async function (web3Ws, web3Rpc, marketPlace) {
         const stickerDBService = require("./stickerDBService");
         let data = (await stickerDBService.getCollections()).data;
 

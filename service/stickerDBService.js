@@ -2491,17 +2491,6 @@ module.exports = {
                 baseToken: result.baseToken, amount: result.amount, quoteToken: result.quoteToken, buyoutPrice: result.buyoutPrice, reservePrice: result.reservePrice,
                 minPrice: result.minPrice, createTime: result.createTime, marketPlace: result.marketPlace, updateTime: result.updateTime, blockNumber}
 
-            if(result.orderState === "1" && blockNumber > config.upgradeBlock) {
-                let extraInfo = await pasarContract.methods.getOrderExtraById(orderId).call();
-                if(extraInfo.sellerUri !== '') {
-                    pasarOrder.platformAddr = extraInfo.platformAddr;
-                    pasarOrder.platformFee = extraInfo.platformFee;
-                    pasarOrder.sellerUri = extraInfo.sellerUri;
-                    pasarOrder.sellerDid = await jobService.getInfoByIpfsUri(extraInfo.sellerUri);
-
-                    await pasarDBService.replaceDid({address: result.sellerAddr, did: pasarOrder.sellerDid});
-                }
-            }
             await pasarDBService.updateOrInsert(pasarOrder);
         } catch(error) {
             console.log(error);

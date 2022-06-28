@@ -14,7 +14,7 @@ let web3Rpc = new Web3(config.escRpcUrl);
 let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register";
 
-const transferCustomCollection = async (event, token) => {
+const transferCustomCollection = async (event, token, marketPlace) => {
     let tokenContract = new web3Rpc.eth.Contract(token721ABI, token);
 
     let [is721, is1155] = await jobService.makeBatchRequest([
@@ -50,7 +50,7 @@ async function tempCollectiblesOfCollection() {
     }
 }
 
-async function tokenRegistered(event) {
+async function tokenRegistered(event, marketPlace) {
     let registeredTokenInfo = event.returnValues;
 
     let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
@@ -81,17 +81,17 @@ async function tokenRegistered(event) {
 
     await stickerDBService.collectionEvent(registeredTokenDetail);
     await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
-        registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data);
+        registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data, marketPlace);
 }
 
-async function tokenRoyaltyChanged(event) {
+async function tokenRoyaltyChanged(event, marketPlace) {
     let orderInfo = event.returnValues;
     let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace}
 
     await stickerDBService.collectionEvent(orderEventDetail);
-    await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates);
+    await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates, marketPlace);
 }
 
 async function tokenInfoUpdated(event, marketPlace) {
@@ -105,7 +105,7 @@ async function tokenInfoUpdated(event, marketPlace) {
     await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber, marketPlace);
 }
 
-const importCollectionRegister = async () => {
+const importCollectionRegister = async (marketPlace) => {
     let currentStep = 0;
     let step = 100;
     let totalCount = await stickerDBService.getCountSyncTemp(DB_REGISTER);
@@ -123,13 +123,13 @@ const importCollectionRegister = async () => {
                 let cell = listDoc[i];
                 switch(cell.eventType) {
                     case "TokenRegistered":
-                        await tokenRegistered(cell.eventData);
+                        await tokenRegistered(cell.eventData, marketPlace);
                         break;
                     case "TokenRoyaltyChanged":
-                        await tokenRoyaltyChanged(cell.eventData);
+                        await tokenRoyaltyChanged(cell.eventData, marketPlace);
                         break;
                     case "TokenInfoUpdated":
-                        await tokenInfoUpdated(cell.eventData);
+                        await tokenInfoUpdated(cell.eventData, marketPlace);
                         break;
                     
                 } 
@@ -165,7 +165,7 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
     console.log(`collection info update count: ${getAllEvents.length}`);
 };
 
-const syncRegisterCollection = async () => {
+const syncRegisterCollection = async (marketPlace) => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
     let startBlock = config.pasarRegisterContractDeploy;
 
@@ -174,7 +174,7 @@ const syncRegisterCollection = async () => {
         startBlock = startBlock + 1000000;
     };
 
-    await importCollectionRegister();
+    await importCollectionRegister(marketPlace);
     await tempCollectiblesOfCollection();
 }
 

@@ -7,7 +7,7 @@ let stickerDBService = require('../service/stickerDBService');
 let currentStep = 0;
 let i = 0;
 let totalCount;
-const importDataInDB = async () => {
+const importDataInDB = async (marketPlace) => {
     console.log("======= Start Importing Data ==========")
     
     let step = 100;
@@ -28,70 +28,70 @@ const importDataInDB = async () => {
                 switch(cell.eventType) {
                     case "TransferSingle":
                         if(cell.baseToken == config.stickerContract) {
-                            await transferSingleV1(cell.eventData);
+                            await transferSingleV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.stickerV2Contract) {
-                            await transferSingleV2(cell.eventData);
+                            await transferSingleV2(cell.eventData, marketPlace);
                         } else {
-                            await transferCustomCollection(cell.eventData, cell.baseToken);
+                            await transferCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "Transfer":
                         if(cell.baseToken == config.stickerContract) {
-                            await transferSingleV1(cell.eventData);
+                            await transferSingleV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.stickerV2Contract) {
-                            await transferSingleV2(cell.eventData);
+                            await transferSingleV2(cell.eventData, marketPlace);
                         } else {
-                            await transferCustomCollection(cell.eventData, cell.baseToken);
+                            await transferCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "TransferBatch":
                         if(cell.baseToken == config.stickerV2Contract) {
-                            await transferBatchV2(cell.eventData);
+                            await transferBatchV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "RoyaltyFee":
                         if(cell.baseToken == config.stickerContract) {
-                            await royaltyFeeV1(cell.eventData);
+                            await royaltyFeeV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.stickerV2Contract) {
-                            await royaltyFeeV2(cell.eventData);
+                            await royaltyFeeV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForSale":
                         if(cell.baseToken == config.pasarContract) {
-                            await orderForSaleV1(cell.eventData);
+                            await orderForSaleV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.pasarV2Contract) {
-                            await orderForSaleV2(cell.eventData);
+                            await orderForSaleV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForAuction":
                         if(cell.baseToken == config.pasarV2Contract) {
-                            await orderForAuctionV2(cell.eventData);
+                            await orderForAuctionV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderBid":
                         if(cell.baseToken == config.pasarV2Contract) {
-                            await orderBidV2(cell.eventData);
+                            await orderBidV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderPriceChanged":
                         if(cell.baseToken == config.pasarContract) {
-                            await orderPriceChangedV1(cell.eventData);
+                            await orderPriceChangedV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.pasarV2Contract) {
-                            await orderPriceChangedV2(cell.eventData);
+                            await orderPriceChangedV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderCanceled":
                         if(cell.baseToken == config.pasarContract) {
-                            await orderCanceledV1(cell.eventData);
+                            await orderCanceledV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.pasarV2Contract) {
-                            await orderCanceledV2(cell.eventData);
+                            await orderCanceledV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderFilled":
                         if(cell.baseToken == config.pasarContract) {
-                            await orderFilledV1(cell.eventData);
+                            await orderFilledV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.pasarV2Contract) {
-                            await orderFilledV2(cell.eventData);
+                            await orderFilledV2(cell.eventData, marketPlace);
                         }
                         break;
                 } 
@@ -109,15 +109,15 @@ const importDataInDB = async () => {
         } else {
             i++;
         }
-        await importDataInDB();
+        await importDataInDB(marketPlace);
     }
 }
 
 if (require.main == module) {
     (async ()=> {
-        await syncRegisterCollection();
+        await syncRegisterCollection(config.elaChain);
         await syncFeedCollection();
         await syncPasarCollection();
-        await importDataInDB();
+        await importDataInDB(config.elaChain);
     })();
 }
