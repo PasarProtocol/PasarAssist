@@ -101,21 +101,23 @@ async function orderForSaleV2(event, marketPlace) {
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
         royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken, price: result.price, timestamp: result.updateTime, gasFee}
 
-        result.sellerAddr = orderInfo._seller;
-        result.tokenId = orderInfo._tokenId;
-        result.amount = orderInfo._amount;
-        result.price = orderInfo._price;
-        result.quoteToken = orderInfo._quoteToken;
-        result.baseToken = orderInfo._baseToken;
-        result.reservePrice = 0;
-        result.buyoutPrice = 0;
-        result.createTime = orderInfo._startTime;
-        result.endTime = 0;
-        result.marketPlace = marketPlace;
+        let updateResult = {...result};
+
+        updateResult.sellerAddr = orderInfo._seller;
+        updateResult.tokenId = orderInfo._tokenId;
+        updateResult.amount = orderInfo._amount;
+        updateResult.price = orderInfo._price;
+        updateResult.quoteToken = orderInfo._quoteToken;
+        updateResult.baseToken = orderInfo._baseToken;
+        updateResult.reservePrice = 0;
+        updateResult.buyoutPrice = 0;
+        updateResult.createTime = orderInfo._startTime;
+        updateResult.endTime = 0;
+        updateResult.marketPlace = marketPlace;
 
         await pasarDBService.insertOrderEvent(orderEventDetail);
-        await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-        await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, result.endTime, 'MarketSale', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+        await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+        await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
 async function orderPriceChangedV2(event, marketPlace) {
@@ -136,16 +138,18 @@ async function orderPriceChangedV2(event, marketPlace) {
         sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
-    result.price = orderInfo._newPrice;
-    result.reservePrice = orderInfo._newReservePrice;
-    result.buyoutPrice = orderInfo._newBuyoutPrice;
-    result.price = orderInfo._newPrice;
-    result.quoteToken = orderInfo._newQuoteToken;
-    result.marketPlace = marketPlace;
+    let updateResult = {...result};
+    
+    updateResult.price = orderInfo._newPrice;
+    updateResult.reservePrice = orderInfo._newReservePrice;
+    updateResult.buyoutPrice = orderInfo._newBuyoutPrice;
+    updateResult.price = orderInfo._newPrice;
+    updateResult.quoteToken = orderInfo._newQuoteToken;
+    updateResult.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
-    await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, result.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
 }
 
 async function orderCanceledV2(event, marketPlace) {
@@ -165,12 +169,13 @@ async function orderCanceledV2(event, marketPlace) {
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
         baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace};
 
-    result.sellerAddr = orderInfo._seller
-    result.marketPlace = marketPlace;
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller
+    updateResult.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
-    await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderInfo._orderId, result.updateTime, 0, 'Not on sale', result.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
 }
 
 async function orderFilledV2(event, marketPlace) {
@@ -191,20 +196,21 @@ async function orderFilledV2(event, marketPlace) {
     let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
         txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace};
 
-    result.sellerAddr = orderInfo._seller;
-    result.buyerAddr = orderInfo._buyer;
-    result.amount = orderInfo._amount;
-    result.price = orderInfo._price;
-    result.royaltyOwner = orderInfo._royaltyOwner;
-    result.royaltyFee = orderInfo._royaltyFee;
-    result.quoteToken = orderInfo._quoteToken;
-    result.baseToken = orderInfo._baseToken;
-    result.marketPlace = marketPlace;
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller;
+    updateResult.buyerAddr = orderInfo._buyer;
+    updateResult.amount = orderInfo._amount;
+    updateResult.price = orderInfo._price;
+    updateResult.royaltyOwner = orderInfo._royaltyOwner;
+    updateResult.royaltyFee = orderInfo._royaltyFee;
+    updateResult.quoteToken = orderInfo._quoteToken;
+    updateResult.baseToken = orderInfo._baseToken;
+    updateResult.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
-    await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, null, result.updateTime, null, 'Not on sale', result.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
 async function orderForAuctionV2(event, marketPlace) {
@@ -223,21 +229,22 @@ async function orderForAuctionV2(event, marketPlace) {
         quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace,
         buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
 
-    result.sellerAddr = orderInfo._seller;
-    result.baseToken = orderInfo._baseToken;
-    result.tokenId = orderInfo._tokenId;
-    result.amount = orderInfo._amount;
-    result.quoteToken = orderInfo._quoteToken;
-    result.price = orderInfo._minPrice;
-    result.reservePrice = orderInfo._reservePrice;
-    result.buyoutPrice = orderInfo._buyoutPrice;
-    result.createTime = orderInfo._startTime;
-    result.endTime = orderInfo._endTime;
-    result.marketPlace = marketPlace;
+    let updateResult = {...result};
+    updateResult.sellerAddr = orderInfo._seller;
+    updateResult.baseToken = orderInfo._baseToken;
+    updateResult.tokenId = orderInfo._tokenId;
+    updateResult.amount = orderInfo._amount;
+    updateResult.quoteToken = orderInfo._quoteToken;
+    updateResult.price = orderInfo._minPrice;
+    updateResult.reservePrice = orderInfo._reservePrice;
+    updateResult.buyoutPrice = orderInfo._buyoutPrice;
+    updateResult.createTime = orderInfo._startTime;
+    updateResult.endTime = orderInfo._endTime;
+    updateResult.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
-    await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', result.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
 async function orderBidV2(event, marketPlace) {
@@ -257,11 +264,12 @@ async function orderBidV2(event, marketPlace) {
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace,
         quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
 
-    result.marketPlace = marketPlace;
+    let updateResult = {...result}
+    updateResult.marketPlace = marketPlace;
 
     await pasarDBService.insertOrderEvent(orderEventDetail);
-    await stickerDBService.updateOrder(result, event.blockNumber, orderInfo._orderId);
-    await stickerDBService.updateTokenInfo(result.tokenId, orderInfo._price, orderEventDetail.orderId, null, result.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+    await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
+    await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
 }
 
 const getTotalEventsOfSticker = async (startBlock, endBlock) => {
