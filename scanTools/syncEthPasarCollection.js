@@ -7,7 +7,7 @@ let stickerContractABI = require('../contractABI/stickerV2ABI');
 let stickerDBService = require('../service/stickerDBService');
 let jobService = require('../service/jobService');
 
-const { scanEvents, saveEvent, dealWithEthNewToken, config, DB_SYNC} = require("./utils");
+const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
 let web3Rpc = new Web3(config.ethRpcUrl);
@@ -39,7 +39,7 @@ async function transferSingleEth(event, marketPlace) {
         await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithEthNewToken(stickerContract, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
         await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
@@ -74,7 +74,7 @@ async function transferBatchEth(event, marketPlace) {
             await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithEthNewToken(stickerContract, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
         } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
             await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
@@ -340,12 +340,7 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
 };
 
 const syncPasarCollection = async () => {
-    let lastBlock;
-    if(config.curNetwork && config.curNetwork == "mainNet") {
-        lastBlock = await web3Rpc.eth.getBlockNumber();
-    } else {
-        lastBlock = 10930305
-    }
+    let lastBlock = await web3Rpc.eth.getBlockNumber();
     let startBlock = config.stickerEthContractDeploy;
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
     console.log("Total Pasar Collection: " + stickerCountContract);

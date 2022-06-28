@@ -50,7 +50,6 @@ module.exports = {
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-
         this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace);
         
     },
@@ -66,7 +65,7 @@ module.exports = {
                 ], web3Rpc);
             }
             
-            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, tokenData, marketPlace)
+            this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, marketPlace, tokenData)
         } else if(result.indexOf("Solana") != -1) {
             result = result.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
             fetch(result)
@@ -123,7 +122,7 @@ module.exports = {
                 console.log(data);
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseLudmila(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         } else if(token.toLocaleLowerCase() == '0xe88b8e977939A3f79e2B045b9cE4365A3512800F'.toLocaleLowerCase() || token.toLocaleLowerCase() == '0x69Cf9fE4a56af7F0dFeE2E4E1a0B33b8D695e4bA'.toLocaleLowerCase()) {
             result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");

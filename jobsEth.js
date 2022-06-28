@@ -70,7 +70,7 @@ module.exports = {
         let recipients = [];
         recipients.push('lifayi2008@163.com');
         
-        async function dealWithNewToken(blockNumber, marketPlace) {
+        async function dealWithNewToken(blockNumber, tokenId, marketPlace) {
             try {
                 let [result] = await jobService.makeBatchRequest([
                     {method: stickerContract.methods.tokenInfo(tokenId).call, params: {}},

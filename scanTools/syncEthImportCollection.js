@@ -166,16 +166,8 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
 };
 
 const syncEthRegisterCollection = async (marketPlace) => {
-    console.log(config.curNetwork);
-    let lastBlock;
-    if(config.curNetwork && config.curNetwork == "mainNet") {
-        lastBlock = await web3Rpc.eth.getBlockNumber();
-    } else {
-        lastBlock = 10930305
-    }
+    let lastBlock = await web3Rpc.eth.getBlockNumber();
     let startBlock = config.pasarRegisterContractDeploy;
-    console.log(lastBlock)
-    console.log(startBlock)
     while(startBlock < lastBlock) {
         await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;

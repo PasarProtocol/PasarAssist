@@ -39,7 +39,7 @@ async function transferSingleV2(event, marketPlace) {
         await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
         await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
@@ -74,7 +74,7 @@ async function transferBatchV2(event, marketPlace) {
             await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithNewToken(stickerContract, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
+            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
         } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
             await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);

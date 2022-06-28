@@ -17,7 +17,7 @@ module.exports = {
     escRpcUrl: 'https://api-testnet.elastos.io/eth',
 
     ethWsUrl: 'wss://ropsten.infura.io/ws/v3/8afb20a70e1047f19ed6f7419ba5381e',
-    ethRpcUrl: 'https://ropsten.infura.io/ws/v3/8afb20a70e1047f19ed6f7419ba5381e',
+    ethRpcUrl: 'https://ropsten.infura.io/v3/8afb20a70e1047f19ed6f7419ba5381e',
 
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
