@@ -3254,12 +3254,12 @@ module.exports = {
         return response.data.data;
     },
 
-    updatePriceRate: async function(token, rate) {
+    updatePriceRate: async function(token, rate, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_price_rate');
-            await collection.updateOne({type: token}, {$set: {rate: rate}}, {upsert: true});                                   
+            await collection.updateOne({type: token, marketPlace}, {$set: {rate: rate}}, {upsert: true});                                   
         } catch(err) {
             logger.error(err);
         } finally {
