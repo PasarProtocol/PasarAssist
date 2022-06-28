@@ -263,7 +263,7 @@ module.exports = {
         });
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', 1);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.elaChain);
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
@@ -314,7 +314,7 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', 1);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.elaChain);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -368,7 +368,7 @@ module.exports = {
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', 1);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.elaChain);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
