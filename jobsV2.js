@@ -254,11 +254,11 @@ module.exports = {
                 updateResult.buyoutPrice = 0;
                 updateResult.createTime = orderInfo._startTime;
                 updateResult.endTime = 0;
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
         
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elaChain);
             })
         });
 
@@ -305,11 +305,11 @@ module.exports = {
                 updateResult.buyoutPrice = orderInfo._newBuyoutPrice;
                 updateResult.price = orderInfo._newPrice;
                 updateResult.quoteToken = orderInfo._newQuoteToken;
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, config.elaChain);
             })
         });
 
@@ -358,12 +358,12 @@ module.exports = {
                 updateResult.royaltyFee = orderInfo._royaltyFee;
                 updateResult.quoteToken = orderInfo._quoteToken;
                 updateResult.baseToken = orderInfo._baseToken;
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elaChain);
             })
         });
 
@@ -403,11 +403,11 @@ module.exports = {
 
                 let updateResult = {...result};
                 updateResult.sellerAddr = orderInfo._seller
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.elaChain);
             })
         });
 
@@ -685,11 +685,11 @@ module.exports = {
                 updateResult.buyoutPrice = orderInfo._buyoutPrice;
                 updateResult.createTime = orderInfo._startTime;
                 updateResult.endTime = orderInfo._endTime;
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elaChain);
             })
         });
 
@@ -729,11 +729,11 @@ module.exports = {
                     quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
                 
                 let updateResult = {...result}
-                updateResult.marketPlace = marketPlace;
+                updateResult.marketPlace = config.elaChain;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, config.elaChain);
             })
         });
 
