@@ -817,6 +817,7 @@ module.exports = {
                     result[i]['tokenJsonVersion'] = res['tokenJsonVersion'];
                     result[i]['quoteToken'] = res['quoteToken'];
                     result[i]['baseToken'] = res['baseToken'];
+                    result[i]['marketPlace'] = res['marketPlace'];
                     result[i]['v1Event'] = res['v1Event'] ? res['v1Event'] : null;
                 }
                 if(result[i]['event'] == 'OrderFilled') {
@@ -918,14 +919,14 @@ module.exports = {
         }
     },
 
-    getNftPriceByTokenId: async function(tokenId, baseToken=null) {
+    getNftPriceByTokenId: async function(tokenId, marketPlace,baseToken=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let temp_collection = 'token_temp_' + Date.now().toString();
 
-            let events = await collection.find({tokenId: tokenId, baseToken: baseToken, event: "OrderFilled"}).toArray();
+            let events = await collection.find({tokenId: tokenId, baseToken: baseToken, marketPlace: marketPlace, event: "OrderFilled"}).toArray();
             for(var i = 0; i < events.length; i++) {
                 console.log(events[i].timestamp);
                 // events[i].timestamp = new Date(events[i].timestamp * 1000);
@@ -938,7 +939,7 @@ module.exports = {
 
             let result = await collection.aggregate([
                 // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
-                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
+                { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, {baseToken: marketPlace},{ event: "OrderFilled" }]} },
                 { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp", quoteToken: "$quoteToken"}, "price": {$sum: "$price"}} },
                 { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1} },
                 { $sort: {timestamp: 1} }
@@ -955,7 +956,7 @@ module.exports = {
         }
     },
 
-    getTranDetailsByTokenId: async function(tokenId, method, timeOrder, baseToken = null) {
+    getTranDetailsByTokenId: async function(tokenId, method, timeOrder, marketPlace,baseToken = null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let methodCondition = this.composeMethodCondition(method, "tokenId", tokenId);
         let methodCondition_order = methodCondition['order'];
@@ -973,8 +974,8 @@ module.exports = {
                       from: "pasar_order_event",
                       pipeline: [
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, orderId: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, baseToken:1, royaltyFee: 1, quoteToken: 1, v1Event: 1} },
-                        { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_order, {baseToken: baseToken}]} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, baseToken:1, royaltyFee: 1, quoteToken: 1, v1Event: 1, marketPlace: 1} },
+                        { $match : {$and: [{tokenId : tokenId.toString()}, methodCondition_order, {baseToken: baseToken}, {marketPlace: marketPlace}]} }
                       ],
                       "as": "collection1"
                     }}
@@ -986,7 +987,7 @@ module.exports = {
                       pipeline: [
                         { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
                             timestamp: 1, memo: 1, tokenId: 1, token:1, blockNumber: 1, royaltyFee: "0"} },
-                        { $match : {$and: [{tokenId : tokenId.toString()}, {token : baseToken},methodCondition_token]} }],
+                        { $match : {$and: [{tokenId : tokenId.toString()}, {token : baseToken}, {marketPlace: marketPlace}, methodCondition_token]} }],
                       "as": "collection2"
                     }}
                   ]
@@ -1004,24 +1005,24 @@ module.exports = {
                 { 
                     $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId"},
-                    pipeline: [{$match: { baseToken: baseToken, "$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
+                    pipeline: [{$match: { baseToken: baseToken, marketPlace: marketPlace,"$expr":{"$eq":["$$ttokenId","$tokenId"]} }}],
                     as: "token"}
                 },
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
                 as: "order"}},
                 { $unwind: "$token" },
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
-                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name"
+                { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", marketPlace: 1
                 , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: "$order.quoteToken", v1Event: true }},
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
             for(var i = 0; i < result.length; i++) {
                 if(result[i]['event'] == 'OrderFilled') {
-                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}]});
+                    let res  = await collection_platformFee.findOne({$and:[{blockNumber: result[i]['blockNumber']}, {orderId: result[i]['orderId']}, {marketPlace: result[i]['marketPlace']}]});
                     if(res != null) {
                         result[i]['platformfee'] = res['platformFee'];
                     }
@@ -1040,8 +1041,8 @@ module.exports = {
         }
     },
 
-    getCollectibleByTokenId: async function(tokenId, baseToken=null) {
-        let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, holder: "$token.holder",
+    getCollectibleByTokenId: async function(tokenId, marketPlace, baseToken=null) {
+        let projectionToken = {"_id": 0, tokenId:1, blockNumber:1, timestamp:1, value: 1,memo: 1, to: 1, marketPlace: 1, holder: "$token.holder",
         tokenIndex: "$token.tokenIndex", quantity: "$token.quantity", royalties: "$token.royalties",
         royaltyOwner: "$token.royaltyOwner", createTime: '$token.createTime', marketTime: '$token.marketTime', endTime: '$token.endTime', tokenIdHex: '$token.tokenIdHex',
         name: "$token.name", description: "$token.description", kind: "$token.kind", type: "$token.type",
@@ -1062,7 +1063,7 @@ module.exports = {
                 { 
                     $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId"},
-                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$ttokenId","$tokenId"]}}, {baseToken: baseToken}]}}],
+                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$ttokenId","$tokenId"]}}, {baseToken: baseToken}, {marketPlace: marketPlace}]}}],
                     as: "token"}
                 },
                 { $lookup: {from: "pasar_order", localField: "orderId", foreignField: "orderId", as: "order"} },
@@ -1081,9 +1082,9 @@ module.exports = {
             }
             collection = client.db(config.dbName).collection('pasar_order');
             let orderForMarketRecord = await collection.find(
-                {$and: [{tokenId: tokenId}, {baseToken: baseToken}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
+                {$and: [{tokenId: tokenId}, {baseToken: baseToken}, {marketPlace: marketPlace}, {buyerAddr: config.burnAddress}, {sellerAddr: result.holder}, {orderState: {$ne: '3'}}]}
             ).sort({'blockNumber': -1}).toArray();
-            let priceRecord = await collection.find({$and: [{tokenId: tokenId}, {baseToken: baseToken}]}).sort({'blockNumber': -1}).toArray();
+            let priceRecord = await collection.find({$and: [{tokenId: tokenId}, {baseToken: baseToken}, {marketPlace: marketPlace}]}).sort({'blockNumber': -1}).toArray();
             if(orderForMarketRecord.length > 0) {
                 result['DateOnMarket'] = orderForMarketRecord[0]['createTime'];
                 result['SaleType'] = orderForMarketRecord[0]['sellerAddr'] == result['royaltyOwner'] ? "Primary Sale": "Secondary Sale";
@@ -1108,7 +1109,7 @@ module.exports = {
                 result.type = "General";
             collection = client.db(config.dbName).collection('pasar_order_event');
             if(result && result.SaleType != 'Not on sale' && result.OrderId) {
-                let listBid = await collection.find({orderId: result.OrderId, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
+                let listBid = await collection.find({orderId: result.OrderId, marketPlace: result.marketPlace, event: 'OrderBid'}).sort({timestamp:-1}) .toArray();
                 result.listBid = listBid;
             } else {
                 result.listBid = [];
@@ -1146,13 +1147,13 @@ module.exports = {
                 },
                 { 
                     $lookup: {from: "pasar_token",
-                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$ttokenId","$tokenId"]}},{"$expr":{"$eq":["$$tbaseToken","$baseToken"]}}]}}],
+                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                    pipeline: [{$match: {$and: [{"$expr":{"$eq":["$$ttokenId","$tokenId"]}},{"$expr":{"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr":{"$eq":["$tmarketPlace","$marketPlace"]}}]}}],
                     as: "token"}
                 },
                 {$unwind: "$royatly"},
                 {$unwind: "$token"},
-                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1, baseToken: 1, platformFee: 1, royatly: 1, royaltyOwner: "$token.royaltyOwner"} },
+                { $project: {"_id": 0, royaltyOwner: 1, sellerAddr: 1, tokenId: 1, orderId: 1, filled: 1, royaltyFee: 1, updateTime: 1, amount: 1, quoteToken: 1, baseToken: 1, marketPlace: 1, platformFee: 1, royatly: 1, royaltyOwner: "$token.royaltyOwner"} },
             ]).toArray();
             result.forEach(x => {
                 let platformFee = x.platformFee.length > 0 ? x.platformFee[0].platformFee: 0;
@@ -1251,7 +1252,7 @@ module.exports = {
                       pipeline: [
                         { $match : {$and: [methodCondition_order]} },
                         { $project: {'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", data: 1, gasFee: 1,
-                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1, baseToken: 1, v1Event: 1} }
+                            timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, orderId: 1, baseToken: 1, marketPlace: 1, v1Event: 1} }
                       ],
                       "as": "collection1"
                     }}
@@ -1302,7 +1303,7 @@ module.exports = {
             let start = (pageNum - 1) * pageSize;
             let tempResult = [];
             for(var i = 0; i < result.length; i++) {
-                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId'], $or: [{baseToken: result[i]['baseToken']}, {baseToken: result[i]['token']}]}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
+                let res  = await collection_token.findOne({$and:[{tokenId: result[i]['tokenId'], marketPlace: result[i]['marketPlace'],$or: [{baseToken: result[i]['baseToken']}, {baseToken: result[i]['token']}]}, {$or: [{name: new RegExp(keyword.toString())}, {royaltyOwner: keyword}, {holder: keyword}, {tokenId: keyword}]}]});
                 // if(res != null) {
                 //     result[i]['name'] = res['name'];
                 //     result[i]['royalties'] = res['royalties'];
@@ -1352,13 +1353,13 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getLatestBids: async function (tokenId, sellerAddr, baseToken=null) {
+    getLatestBids: async function (tokenId, sellerAddr, marketPlace, baseToken=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
             let result = await collection.aggregate([
-                { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {baseToken: baseToken}, {event: 'OrderBid'} ] } },
+                { $match: { $and: [{sellerAddr: sellerAddr}, {tokenId : new RegExp(tokenId.toString())}, {baseToken: baseToken}, {marketPlace: marketPlace}, {event: 'OrderBid'} ] } },
                 { $sort: {timestamp: -1} }
             ]).toArray();
             const collection_address = mongoClient.db(config.dbName).collection('pasar_address_did');
@@ -1432,7 +1433,7 @@ module.exports = {
         }
     },
 
-    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, tokenType=null) {
+    getDetailedCollectibles: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, marketPlace, tokenType=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};
         let rateEndTime = {};
@@ -1484,7 +1485,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
@@ -1509,6 +1510,12 @@ module.exports = {
                 }
             }
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
 
             if(!(statusArr.length == 1 && statusArr.indexOf('Not Met') != -1)) {
 
@@ -1525,14 +1532,14 @@ module.exports = {
                     else itemType_condition.push({type: ele});
                 }
                 itemType_condition = {$or: itemType_condition};
-                await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-                await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+                await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+                await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
                 let marketTokens = await collection.aggregate([
-                    { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    { $match: {$and: [tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkMarketPlace, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     {$addFields: {"currentBid": [{price: "$price"}], createTime: {$toInt:"$createTime"}, updateTime: {$toInt:"$updateTime"}, marketTime: {$toInt:"$marketTime"}}},
                     { $lookup: {
                         from: "pasar_order",
-                        let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                        let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
                     { $unwind: "$tokenOrder"},
@@ -1540,7 +1547,7 @@ module.exports = {
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                     marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
-                    baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1},},
+                    baseToken: 1, marketPlace: 1,reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1},},
                 ]).toArray();
 
                 let rates = await this.getPriceRate();
@@ -1563,11 +1570,11 @@ module.exports = {
             let dataNotMet = [], dataBuyNow = [];
 
             if(statusArr.indexOf('Not Met') != -1) {
-                dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+                dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace,tokenType=null)
             }
 
             if(statusArr.indexOf('Buy Now') != -1) {
-                dataBuyNow = await this.getBuyNowCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+                dataBuyNow = await this.getBuyNowCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace,tokenType=null)
             }
 
             for(var i = 0; i < dataNotMet.length; i++) {
@@ -1594,7 +1601,7 @@ module.exports = {
         }
     },
 
-    getBuyNowCollectibles: async function (minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null) {
+    getBuyNowCollectibles: async function (minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace, tokenType=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
 
         try {
@@ -1615,7 +1622,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             checkOrder.push({ $and: [{buyoutPrice: {$ne: null}}, {buyoutPrice: {$ne: "0"}}] });
             let current = Date.now();
             current = Math.floor(current/1000).toString();
@@ -1639,16 +1646,24 @@ module.exports = {
             // if(maxPrice) {
             //     checkOrder.push({price: {$lte: maxPrice.toString()}});
             // }
+
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
+
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
 
             let marketTokens = await collection.aggregate([
-                { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [{holder: {$ne: burnAddress}}, tokenTypeCheck, collectionTypeCheck, checkMarketPlace, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 {$addFields: {
@@ -1659,7 +1674,7 @@ module.exports = {
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                 marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
-                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
+                baseToken: 1, marketPlace: 1,reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
 
             let rates = await this.getPriceRate();
@@ -1702,7 +1717,7 @@ module.exports = {
         }
     },
 
-    getNotMetCollectibles: async function (minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null) {
+    getNotMetCollectibles: async function (minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace,tokenType=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
 
         try {
@@ -1723,7 +1738,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             status_condition.push({status: 'MarketBid'});
             status_condition.push({status: 'MarketAuction'});
             checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
@@ -1748,15 +1763,22 @@ module.exports = {
             // if(maxPrice) {
             //     checkOrder.push({price: {$lte: maxPrice.toString()}});
             // }
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
+
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
-            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             let marketTokens = await collection.aggregate([
-                { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, checkMarketPlace, collectionTypeCheck, status_condition, itemType_condition, {adult: adult == "true"}, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: checkOrder}}],
                     as: "tokenOrder"}},
                 {$addFields: {
@@ -1767,7 +1789,7 @@ module.exports = {
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                 marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
-                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
+                baseToken: 1, marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
             let rates = await this.getPriceRate();
             let listRate = [];
@@ -1809,7 +1831,7 @@ module.exports = {
         }
     },
 
-    getDetailedCollectiblesInCollection: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, attribute, tokenType=null) {
+    getDetailedCollectiblesInCollection: async function (status, minPrice, maxPrice, collectionType, itemType, adult, order, pageNum, pageSize, keyword, attribute, marketPlace,tokenType=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         let sort = {};
         let rateEndTime = {};
@@ -1860,7 +1882,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}},  {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
@@ -1921,17 +1943,22 @@ module.exports = {
                     });
                     checkAttribute = {$and: listCheckAttribute};
                 }
-                
+                let checkMarketPlace;
+                if(marketPlace == 0) {
+                    checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                } else {
+                    checkMarketPlace = {marketPlace : marketPlace}
+                }
                 let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}, {status: 'Not on sale'}] };
                 let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
                 await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
                 await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
 
                 let marketTokens = await collection.aggregate([
-                    { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
+                    { $match: {$and: [{holder: {$ne: burnAddress}}, market_condition, checkMarketPlace, tokenTypeCheck, collectionTypeCheck, rateEndTime, status_condition, checkAttribute, {$or: [{tokenId: keyword},{tokenIdHex: keyword}, {name: new RegExp(keyword)}, {royaltyOwner: keyword}]}]} },
                     { $lookup: {
                         from: "pasar_order",
-                        let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                        let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [{$match: {$and: checkOrder}}],
                         as: "tokenOrder"}},
                     {$addFields: {
@@ -1942,7 +1969,7 @@ module.exports = {
                     createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                     data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: 1,
                     marketTime:1, status: 1, endTime:1, orderId: 1, orderType: "$tokenOrder.orderType", orderState: "$tokenOrder.orderState", amount: "$tokenOrder.amount",
-                    baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
+                    baseToken: 1, marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, attribute: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
                 ]).toArray();
                 
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
@@ -1983,11 +2010,11 @@ module.exports = {
             let dataNotMet = [], dataBuyNow = [];
 
             if(statusArr.indexOf('Not Met') != -1) {
-                dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+                dataNotMet = await this.getNotMetCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace, tokenType=null)
             }
 
             if(statusArr.indexOf('Buy Now') != -1) {
-                dataBuyNow = await this.getBuyNowCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, tokenType=null)
+                dataBuyNow = await this.getBuyNowCollectibles(minPrice, maxPrice, collectionType, itemType, adult, keyword, marketPlace, tokenType=null)
             }
 
             for(var i = 0; i < dataNotMet.length; i++) {
@@ -2053,9 +2080,9 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
             let collection_order_event  = mongoClient.db(config.dbName).collection('pasar_order_event');
-            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
 
             let sort = {};
             switch (orderType) {
@@ -2154,7 +2181,7 @@ module.exports = {
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, v1State: 1 },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)

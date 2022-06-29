@@ -1,4 +1,5 @@
 let express = require('express');
+const config = require('../../config');
 let router = express.Router();
 let stickerDBService = require('../../service/stickerDBService');
 
@@ -195,12 +196,13 @@ router.get('/gettv', function(req, res) {
     })
 });
 
-router.get('/getNftPriceByTokenId/:tokenId/:baseToken', function(req, res) {
+router.get('/getNftPriceByTokenId/:tokenId/:baseToken/:marketPlace', function(req, res) {
     let tokenId = req.params.tokenId;
     tokenId = tokenId ? tokenId: "^";
     let baseToken = req.params.baseToken;
+    let marketPlace = req.params.marketPlace ? req.params.marketPlace : config.elaChain;
 
-    stickerDBService.getNftPriceByTokenId(tokenId, baseToken).then(result => {
+    stickerDBService.getNftPriceByTokenId(tokenId, marketPlace, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -213,9 +215,10 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
     let baseToken = req.query.baseToken;
+    let marketPlace = req.query.marketPlace ? req.query.marketPlace : config.elaChain;
 
     method = method ? method : 'All';
-    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, baseToken).then(result => {
+    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, marketPlace, baseToken).then(result => {
       res.json(result);
     }).catch(error => {
         console.log(error);
@@ -223,11 +226,12 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     })
 });
 
-router.get('/getCollectibleByTokenId/:tokenId/:baseToken', function(req, res) {
+router.get('/getCollectibleByTokenId/:tokenId/:baseToken/:marketPlace', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
+    let marketPlace = req.params.marketPlace ? req.params.marketPlace : config.elaChain;
 
-    stickerDBService.getCollectibleByTokenId(tokenId, baseToken).then(result => {
+    stickerDBService.getCollectibleByTokenId(tokenId, marketPlace,baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -304,13 +308,14 @@ router.get('/getAuctionOrdersByTokenId/:tokenId', function(req, res) {
 });
 
 
-router.get('/getLatestBids/:tokenId/:baseToken', function(req, res) {
+router.get('/getLatestBids/:tokenId/:baseToken/:marketPlace', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
+    let marketPlace = req.params.marketPlace? req.params.marketPlace : config.elaChain;
     let ownerAddr = req.query.owner;
     tokenId = tokenId ? tokenId : '';
 
-    stickerDBService.getLatestBids(tokenId, ownerAddr, baseToken).then(result => {
+    stickerDBService.getLatestBids(tokenId, ownerAddr, marketPlace, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -330,6 +335,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let pageSizeStr = req.query.pageSize;
     let keyword = req.query.keyword;
     let tokenType = req.query.tokenType;
+    let marketPlace = req.query.marketPlace ? req.query.marketPlace : 0;
     let pageNum, pageSize, min, max;
 
     try {
@@ -349,7 +355,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
         return;
     }
     
-    stickerDBService.getDetailedCollectibles(status, min, max, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, tokenType).then(result => {
+    stickerDBService.getDetailedCollectibles(status, min, max, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, marketPlace, tokenType).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -370,6 +376,7 @@ router.post('/getDetailedCollectiblesInCollection', function(req, res) {
     let keyword = req.body.keyword;
     let tokenType = req.body.tokenType;
     let attribute = req.body.attribute;
+    let marketPlace = req.body.marketPlace ? req.body.marketPlace : 0;
     let pageNum, pageSize, min, max;
 
     try {
@@ -387,7 +394,7 @@ router.post('/getDetailedCollectiblesInCollection', function(req, res) {
         return;
     }
 
-    stickerDBService.getDetailedCollectiblesInCollection(status, min, max, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, attribute, tokenType).then(result => {
+    stickerDBService.getDetailedCollectiblesInCollection(status, min, max, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, attribute, marketPlace,tokenType).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
