@@ -196,13 +196,12 @@ router.get('/gettv', function(req, res) {
     })
 });
 
-router.get('/getNftPriceByTokenId/:tokenId/:baseToken/:marketPlace', function(req, res) {
+router.get('/getNftPriceByTokenId/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
     tokenId = tokenId ? tokenId: "^";
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace ? parseInt(req.params.marketPlace) : config.elaChain;
 
-    stickerDBService.getNftPriceByTokenId(tokenId, marketPlace, baseToken).then(result => {
+    stickerDBService.getNftPriceByTokenId(tokenId, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -215,10 +214,9 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
     let baseToken = req.query.baseToken;
-    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : config.elaChain;
 
     method = method ? method : 'All';
-    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, marketPlace, baseToken).then(result => {
+    stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, baseToken).then(result => {
       res.json(result);
     }).catch(error => {
         console.log(error);
@@ -226,12 +224,11 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     })
 });
 
-router.get('/getCollectibleByTokenId/:tokenId/:baseToken/:marketPlace', function(req, res) {
+router.get('/getCollectibleByTokenId/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace ? parseInt(req.params.marketPlace) : config.elaChain;
 
-    stickerDBService.getCollectibleByTokenId(tokenId, marketPlace,baseToken).then(result => {
+    stickerDBService.getCollectibleByTokenId(tokenId, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -308,14 +305,13 @@ router.get('/getAuctionOrdersByTokenId/:tokenId', function(req, res) {
 });
 
 
-router.get('/getLatestBids/:tokenId/:baseToken/:marketPlace', function(req, res) {
+router.get('/getLatestBids/:tokenId/:baseToken', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace? parseInt(req.params.marketPlace) : config.elaChain;
     let ownerAddr = req.query.owner;
     tokenId = tokenId ? tokenId : '';
 
-    stickerDBService.getLatestBids(tokenId, ownerAddr, marketPlace, baseToken).then(result => {
+    stickerDBService.getLatestBids(tokenId, ownerAddr, baseToken).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
