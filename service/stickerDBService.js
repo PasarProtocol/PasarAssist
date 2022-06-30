@@ -2120,7 +2120,7 @@ module.exports = {
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
+                baseToken: "$tokenOrder.baseToken", marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1 },},
             ]).toArray();
 
             result = await this.getSortCollectibles(result, sort)
@@ -2181,7 +2181,7 @@ module.exports = {
                 createTime: 1, updateTime: 1, tokenIdHex: 1, tokenJsonVersion: 1, type: 1, name: 1, description: 1, properties: 1,
                 data: 1, asset: 1, adult: 1, price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:1, status: 1, endTime:1, orderId: 1, priceCalculated: 1, orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, v1State: 1 },},
+                baseToken: 1, marketPlace: 1,reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, v1State: 1 },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
@@ -2240,7 +2240,7 @@ module.exports = {
                 createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
                 data: "$token.data", asset: "$token.asset", adult: "$token.adult", price: 1, buyoutPrice: 1, quoteToken: 1,
                 marketTime:"$token.marketTime", status: "$token.status", endTime:"$token.endTime", orderId: "$token.orderId", priceCalculated: "$token.priceCalculated", orderType: 1, amount: 1,
-                baseToken: "$token.baseToken", reservePrice: 1,currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
+                baseToken: "$token.baseToken",  marketPlace:1, reservePrice: 1,currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
@@ -2386,7 +2386,7 @@ module.exports = {
                 createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
                 data: "$token.data", asset: "$token.asset", adult: "$token.adult", price: "$tokenOrder.price", buyoutPrice: "$tokenOrder.buyoutPrice", quoteToken: "$tokenOrder.quoteToken",
                 marketTime:"$token.marketTime", status: "$token.status", endTime:"$token.endTime", orderId: 1, priceCalculated: "$token.priceCalculated", orderType: "$tokenOrder.orderType", amount: "$tokenOrder.amount",
-                baseToken: "$tokenOrder.baseToken", reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
+                baseToken: "$tokenOrder.baseToken", marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
