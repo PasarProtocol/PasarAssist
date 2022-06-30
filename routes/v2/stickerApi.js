@@ -200,7 +200,7 @@ router.get('/getNftPriceByTokenId/:tokenId/:baseToken/:marketPlace', function(re
     let tokenId = req.params.tokenId;
     tokenId = tokenId ? tokenId: "^";
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace ? req.params.marketPlace : config.elaChain;
+    let marketPlace = req.params.marketPlace ? parseInt(req.params.marketPlace) : config.elaChain;
 
     stickerDBService.getNftPriceByTokenId(tokenId, marketPlace, baseToken).then(result => {
         res.json(result);
@@ -215,7 +215,7 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
     let method = req.query.method;
     let timeOrder = req.query.timeOrder;
     let baseToken = req.query.baseToken;
-    let marketPlace = req.query.marketPlace ? req.query.marketPlace : config.elaChain;
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : config.elaChain;
 
     method = method ? method : 'All';
     stickerDBService.getTranDetailsByTokenId(tokenId, method, timeOrder, marketPlace, baseToken).then(result => {
@@ -229,7 +229,7 @@ router.get('/getTranDetailsByTokenId', function(req, res) {
 router.get('/getCollectibleByTokenId/:tokenId/:baseToken/:marketPlace', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace ? req.params.marketPlace : config.elaChain;
+    let marketPlace = req.params.marketPlace ? parseInt(req.params.marketPlace) : config.elaChain;
 
     stickerDBService.getCollectibleByTokenId(tokenId, marketPlace,baseToken).then(result => {
         res.json(result);
@@ -311,7 +311,7 @@ router.get('/getAuctionOrdersByTokenId/:tokenId', function(req, res) {
 router.get('/getLatestBids/:tokenId/:baseToken/:marketPlace', function(req, res) {
     let tokenId = req.params.tokenId;
     let baseToken = req.params.baseToken;
-    let marketPlace = req.params.marketPlace? req.params.marketPlace : config.elaChain;
+    let marketPlace = req.params.marketPlace? parseInt(req.params.marketPlace) : config.elaChain;
     let ownerAddr = req.query.owner;
     tokenId = tokenId ? tokenId : '';
 
@@ -335,7 +335,7 @@ router.get('/getDetailedCollectibles', function(req, res) {
     let pageSizeStr = req.query.pageSize;
     let keyword = req.query.keyword;
     let tokenType = req.query.tokenType;
-    let marketPlace = req.query.marketPlace ? req.query.marketPlace : 0;
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
     let pageNum, pageSize, min, max;
 
     try {
@@ -376,7 +376,7 @@ router.post('/getDetailedCollectiblesInCollection', function(req, res) {
     let keyword = req.body.keyword;
     let tokenType = req.body.tokenType;
     let attribute = req.body.attribute;
-    let marketPlace = req.body.marketPlace ? req.body.marketPlace : 0;
+    let marketPlace = req.body.marketPlace ? parseInt(req.body.marketPlace) : 0;
     let pageNum, pageSize, min, max;
 
     try {
@@ -528,7 +528,8 @@ router.get('/getLatestElaPrice', function(req, res) {
 router.get('/getCollection', function(req, res) {
     let sort = req.query.sort;
     let onMarket = req.query.onMarket ? req.query.onMarket : false;
-    stickerDBService.getCollections(sort, onMarket).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+    stickerDBService.getCollections(sort, marketPlace, onMarket).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

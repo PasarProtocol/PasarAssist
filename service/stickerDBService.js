@@ -2746,7 +2746,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function(sort = 0, onMarket=false) {
+    getCollections: async function(sort = 0, marketPlace, onMarket=false) {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2798,6 +2798,13 @@ module.exports = {
                     break;
             }
 
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
+
             let web3 = new Web3(config.escRpcUrl);
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
 
@@ -2837,9 +2844,10 @@ module.exports = {
                 result.push(cell);
             }));
             let returnValue = {}
+            console.log(checkMarketPlace);
             if(result.length > 0) {
                 await temp_collection.insertMany(result);
-                returnValue = await temp_collection.find({}).sort(sortData).toArray();
+                returnValue = await temp_collection.find(marketPlace).sort(sortData).toArray();
                 await temp_collection.drop();
             }
             return {code: 200, message: 'success', data: returnValue};
