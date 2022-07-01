@@ -6,15 +6,13 @@ const { scanEvents, config } = require("./utils");
 
 let jobService = require('../service/jobService');
 
-let web3Rpc = new Web3(config.escRpcUrl);
+let web3Rpc = new Web3(config.ethRpcUrl);
 
 let listCollection = [                       
-    {name: "Eliens Of Hedrom", address: '0x69Cf9fE4a56af7F0dFeE2E4E1a0B33b8D695e4bA'},
-    {name: "Eliens Of Xenora", address: '0xe88b8e977939A3f79e2B045b9cE4365A3512800F'},
+    {name: "Test2", address: '0x0aC5d975876DE8a21F709e632CBb700561276EAD'},
 ];
 
 const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
-
     for(let collection of listCollection) {
         let tokenContract = new web3Rpc.eth.Contract(token721ABI, collection.address);
 
@@ -22,11 +20,11 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
             {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
             {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
         ], web3Rpc)
-    
+        console.log(1111111);
         if(!is721 && is1155) {
             tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
         }
-    
+        console.log(22222222);
         let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
 
         for (var i = 0; i < getAllEvents.length; i++) {
