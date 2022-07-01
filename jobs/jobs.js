@@ -1,17 +1,17 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let pasarDBService = require('./service/pasarDBService');
-let stickerDBService = require('./service/stickerDBService');
-let indexDBService = require('./service/indexDBService');
-let galleriaDbService = require('./service/galleriaDBService');
-let config = require('./config');
-let pasarContractABI = require('./contractABI/pasarABI');
-let stickerContractABI = require('./contractABI/stickerABI');
-let galleriaContractABI = require('./contractABI/galleriaABI');
-let jobService = require('./service/jobService');
-let authService  = require('./service/authService')
-let sendMail = require('./send_mail');
-const config_test = require("./config_test");
+let pasarDBService = require('../service/pasarDBService');
+let stickerDBService = require('../service/stickerDBService');
+let indexDBService = require('../service/indexDBService');
+let galleriaDbService = require('../service/galleriaDBService');
+let config = require('../config');
+let pasarContractABI = require('../contractABI/pasarABI');
+let stickerContractABI = require('../contractABI/stickerABI');
+let galleriaContractABI = require('../contractABI/galleriaABI');
+let jobService = require('../service/jobService');
+let authService  = require('../service/authService')
+let sendMail = require('../send_mail');
+const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
