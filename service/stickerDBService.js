@@ -2750,10 +2750,16 @@ module.exports = {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
             
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let collections = await token_collection.find({}).toArray();
+            let collections = await token_collection.find(checkMarketPlace).toArray();
             let result = [];
 
             const temp_collection = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
@@ -2798,12 +2804,7 @@ module.exports = {
                     break;
             }
 
-            let checkMarketPlace;
-            if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
-            } else {
-                checkMarketPlace = {marketPlace : marketPlace}
-            }
+            
 
             let web3 = new Web3(config.escRpcUrl);
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
@@ -2844,10 +2845,10 @@ module.exports = {
                 result.push(cell);
             }));
             let returnValue = {}
-            console.log(checkMarketPlace);
+            
             if(result.length > 0) {
                 await temp_collection.insertMany(result);
-                returnValue = await temp_collection.find(marketPlace).sort(sortData).toArray();
+                returnValue = await temp_collection.find().sort(sortData).toArray();
                 await temp_collection.drop();
             }
             return {code: 200, message: 'success', data: returnValue};
