@@ -6,7 +6,6 @@ let pasarApi = require('./routes/pasarApi');
 let stickerApi = require('./routes/stickerApi');
 let galleriaApi = require('./routes/galleriaApi');
 let authApi = require('./routes/authApi');
-let apiV2 = require('./routes/apiV2');
 let routeV2 = require('./routes/v2/route');
 let jobs = require('./jobs/jobs');
 let jobsV2 = require('./jobs/jobsV2');
