@@ -140,7 +140,7 @@ module.exports = {
             .then(async data => {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseBunnyLottery(jsonData, token);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
         }
     },
