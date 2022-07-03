@@ -134,6 +134,14 @@ module.exports = {
                 let returnData = await this.parseEliens(jsonData, token);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
             })
+        } else if(token.toLocaleLowerCase() == '0x0954133d1a6E12d420602336643fbd6d61cdE91d'.toLocaleLowerCase()) {
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parseBunnyLottery(jsonData, token);
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
+            })
         }
     },
 
@@ -484,6 +492,20 @@ module.exports = {
         if(attributeOfCollection) {
             await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
         }
+        return returnValue;
+    },
+
+    parseBunnyLottery: function(data) {
+        let returnValue = {};
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = 'image';
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.pasarprotocol.io/ipfs");
+        returnValue.asset = data.image.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.pasarprotocol.io/ipfs");
+        returnValue.kind = 'image';
+        returnValue.size = 0;
+        returnValue.adult = false;
         return returnValue;
     },
 }
