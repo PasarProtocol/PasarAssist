@@ -133,7 +133,7 @@ module.exports = {
                 let returnData = await this.parseEliens(jsonData, token);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
-        } else if(token.toLocaleLowerCase() == '0x0954133d1a6E12d420602336643fbd6d61cdE91d'.toLocaleLowerCase()) 
+        } else if(token.toLocaleLowerCase() == '0x0954133d1a6E12d420602336643fbd6d61cdE91d'.toLocaleLowerCase()) {
             fetch(result)
             .then(res => res.text())
             .then(async data => {
