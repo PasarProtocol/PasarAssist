@@ -2,14 +2,10 @@ const schedule = require('node-schedule');
 let Web3 = require('web3');
 let pasarDBService = require('../service/pasarDBService');
 let stickerDBService = require('../service/stickerDBService');
-let indexDBService = require('../service/indexDBService');
 let config = require('../config');
 let pasarContractABI = require('../contractABI/pasarABI');
 let stickerContractABI = require('../contractABI/stickerABI');
-let galleriaContractABI = require('../contractABI/galleriaABI');
 let jobService = require('../service/jobService');
-let authService  = require('../service/authService')
-let sendMail = require('../send_mail');
 const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
@@ -41,22 +37,16 @@ module.exports = {
         let web3Ws = new Web3(web3WsProvider);
         let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarContract);
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerContract);
-        let galleriaContractWs = new web3Ws.eth.Contract(galleriaContractABI, config.galleriaContract);
 
         let web3Rpc = new Web3(config.escRpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
         let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
 
-        let isGetForSaleOrderJobRun = false;
         let isGetForOrderPriceChangedJobRun = false;
         let isGetForOrderCancelledJobRun = false;
         let isGetForOrderFilledJobRun = false;
         let isGetTokenInfoJobRun = false;
-        let isGetTokenInfoWithMemoJobRun = false;
-        let isGetForPlatformFeeJobRun = false;
         let isGetApprovalRun = false;
-        let isGetOrderForAuctionJobRun = false;
-        let isGetOrderBidJobRun = false;
         let now = Date.now();
 
         let recipients = [];
