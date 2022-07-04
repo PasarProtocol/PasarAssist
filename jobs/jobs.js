@@ -3,7 +3,6 @@ let Web3 = require('web3');
 let pasarDBService = require('../service/pasarDBService');
 let stickerDBService = require('../service/stickerDBService');
 let indexDBService = require('../service/indexDBService');
-let galleriaDbService = require('../service/galleriaDBService');
 let config = require('../config');
 let pasarContractABI = require('../contractABI/pasarABI');
 let stickerContractABI = require('../contractABI/stickerABI');

@@ -4,7 +4,6 @@ let bodyParser = require('body-parser');
 let indexRouter = require('./routes/index');
 let pasarApi = require('./routes/pasarApi');
 let stickerApi = require('./routes/stickerApi');
-let galleriaApi = require('./routes/galleriaApi');
 let authApi = require('./routes/authApi');
 let routeV2 = require('./routes/v2/route');
 let jobs = require('./jobs/jobs');
@@ -60,7 +59,6 @@ app.use(function(req, res, next) {
 app.use('/feeds/api/v1', indexRouter);
 app.use('/pasar/api/v1', pasarApi);
 app.use('/sticker/api/v1', stickerApi);
-app.use('/galleria/api/v1', galleriaApi);
 app.use('/auth/api/v1', authApi);
 app.use('/api/v2', routeV2);
 
