@@ -1,3 +1,7 @@
+/**
+    sync all events on the ethereum network
+*/
+
 const { config, DB_SYNC} = require("./utils");
 const { syncEthRegisterCollection, transferEthCustomCollection } = require('./syncEthImportCollection');
 const { syncPasarCollection, transferSingleEth, transferBatchEth, royaltyFeeEth, orderPriceChangedEth, orderForSaleEth, orderForAuctionEth, orderFilledEth, orderCanceledEth, orderBidEth } = require('./syncEthPasarCollection');

@@ -1,3 +1,7 @@
+/**
+    sync all events on the elastos network
+*/
+
 const { config, DB_SYNC} = require("./utils");
 const { syncRegisterCollection, transferCustomCollection } = require('./syncImportCollection');
 const { syncFeedCollection, transferSingleV1, royaltyFeeV1, orderPriceChangedV1, orderForSaleV1, orderFilledV1, orderCanceledV1 } = require('./syncFeedCollection');
