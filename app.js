@@ -1,8 +1,6 @@
 let express = require('express');
 let cookieParser = require('cookie-parser');
 let bodyParser = require('body-parser');
-let pasarApi = require('./routes/pasarApi');
-let stickerApi = require('./routes/stickerApi');
 let routeV2 = require('./routes/v2/route');
 let jobs = require('./jobs/jobs');
 let jobsV2 = require('./jobs/jobsV2');
@@ -54,8 +52,6 @@ app.use(function(req, res, next) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     next();
 });
-app.use('/pasar/api/v1', pasarApi);
-app.use('/sticker/api/v1', stickerApi);
 app.use('/api/v2', routeV2);
 
 let resolverUrl = "https://api.trinity-tech.cn/eid";
