@@ -2804,17 +2804,23 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollectionByOwner: async function(owner) {
+    getCollectionByOwner: async function(owner, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let checkMarketPlace;
+            if(marketPlace == 0) {
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+            } else {
+                checkMarketPlace = {marketPlace : marketPlace}
+            }
 
             let collections = await token_collection.aggregate([
                 { $lookup: {from: "pasar_collection_royalty", localField: "token", foreignField: "token", as: "royalty"} },
                 { $unwind: "$royalty"},
-                { $match: {$and: [{owner: owner}]} },
-                { $project: {"_id": 0, token: 1, owner: 1, name: 1, uri: 1, symbol: 1, is721: 1, tokenJson: 1, createdTime: 1,
+                { $match: {$and: [{owner: owner}, checkMarketPlace]} },
+                { $project: {"_id": 0, token: 1, owner: 1, name: 1, uri: 1, symbol: 1, is721: 1, tokenJson: 1, marketPlace: 1,createdTime: 1,
                     "owners": "$royalty.royaltyOwner", "feeRates": "$royalty.royaltyRates"},},
             ]).toArray();
 

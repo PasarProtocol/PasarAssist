@@ -545,7 +545,9 @@ router.get('/getCollection/:token', function(req, res) {
 
 router.get('/getCollectionByOwner/:owner', function(req, res) {
     let owner = req.params.owner;
-    stickerDBService.getCollectionByOwner(owner).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+
+    stickerDBService.getCollectionByOwner(owner, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
