@@ -3,6 +3,7 @@ const axios = require('axios');
 const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
+var ObjectID = require('mongodb').ObjectID;
 let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
@@ -3204,32 +3205,36 @@ module.exports = {
     test: async function(baseToken) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
-            let result = [], tokenlist = [];
             await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_sync_temp');
             let collection_token = await mongoClient.db(config.dbName).collection('pasar_token');
-            let mintCount = await collection.find({event: "TransferSingle", "eventData.returnValues._from": "0x0000000000000000000000000000000000000000"}).toArray();
-            let tempTokenList = await collection.find({event: "TransferSingle"}).toArray();
-            let missingNFT = [];
-            let mintedNFT = [];
-            for(var i = 0; i < tempTokenList.length; i++) {
-                if(tokenlist.indexOf(tempTokenList[i].eventData.returnValues._id) == -1) {
-                    tokenlist.push(tempTokenList[i].eventData.returnValues._id);
-                    if(tempTokenList[i].eventData.returnValues._from != "0x0000000000000000000000000000000000000000") {
-                        missingNFT.push({
-                            id: tempTokenList[i].eventData.returnValues._id,
-                        })
-                    }
+            let collection_token_event = await mongoClient.db(config.dbName).collection('pasar_token_event');
+
+            let result = await collection_token.find({baseToken: baseToken}).toArray();
+            let result_event = await collection_token_event.find({token: baseToken, from: config.burnAddress}).toArray();
+
+            let tokenIdList = [], duplicatedIds = [], eventIdList = [], duplicatedEventIds = [];
+
+            for(var i = 0; i < result.length; i++) {
+                if(tokenIdList.indexOf(result[i].tokenId) == -1) {
+                    tokenIdList.push(result[i].tokenId);
+                } else {
+                    duplicatedIds.push(result[i]._id);
                 }
             }
-
-            for(var i = 0; i < mintCount.length; i++) {
-                if(mintedNFT.indexOf(mintCount[i].eventData.returnValues._id) == -1) {
-                    mintedNFT.push(mintCount[i].eventData.returnValues._id);
+            for(var i = 0; i < result_event.length; i++) {
+                if(eventIdList.indexOf(result_event[i].tokenId) == -1) {
+                    eventIdList.push(result_event[i].tokenId);
+                } else {
+                    duplicatedEventIds.push(result_event[i]._id);
                 }
             }
-
-            return {code: 200, message: 'success', data: {minted: mintedNFT.length, total: tokenlist.length, missingNFT: {count: missingNFT.length, list: missingNFT}}};
+            for(var i = 0; i < duplicatedIds.length; i++) {
+                await collection_token.deleteMany({_id: ObjectID(duplicatedIds[i])});
+            }
+            for(var i = 0; i < duplicatedEventIds.length; i++) {
+                await collection_token_event.deleteMany({_id: ObjectID(duplicatedEventIds[i])});
+            }
+            return {code: 200, message: 'success', tokenData: {total: duplicatedIds.length, data: duplicatedIds},eventData: {total: duplicatedEventIds.length, data: duplicatedEventIds}};
         } catch(err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
