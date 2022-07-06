@@ -27,9 +27,9 @@ module.exports = {
     pasarRegisterContract: '0x2b304ffC302b402785294629674A8C2b64cEF897',
     diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
 
-    pasarEthContract: '0xAB5bB5FcEFc9703814AF68077387BC09Be12190b',
-    stickerEthContract: '0x2C8615B32cf6535Eb38DD076aD822E7c2362a4c7',
-    pasarEthRegisterContract: '0x7d797f3564073FFF8E75D9D5Be57EBC01512b554',
+    pasarEthContract: '0x7d797f3564073FFF8E75D9D5Be57EBC01512b554',
+    stickerEthContract: '0xAB5bB5FcEFc9703814AF68077387BC09Be12190b',
+    pasarEthRegisterContract: '0x2C8615B32cf6535Eb38DD076aD822E7c2362a4c7',
 
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
@@ -38,9 +38,9 @@ module.exports = {
     galleriaContractDeploy: 10242686,
     pasarRegisterContractDeploy: 12311838,
     
-    pasarEthContractDeploy: 12535391,
-    stickerEthContractDeploy: 12535394,
-    pasarEthRegisterContractDeploy: 12535402,
+    pasarEthContractDeploy: 12535402,
+    stickerEthContractDeploy: 12535391,
+    pasarEthRegisterContractDeploy: 12535394,
 
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
