@@ -907,10 +907,11 @@ module.exports = {
             ]).toArray();
             let sum = 0;
             result.forEach(ele => {
-                sum += parseInt(ele['price']) * parseInt(ele['amount']);
+                let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
+                sum += Math.floor(parseInt(ele['price']) / Math.pow(10, 18)) * amount;
             });
-            sum = Math.floor(sum / Math.pow(10, 18));
-            result = {code: 200, message: 'success', data : sum};
+            
+            result = {code: 200, message: 'success', data : sum, result};
           return result;
         } catch (err) {
             logger.error(err);
