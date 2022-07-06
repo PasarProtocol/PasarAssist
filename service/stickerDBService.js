@@ -940,8 +940,8 @@ module.exports = {
             let result = await collection.aggregate([
                 // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
                 { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
-                { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp", quoteToken: "$quoteToken"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1, marketPlace: 1} },
+                { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp", quoteToken: "$quoteToken", marketPlace: "$marketPlace"}, "price": {$sum: "$price"}} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1, marketPlace: "$_id.marketPlace"} },
                 { $sort: {timestamp: 1} }
             ]).toArray();
             if(result.length > 0)
