@@ -251,7 +251,7 @@ module.exports = {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`)
                 }).on("data", async function (event) {
                     let jobService = require('./jobService.js');
-                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
+                    await jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
                 })
             } else {
                 tokenContractWs.events.TransferSingle({
@@ -263,7 +263,7 @@ module.exports = {
                     logger.info(`[User Contract] ${x.token} Sync Starting ...`);
                 }).on("data", async function (event) {
                     let jobService = require('./jobService.js');
-                    jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
+                    await jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
                 })
             }
         }

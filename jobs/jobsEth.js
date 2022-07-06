@@ -1027,7 +1027,7 @@ module.exports = {
             /**
                 *  Start to listen all user's contract events
             */
-            jobService.startupUsersContractEvents(web3Ws, web3Rpc, config.ethChain);
+            await jobService.startupUsersContractEvents(web3Ws, web3Rpc, config.ethChain);
         })
 
         schedule.scheduleJob('0 * * * * *', async () => {
