@@ -941,7 +941,7 @@ module.exports = {
                 // { $addFields: {onlyDate: {$dateToString: {format: '%Y-%m-%d %H', date: '$timestamp'}}} },
                 { $match: {$and : [{"tokenId": new RegExp('^' + tokenId)}, {baseToken: baseToken}, { event: "OrderFilled" }]} },
                 { $group: { "_id"  : { tokenId: "$tokenId", timestamp: "$timestamp", quoteToken: "$quoteToken"}, "price": {$sum: "$price"}} },
-                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1} },
+                { $project: {_id: 0, tokenId : "$_id.tokenId", onlyDate: "$_id.timestamp", quoteToken: "$_id.quoteToken", price:1, marketPlace: 1} },
                 { $sort: {timestamp: 1} }
             ]).toArray();
             if(result.length > 0)
