@@ -911,7 +911,7 @@ module.exports = {
                 sum += Math.floor(parseInt(ele['price']) / Math.pow(10, 18)) * amount;
             });
             
-            result = {code: 200, message: 'success', data : sum, result};
+            result = {code: 200, message: 'success', data : sum};
           return result;
         } catch (err) {
             logger.error(err);
