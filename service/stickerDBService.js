@@ -903,11 +903,23 @@ module.exports = {
                 }
             ]).toArray();
             let sum = 0;
+            
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
+
             result.forEach(ele => {
-                sum += parseInt(ele['price']) * parseInt(ele['amount']);
+                let convertToken = ele['quoteToken'];
+                if(ele['quoteToken'] == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                
+                let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
+                let price = parseInt(ele['price']) * listRate[convertToken] / 10 ** 18;
+
+                sum += price * amount;
             });
-            sum = Math.floor(sum / Math.pow(10, 18));
-            result = {code: 200, message: 'success', data : sum};
           return result;
         } catch (err) {
             logger.error(err);
