@@ -1,3 +1,7 @@
+/**
+    sync the nfts of feeds collection on elastos network
+*/
+
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 let pasarDBService = require('../service/pasarDBService');

@@ -1,3 +1,7 @@
+/**
+    sync the nfts of importing collection on elastos network
+*/
+
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 const token1155ABI = require("../contractABI/token1155ABI");
@@ -8,6 +12,7 @@ let jobService = require('../service/jobService');
 
 let web3Rpc = new Web3(config.escRpcUrl);
 
+// set the address list of imported collection
 let listCollection = [                       
     {name: "Bunny Lottery", address: '0x0954133d1a6E12d420602336643fbd6d61cdE91d'},
 ];

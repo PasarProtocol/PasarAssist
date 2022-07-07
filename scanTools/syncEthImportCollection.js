@@ -1,3 +1,7 @@
+/**
+    sync the importing collections and nfts on ethereum network
+*/
+
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 

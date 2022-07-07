@@ -1,3 +1,7 @@
+/**
+    sync the nfts of importing collection on ethereum network
+*/
+
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 const token1155ABI = require("../contractABI/token1155ABI");
@@ -8,6 +12,7 @@ let jobService = require('../service/jobService');
 
 let web3Rpc = new Web3(config.ethRpcUrl);
 
+// set the address list of imported collection
 let listCollection = [                       
     {name: "Test2", address: '0x0aC5d975876DE8a21F709e632CBb700561276EAD'},
 ];
