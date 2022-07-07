@@ -920,7 +920,8 @@ module.exports = {
 
                 sum += price * amount;
             });
-          return result;
+            result = {code: 200, message: 'success', data : sum};
+            return result;
         } catch (err) {
             logger.error(err);
             return {code: 500, message: 'server error'};
