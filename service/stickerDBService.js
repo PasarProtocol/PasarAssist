@@ -879,8 +879,8 @@ module.exports = {
             await mongoClient.connect();
             let collection  = mongoClient.db(config.dbName).collection('pasar_token');
             let owners = await collection.aggregate([
-                {
-                    $group: {
+                {$match: {holder: {$ne: config.burnAddress}}},
+                { $group: {
                         _id: "$holder"
                     }
                 }]).toArray();
