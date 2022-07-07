@@ -906,9 +906,22 @@ module.exports = {
                 }
             ]).toArray();
             let sum = 0;
+            
+            let rates = await this.getPriceRate();
+            let listRate = [];
+            for(var i=0; i < rates.length; i++) {
+                listRate[rates[i].type] = rates[i].rate;
+            }
+
             result.forEach(ele => {
+                let convertToken = ele['quoteToken'];
+                if(ele['quoteToken'] == config.diaTokenContract)
+                    convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
+                
                 let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
-                sum += Math.floor(parseInt(ele['price']) / Math.pow(10, 18)) * amount;
+                let price = parseInt(ele['price']) * listRate[convertToken] / 10 ** 18;
+
+                sum += price * amount;
             });
             
             result = {code: 200, message: 'success', data : sum};
