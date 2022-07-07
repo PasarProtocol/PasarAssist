@@ -16,8 +16,8 @@ module.exports = {
     escWsUrl: 'wss://api.elastos.io/eth-ws',
     escRpcUrl: 'https://api.elastos.io/eth',
 
-    ethWsUrl: 'wss://mainnet.infura.io/ws/v3/8afb20a70e1047f19ed6f7419ba5381e',
-    ethRpcUrl: 'https://mainnet.infura.io/v3/8afb20a70e1047f19ed6f7419ba5381e',
+    ethWsUrl: 'wss://mainnet.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f',
+    ethRpcUrl: 'https://mainnet.infura.io/v3/02505ed478e64ee481a74236dc9e91f',
 
     pasarContract: '0x02E8AD0687D583e2F6A7e5b82144025f30e26aA0',
     stickerContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
