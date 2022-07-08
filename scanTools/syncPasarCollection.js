@@ -46,7 +46,7 @@ async function transferSingleV2(event, marketPlace) {
         await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
     }
 }
 

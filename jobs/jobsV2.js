@@ -488,7 +488,7 @@ module.exports = {
                 } else if(from === burnAddress) {
                     await dealWithNewToken(blockNumber, tokenId, config.elaChain)
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elaChain);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, config.elaChain);
                 }
             })
         });
