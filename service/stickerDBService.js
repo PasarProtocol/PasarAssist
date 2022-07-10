@@ -405,7 +405,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
-            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken}).count();
+            let length = await collection.find({tokenId: token.tokenId, baseToken: token.baseToken, holder: {$ne: config.burnAddress}}).count();
             
             if(length == 0) {
                 await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken}, {$set: token}, {upsert: true});
