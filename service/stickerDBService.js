@@ -2753,15 +2753,6 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let result = await token_collection.findOne({token: token, marketPlace: marketPlace});
-            let uriInfo = await jobService.getInfoByIpfsUri(result.uri);
-            result.creatorDid = '';
-            result.creatorName = '';
-            result.creatorDescription = '';
-            if(uriInfo && uriInfo.creator) {
-                result.creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
-                result.creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
-                result.creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
-            }
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -3266,6 +3257,7 @@ module.exports = {
             
             await Promise.all(collections.map(async cell => {
                 let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, collectibles = [];
+                let creatorDid = '', creatorName = '', creatorDescription = '';
 
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
                 diaBalance = diaBalance / (10 ** 18);
@@ -3299,7 +3291,15 @@ module.exports = {
                     totalPrice = 0;
                 }
                 
-                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, diaBalance}})
+                let uriInfo = await jobService.getInfoByIpfsUri(cell.uri);
+                
+                if(uriInfo && uriInfo.creator) {
+                    creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
+                    creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
+                    creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
+                }
+
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, diaBalance, creatorDid, creatorName, creatorDescription}})
             }));
 
         } catch(err) {
