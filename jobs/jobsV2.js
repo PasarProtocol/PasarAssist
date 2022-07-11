@@ -1048,5 +1048,12 @@ module.exports = {
                 }
             }
         })
+
+        /**
+            *  Update the infos related with collection
+        */
+        schedule.scheduleJob('0 */2 * * * *', async () => {
+            await stickerDBService.updateCollectionInfo();
+        })
     }
 }
