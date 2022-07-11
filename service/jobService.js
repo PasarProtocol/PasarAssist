@@ -141,6 +141,16 @@ module.exports = {
                 let returnData = await this.parseBunnyLottery(jsonData, token);
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
+        } else if(token.toLocaleLowerCase() == '0x78a562065FD208117670B89FcD2701bF4FBda4FE'.toLocaleLowerCase()) {
+            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
+            fetch(result)
+            .then(res => res.text())
+            .then(async data => {
+                let jsonData = await JSON.parse(data);
+                let returnData = await this.parseHeralds(jsonData, token);
+
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+            })
         }
     },
 
@@ -507,6 +517,49 @@ module.exports = {
         returnValue.kind = 'image';
         returnValue.size = 0;
         returnValue.adult = false;
+        return returnValue;
+    },
+
+    parseHeralds: async function(data, token) {
+        let returnValue = {};
+
+        returnValue.tokenJsonVersion = 1;
+        returnValue.type = data.type;
+        returnValue.name = data.name;
+        returnValue.description = data.description;
+        returnValue.thumbnail = data.image.replace("ipfs://", "https://ipfs.pasarprotocol.io/ipfs/");
+        returnValue.asset = data.image.replace("ipfs://", "https://ipfs.pasarprotocol.io/ipfs/");
+        returnValue.kind = data.type;
+        returnValue.size = 0;
+        returnValue.adult = false;
+        returnValue.attribute={};
+        let listAttributes = data.attributes;
+
+        let stickerDBService = require("./stickerDBService");
+        let collection = await stickerDBService.getCollection(token);
+        let attributeOfCollection = {};
+        if(collection && collection.attribute) {
+            attributeOfCollection = collection.attribute;
+        }
+
+        listAttributes.forEach(element => {
+            console.log(element)
+            let type = element.trait_type;
+            let value = element.value;
+            returnValue.attribute[type] = value;
+            if(attributeOfCollection[type]) {
+                let listParams = attributeOfCollection[type];
+                if(listParams.indexOf(value) == -1) {
+                    attributeOfCollection[type].push(value);
+                }
+            } else {
+                attributeOfCollection[type] = [value];
+            }
+        });
+        if(attributeOfCollection) {
+            await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+        }
+        
         return returnValue;
     },
 }
