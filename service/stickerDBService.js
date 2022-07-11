@@ -2055,13 +2055,13 @@ module.exports = {
         }
     },
 
-    getAttributeOfCollection: async function(token) {
+    getAttributeOfCollection: async function(token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try{
             await mongoClient.connect();
             let collectionToken  = mongoClient.db(config.dbName).collection('pasar_token');
             let attributesOfToken = await collectionToken.aggregate([
-                {$match: {baseToken: token}},
+                {$match: {baseToken: token, marketPlace: marketPlace}},
                 {$project: {_id: 0, attribute: 1}}
             ]).toArray();
             let result = {};
@@ -2751,7 +2751,7 @@ module.exports = {
             await Promise.all(collections.map(async cell => {
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
                 cell.diaBalance = diaBalance / (10 ** 18);
-                let reponse = await this.getTotalCountCollectibles(cell.token, onMarket);
+                let reponse = await this.getTotalCountCollectibles(cell.token, cell.marketPlace, onMarket);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalCount = reponse.data.total;
@@ -2762,19 +2762,19 @@ module.exports = {
                 } else {
                     cell.totalCount = 0;
                 }
-                reponse = await this.getFloorPriceCollectibles(cell.token);
+                reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
                     cell.floorPrice = reponse.data.price ;
                 } else {
                     cell.floorPrice = 0;
                 }
-                reponse = await this.getOwnersOfCollection(cell.token);
+                reponse = await this.getOwnersOfCollection(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalOwner = reponse.data.total;
                 } else {
                     cell.totalOwner = 0;
                 }
-                reponse = await this.getTotalPriceCollectibles(cell.token);
+                reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalPrice = reponse.data.total;
                 } else {
@@ -2797,12 +2797,12 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollectionByToken: async function(token) {
+    getCollectionByToken: async function(token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let result = await token_collection.findOne({token: token});
+            let result = await token_collection.findOne({token: token, marketPlace: marketPlace});
             let uriInfo = await jobService.getInfoByIpfsUri(result.uri);
             result.creatorDid = '';
             result.creatorName = '';
@@ -2832,7 +2832,11 @@ module.exports = {
             }
 
             let collections = await token_collection.aggregate([
-                { $lookup: {from: "pasar_collection_royalty", localField: "token", foreignField: "token", as: "royalty"} },
+                { $lookup: {from: "pasar_collection_royalty",
+                    let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttoken", "$token"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
+                    as: "royalty"}},
+                // { $lookup: {from: "pasar_collection_royalty", localField: "token", foreignField: "token", as: "royalty"} },
                 { $unwind: "$royalty"},
                 { $match: {$and: [{owner: owner}, checkMarketPlace]} },
                 { $project: {"_id": 0, token: 1, owner: 1, name: 1, uri: 1, symbol: 1, is721: 1, tokenJson: 1, marketPlace: 1,createdTime: 1,
@@ -2847,7 +2851,7 @@ module.exports = {
             await Promise.all(collections.map(async cell => {
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
                 cell.diaBalance = diaBalance / (10 ** 18);
-                let reponse = await this.getTotalCountCollectibles(cell.token);
+                let reponse = await this.getTotalCountCollectibles(cell.token, cell.marketPlace);
                 cell.collectibles = [];
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalCount = reponse.data.total;
@@ -2858,19 +2862,19 @@ module.exports = {
                 } else {
                     cell.totalCount = 0;
                 }
-                reponse = await this.getFloorPriceCollectibles(cell.token);
+                reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
                     cell.floorPrice = reponse.data.price ;
                 } else {
                     cell.floorPrice = 0;
                 }
-                reponse = await this.getOwnersOfCollection(cell.token);
+                reponse = await this.getOwnersOfCollection(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalOwner = reponse.data.total;
                 } else {
                     cell.totalOwner = 0;
                 }
-                reponse = await this.getTotalPriceCollectibles(cell.token);
+                reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     cell.totalPrice = reponse.data.total;
                 } else {
@@ -2886,13 +2890,13 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getOwnersOfCollection: async function(token) {
+    getOwnersOfCollection: async function(token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
             let listAddress = [];
-            let tokens = await token_collection.find({baseToken: token, holder: {$ne: burnAddress}}).toArray();
+            let tokens = await token_collection.find({baseToken: token, marketPlace: marketPlace, holder: {$ne: burnAddress}}).toArray();
 
             tokens.forEach(cell => {
                 if(listAddress.indexOf(cell.holder) == -1) {
@@ -2906,11 +2910,11 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getTotalCountCollectibles: async function(token, onMarket=false) {
+    getTotalCountCollectibles: async function(token, marketPlace, onMarket=false) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
-            let checkCondition = [{baseToken: token}, {holder: {$ne: burnAddress}}];
+            let checkCondition = [{baseToken: token}, {holder: {$ne: burnAddress}}, {marketPlace: marketPlace}];
             if(onMarket) {
                 checkCondition.push({status: {$ne: "Not on sale"}})
             }
@@ -2951,14 +2955,14 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getTotalPriceCollectibles: async function(token) {
+    getTotalPriceCollectibles: async function(token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_order');
 
             let result = await token_collection.aggregate([
-                { $match: {baseToken: token, orderState: "2"}},
+                { $match: {baseToken: token, orderState: "2", marketPlace: marketPlace}},
                 { $project: {"_id": 0, filled: 1, quoteToken: 1}},
             ]).toArray();
 
@@ -2986,21 +2990,21 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getFloorPriceCollectibles: async function(token) {
+    getFloorPriceCollectibles: async function(token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
-            await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
+            await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
 
             let result = await token_collection.aggregate([
-                { $match: {baseToken: token, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
+                { $match: {baseToken: token, marketPlace: marketPlace, status: {$ne: "Not on sale"}, holder: {$ne: burnAddress}}},
                 { $lookup: {
                     from: "pasar_order",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
+                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}},{$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
                     as: "order"}},
                 { $unwind: "$order"},
                 { $project: {"_id": 0, price: "$order.price", quoteToken: "$order.quoteToken"}},

@@ -400,8 +400,9 @@ router.post('/getDetailedCollectiblesInCollection', function(req, res) {
 
 router.get('/getAttributeOfCollection/:token', function(req, res) {
     let token = req.params.token;
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
 
-    stickerDBService.getAttributeOfCollection(token).then(result => {
+    stickerDBService.getAttributeOfCollection(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -535,7 +536,9 @@ router.get('/getCollection', function(req, res) {
 
 router.get('/getCollection/:token', function(req, res) {
     let token = req.params.token;
-    stickerDBService.getCollectionByToken(token).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
+
+    stickerDBService.getCollectionByToken(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -556,7 +559,9 @@ router.get('/getCollectionByOwner/:owner', function(req, res) {
 });
 router.get('/getOwnersOfCollection/:token', function(req, res) {
     let token = req.params.token;
-    stickerDBService.getOwnersOfCollection(token).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
+
+    stickerDBService.getOwnersOfCollection(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -565,7 +570,9 @@ router.get('/getOwnersOfCollection/:token', function(req, res) {
 });
 router.get('/getTotalCountCollectibles/:token', function(req, res) {
     let token = req.params.token;
-    stickerDBService.getTotalCountCollectibles(token).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
+
+    stickerDBService.getTotalCountCollectibles(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -574,7 +581,9 @@ router.get('/getTotalCountCollectibles/:token', function(req, res) {
 });
 router.get('/getTotalPriceCollectibles/:token', function(req, res) {
     let token = req.params.token;
-    stickerDBService.getTotalPriceCollectibles(token).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
+
+    stickerDBService.getTotalPriceCollectibles(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -583,7 +592,9 @@ router.get('/getTotalPriceCollectibles/:token', function(req, res) {
 });
 router.get('/getFloorPriceCollectibles/:token', function(req, res) {
     let token = req.params.token;
-    stickerDBService.getFloorPriceCollectibles(token).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 1;
+
+    stickerDBService.getFloorPriceCollectibles(token, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
