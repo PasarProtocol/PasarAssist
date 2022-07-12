@@ -4,13 +4,13 @@
 
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let pasarDBService = require('../service/pasarDBService');
-let pasarContractABI = require('../contractABI/pasarABI');
-let stickerContractABI = require('../contractABI/stickerABI');
-let stickerDBService = require('../service/stickerDBService');
-let jobService = require('../service/jobService');
+let pasarDBService = require('../../service/pasarDBService');
+let pasarContractABI = require('../../contractABI/pasarABI');
+let stickerContractABI = require('../../contractABI/stickerABI');
+let stickerDBService = require('../../service/stickerDBService');
+let jobService = require('../../service/jobService');
 
-const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("./utils");
+const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("../ethereumScanTools/utils");
 
 let token = config.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';

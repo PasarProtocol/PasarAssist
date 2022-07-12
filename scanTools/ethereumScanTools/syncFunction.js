@@ -6,7 +6,7 @@ const { config, DB_SYNC} = require("./utils");
 const { syncEthRegisterCollection, transferEthCustomCollection } = require('./syncEthImportCollection');
 const { syncPasarCollection, transferSingleEth, transferBatchEth, royaltyFeeEth, orderPriceChangedEth, orderForSaleEth, orderForAuctionEth, orderFilledEth, orderCanceledEth, orderBidEth } = require('./syncEthPasarCollection');
 
-let stickerDBService = require('../service/stickerDBService');
+let stickerDBService = require('../../service/stickerDBService');
 let currentStep = 0;
 let i = 0;
 let totalCount;

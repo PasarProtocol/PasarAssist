@@ -1,8 +1,8 @@
 let Web3 = require('web3');
-let stickerDBService = require('../service/stickerDBService');
-let jobService = require('../service/jobService');
-let config = require('../config');
-let config_test = require("../config_test");
+let stickerDBService = require('../../service/stickerDBService');
+let jobService = require('../../service/jobService');
+let config = require('../../config');
+let config_test = require("../../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
 let DB_SYNC = 'pasar_sync_temp';

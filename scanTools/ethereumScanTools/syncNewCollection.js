@@ -4,11 +4,11 @@
 
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-const token1155ABI = require("../contractABI/token1155ABI");
-const token721ABI = require("../contractABI/token721ABI");
+const token1155ABI = require("../../contractABI/token1155ABI");
+const token721ABI = require("../../contractABI/token721ABI");
 const { scanEvents, config } = require("./utils");
 
-let jobService = require('../service/jobService');
+let jobService = require('../../service/jobService');
 
 let web3Rpc = new Web3(config.ethRpcUrl);
 
@@ -25,7 +25,7 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
             {method: tokenContract.methods.supportsInterface('0x80ac58cd').call, params: {}},
             {method: tokenContract.methods.supportsInterface('0xd9b67a26').call, params: {}},
         ], web3Rpc)
-        console.log(1111111);
+        
         if(!is721 && is1155) {
             tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
         }

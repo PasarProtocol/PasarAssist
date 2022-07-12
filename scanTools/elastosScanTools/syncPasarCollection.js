@@ -1,25 +1,25 @@
 /**
-    sync the nfts of pasar collection on ethereum network
+    sync the nfts of pasar collection on elastos network
 */
 
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let pasarDBService = require('../service/pasarDBService');
-let pasarContractABI = require('../contractABI/pasarV2ABI');
-let stickerContractABI = require('../contractABI/stickerV2ABI');
+let pasarDBService = require('../../service/pasarDBService');
+let pasarContractABI = require('../../contractABI/pasarV2ABI');
+let stickerContractABI = require('../../contractABI/stickerV2ABI');
 
-let stickerDBService = require('../service/stickerDBService');
-let jobService = require('../service/jobService');
+let stickerDBService = require('../../service/stickerDBService');
+let jobService = require('../../service/jobService');
 
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.ethRpcUrl);
-let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
-let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
+let web3Rpc = new Web3(config.escRpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Contract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerV2Contract);
 
 
-async function transferSingleEth(event, marketPlace) {
+async function transferSingleV2(event, marketPlace) {
     let blockNumber = event.blockNumber;
     let txHash = event.transactionHash;
     let txIndex = event.transactionIndex;
@@ -40,17 +40,17 @@ async function transferSingleEth(event, marketPlace) {
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+        await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
     }
 }
 
-async function transferBatchEth(event, marketPlace) {
+async function transferBatchV2(event, marketPlace) {
     let blockNumber = event.blockNumber;
     let txHash = event.transactionHash;
     let txIndex = event.transactionIndex;
@@ -71,29 +71,29 @@ async function transferBatchEth(event, marketPlace) {
     {
         let tokenId = tokenIds[i];
         let value = values[i];
-        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace};
+        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
 
         if(to === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+            await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
         } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
         }
     }
 }
 
-async function royaltyFeeEth(event, marketPlace) {
+async function royaltyFeeV2(event, marketPlace) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerEthContract, marketPlace);
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerV2Contract, marketPlace);
 }
 
-async function orderForSaleEth(event, marketPlace) {
+async function orderForSaleV2(event, marketPlace) {
     let orderInfo = event.returnValues;
     let [result, txInfo] = await jobService.makeBatchRequest([
         {method: pasarContract.methods.getOrderById(orderInfo._orderId).call, params: {}},
@@ -124,7 +124,7 @@ async function orderForSaleEth(event, marketPlace) {
         await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderPriceChangedEth(event, marketPlace) {
+async function orderPriceChangedV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -156,7 +156,7 @@ async function orderPriceChangedEth(event, marketPlace) {
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, marketPlace);
 }
 
-async function orderCanceledEth(event, marketPlace) {
+async function orderCanceledV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -182,7 +182,7 @@ async function orderCanceledEth(event, marketPlace) {
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
 }
 
-async function orderFilledEth(event, marketPlace) {
+async function orderFilledV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -217,7 +217,7 @@ async function orderFilledEth(event, marketPlace) {
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderForAuctionEth(event, marketPlace) {
+async function orderForAuctionV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -251,7 +251,7 @@ async function orderForAuctionEth(event, marketPlace) {
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
 }
 
-async function orderBidEth(event, marketPlace) {
+async function orderBidV2(event, marketPlace) {
     let orderInfo = event.returnValues;
 
     let [result, txInfo] = await jobService.makeBatchRequest([
@@ -280,21 +280,21 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "TransferBatch", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
     }
     console.log(`collectible batch count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
@@ -303,49 +303,49 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderForAuction", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`auction count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderBid", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`bid count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 };
 
 const syncPasarCollection = async () => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.stickerEthContractDeploy;
+    let startBlock = config.stickerV2ContractDeploy;
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
     console.log("Total Pasar Collection: " + stickerCountContract);
     while(startBlock < lastBlock) {
@@ -353,7 +353,7 @@ const syncPasarCollection = async () => {
         startBlock = startBlock + 1000000;
     };
     
-    startBlock = config.pasarEthContractDeploy;
+    startBlock = config.pasarV2ContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;
@@ -362,13 +362,13 @@ const syncPasarCollection = async () => {
 
 module.exports = {
     syncPasarCollection,
-    transferSingleEth,
-    transferBatchEth,
-    royaltyFeeEth,
-    orderForSaleEth,
-    orderForAuctionEth,
-    orderBidEth,
-    orderPriceChangedEth,
-    orderCanceledEth,
-    orderFilledEth
+    transferSingleV2,
+    transferBatchV2,
+    royaltyFeeV2,
+    orderForSaleV2,
+    orderForAuctionV2,
+    orderBidV2,
+    orderPriceChangedV2,
+    orderCanceledV2,
+    orderFilledV2
 }

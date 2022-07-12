@@ -4,11 +4,11 @@
 
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-const token1155ABI = require("../contractABI/token1155ABI");
-const token721ABI = require("../contractABI/token721ABI");
+const token1155ABI = require("../../contractABI/token1155ABI");
+const token721ABI = require("../../contractABI/token721ABI");
 const { scanEvents, config } = require("./utils");
 
-let jobService = require('../service/jobService');
+let jobService = require('../../service/jobService');
 
 let web3Rpc = new Web3(config.escRpcUrl);
 

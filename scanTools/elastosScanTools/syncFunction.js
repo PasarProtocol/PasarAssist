@@ -7,7 +7,7 @@ const { syncRegisterCollection, transferCustomCollection } = require('./syncImpo
 const { syncFeedCollection, transferSingleV1, royaltyFeeV1, orderPriceChangedV1, orderForSaleV1, orderFilledV1, orderCanceledV1 } = require('./syncFeedCollection');
 const { syncPasarCollection, transferSingleV2, transferBatchV2, royaltyFeeV2, orderPriceChangedV2, orderForSaleV2, orderForAuctionV2, orderFilledV2, orderCanceledV2, orderBidV2 } = require('./syncPasarCollection');
 
-let stickerDBService = require('../service/stickerDBService');
+let stickerDBService = require('../../service/stickerDBService');
 let currentStep = 0;
 let i = 0;
 let totalCount;

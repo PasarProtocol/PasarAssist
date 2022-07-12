@@ -5,14 +5,14 @@
 const schedule = require('node-schedule');
 let Web3 = require('web3');
 
-const token1155ABI = require("../contractABI/token1155ABI");
-const token721ABI = require("../contractABI/token721ABI");
-const pasarRegisterContractABI = require('../contractABI/pasarRegisterABI');
+const token1155ABI = require("../../contractABI/token1155ABI");
+const token721ABI = require("../../contractABI/token721ABI");
+const pasarRegisterContractABI = require('../../contractABI/pasarRegisterABI');
 
 const { scanEvents, saveEvent, config, DB_SYNC } = require("./utils");
-let jobService = require('../service/jobService');
-let stickerDBService = require('../service/stickerDBService');
-let pasarDBService = require('../service/pasarDBService');
+let jobService = require('../../service/jobService');
+let stickerDBService = require('../../service/stickerDBService');
+let pasarDBService = require('../../service/pasarDBService');
 
 let web3Rpc = new Web3(config.escRpcUrl);
 let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarRegisterContract);
