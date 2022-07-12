@@ -241,7 +241,7 @@ module.exports = {
 
     startupUsersContractEvents: async function (web3Ws, web3Rpc, marketPlace) {
         const stickerDBService = require("./stickerDBService");
-        let data = (await stickerDBService.getCollections()).data;
+        let data = (await stickerDBService.getCollections(0, marketPlace)).data;
 
         for(let x of data) {
 

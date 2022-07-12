@@ -2685,7 +2685,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function(sort = 0, marketPlace, onMarket=false) {
+    getCollections: async function(sort = 0, marketPlace) {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
