@@ -3012,7 +3012,7 @@ module.exports = {
             let fields = {_id: 0, tokenId: 1, saleType: 1, quantity: "$token.quantity", royalties: "$token.royalties", royaltyOwner: "$token.royaltyOwner", holder: "$token.holder",
                 createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
                 data: "$token.data", asset: "$token.asset", adult: "$token.adult", quoteToken: "$token.quoteToken", price: "$token.price",
-                marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail"}
+                marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail", marketPlace: 1}
 
             let result = await collection.aggregate([
                 { $match: {$and: [{orderState: "2"}]}},
