@@ -2815,12 +2815,15 @@ module.exports = {
         try {
             await mongoClient.connect();
             let checkCondition = [{baseToken: token}, {holder: {$ne: burnAddress}}, {marketPlace: marketPlace}];
+            let sort = {createTime: -1}
+
             if(onMarket) {
                 checkCondition.push({status: {$ne: "Not on sale"}})
+                sort = {marketTime : -1}
             }
             let condition = {$and: checkCondition};
             const tokenDB = await mongoClient.db(config.dbName).collection('pasar_token');
-            let result = await tokenDB.find(condition).sort({createTime: -1}).toArray();
+            let result = await tokenDB.find(condition).sort(sort).toArray();
             return {code: 200, message: 'success', data: {total: result.length, list: result}};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -3256,7 +3259,7 @@ module.exports = {
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
             
             await Promise.all(collections.map(async cell => {
-                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, collectibles = [];
+                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, collectibles = [], collectiblesOnMarket=[];
                 let creatorDid = '', creatorName = '', creatorDescription = '';
 
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
@@ -3272,6 +3275,16 @@ module.exports = {
                 } else {
                     totalCount = 0;
                 }
+                
+                reponse = await this.getTotalCountCollectibles(cell.token, cell.marketPlace, true);
+                
+                if(reponse.code == 200 && reponse.data.total) {
+                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
+                    for(var i = 0; i < endCount; i++) {
+                        collectiblesOnMarket.push(reponse.data.list[i])
+                    }
+                }
+
                 reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
                     floorPrice = reponse.data.price ;
@@ -3299,7 +3312,7 @@ module.exports = {
                     creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
                 }
 
-                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, diaBalance, creatorDid, creatorName, creatorDescription}})
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
             }));
 
         } catch(err) {
