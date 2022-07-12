@@ -2242,15 +2242,15 @@ module.exports = {
             const order_collection = mongoClient.db(config.dbName).collection('pasar_order');
             const token_collection = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order_event  = mongoClient.db(config.dbName).collection('pasar_order_event');
-            await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await order_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-            await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
-
+            await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await order_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
+            console.log(address);
             let tokens = await order_collection.aggregate([
                 { $match: {$and: [{sellerAddr: address, orderState: "2"}]} },
                 { $lookup: {from: "pasar_token",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
+                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
                     as: "token"}
                 },
                 { $lookup: {from: "pasar_order_event",
@@ -2264,7 +2264,7 @@ module.exports = {
                 marketTime:"$token.marketTime", status: "$token.status", endTime:"$token.endTime", orderId: "$token.orderId", priceCalculated: "$token.priceCalculated", orderType: 1, amount: 1,
                 baseToken: "$token.baseToken",  marketPlace:1, reservePrice: 1,currentBid: 1, thumbnail: "$token.thumbnail", kind: "$token.kind" },},
             ]).toArray();
-
+            
             let result = await this.getSortCollectibles(tokens, sort)
 
             return { code: 200, message: 'sucess', data: result};
