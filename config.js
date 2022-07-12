@@ -16,8 +16,8 @@ module.exports = {
     escWsUrl: 'wss://api.elastos.io/eth-ws',
     escRpcUrl: 'https://api.elastos.io/eth',
 
-    ethWsUrl: 'wss://mainnet.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f',
-    ethRpcUrl: 'https://mainnet.infura.io/v3/02505ed478e64ee481a74236dc9e91f',
+    ethWsUrl: 'wss://mainnet.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
+    ethRpcUrl: 'https://mainnet.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
 
     pasarContract: '0x02E8AD0687D583e2F6A7e5b82144025f30e26aA0',
     stickerContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
@@ -27,9 +27,9 @@ module.exports = {
     pasarRegisterContract: '0x3d0AD66765C319c2A1c6330C1d815608543dcc19',
     diaTokenContract: '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5',
 
-    pasarEthContract: '0xC1c2f0f2b4A6e7aB99Bf588930Dcbb5dD6690F30',
-    stickerEthContract: '0xA4b6ca4c59F2FA0c122e702ED6830fea48e635f9',
-    pasarEthRegisterContract: '0x73c7fa921fE366aDcCC241E11A5A120198D2364c',
+    pasarEthContract: '0x940b857f2D5FA0cf9f0345B43C0e3308cD9E4A62',
+    stickerEthContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
+    pasarEthRegisterContract: '0x24A7af00c8d03F2FeEb89045B2B93c1D7C3ffB08',
 
     pasarContractDeploy: 7744408,
     stickerContractDeploy: 7744408,
@@ -38,9 +38,9 @@ module.exports = {
     stickerV2ContractDeploy: 12695430,
     pasarRegisterContractDeploy: 12698059,
 
-    pasarEthContractDeploy: 12445478,
-    stickerEthContractDeploy: 12445467,
-    pasarEthRegisterContractDeploy: 12445472,
+    pasarEthContractDeploy: 15126947,
+    stickerEthContractDeploy: 15126909,
+    pasarEthRegisterContractDeploy: 15126930,
 
     ipfsNodeUrl:  "https://ipfs.pasarprotocol.io/ipfs/",
 
