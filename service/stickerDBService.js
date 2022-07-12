@@ -513,12 +513,19 @@ module.exports = {
 
             await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: updateData});
             if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != config.pasarEthContract && holder != null) {
+                updateData.holder = holder;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {holder}});
             }
             if(status != null) {
+                updateData.status = status;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {status}});
             }
 
+            let checkData = await collection.findOne(updateData);
+            if(checkData == null) {
+                await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
+            }
+            
         } catch (err) {
             logger.error(err);
             throw new Error();
