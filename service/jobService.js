@@ -149,7 +149,7 @@ module.exports = {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseHeralds(jsonData, token);
 
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         } else if(token.toLocaleLowerCase() == '0xd5aFf849495487e3c405c9fcA1b878bDd72B9e97'.toLocaleLowerCase()) {
             result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
@@ -159,7 +159,7 @@ module.exports = {
                 let jsonData = await JSON.parse(data);
                 let returnData = await this.parseBirdie(jsonData, token);
 
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData)
+                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
         }
     },
