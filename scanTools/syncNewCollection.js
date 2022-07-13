@@ -9,7 +9,7 @@ let jobService = require('../service/jobService');
 let web3Rpc = new Web3(config.escRpcUrl);
 
 let listCollection = [                       
-    {name: "Heralds of Elastos", address: '0x78a562065FD208117670B89FcD2701bF4FBda4FE'},
+    {name: "Birdie", address: '0xd5aFf849495487e3c405c9fcA1b878bDd72B9e97'},
 ];
 
 const getTotalEvents = async (startBlock, endBlock) => {
