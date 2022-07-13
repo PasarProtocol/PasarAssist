@@ -14,7 +14,7 @@ let web3Rpc = new Web3(config.escRpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       
-    {name: "Bunny Lottery", address: '0x0954133d1a6E12d420602336643fbd6d61cdE91d'},
+    {name: "BIRDIE", address: '0xd5aFf849495487e3c405c9fcA1b878bDd72B9e97'},
 ];
 
 const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
