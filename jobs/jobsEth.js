@@ -834,7 +834,7 @@ module.exports = {
         });
 
         let tokenInfoUpdatedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenInfoUpdated');
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenInfoUpdated', config.ethChain);
 
             isTokenInfoUpdatedJobRun = true;
 
