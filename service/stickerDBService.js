@@ -915,9 +915,13 @@ module.exports = {
             let sum = 0;
             
             let rates = await this.getPriceRate();
-            let listRate = [];
+            let listRate_ela = [], listRate_eth = [];
             for(var i=0; i < rates.length; i++) {
-                listRate[rates[i].type] = rates[i].rate;
+                if(rates[i].marketPlace == config.elaChain) {
+                    listRate_ela[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.ethChain) {
+                    listRate_eth[rates[i].type] = rates[i].rate;
+                }
             }
 
             result.forEach(ele => {
@@ -926,7 +930,19 @@ module.exports = {
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
-                let price = parseInt(ele['price']) * listRate[convertToken] / 10 ** 18;
+                let rate = 1;
+                switch(ele.marketPlace) {
+                    case config.elaChain:
+                        rate = listRate_ela[convertToken];
+                        break;
+                    case config.ethChain:
+                        rate = listRate_eth[convertToken];
+                        break;
+                    default:
+                        rate = 1;
+                        break;
+                }
+                let price = parseInt(ele['price']) * rate / 10 ** 18;
 
                 sum += price * amount;
             });
@@ -1573,16 +1589,34 @@ module.exports = {
                 ]).toArray();
 
                 let rates = await this.getPriceRate();
-                let listRate = [];
+                let listRate_ela = [], listRate_eth = [];
                 for(var i=0; i < rates.length; i++) {
-                    listRate[rates[i].type] = rates[i].rate;
+                    if(rates[i].marketPlace == config.elaChain) {
+                        listRate_ela[rates[i].type] = rates[i].rate;
+                    } else if(rates[i].marketPlace == config.ethChain) {
+                        listRate_eth[rates[i].type] = rates[i].rate;
+                    }
                 }
                 
                 for(var i = 0; i < marketTokens.length; i++) {
                     let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
+
+                    let rate = 1;
+                    switch(marketTokens[i].marketPlace) {
+                        case config.elaChain:
+                            rate = listRate_ela[convertToken];
+                            break;
+                        case config.ethChain:
+                            rate = listRate_eth[convertToken];
+                            break;
+                        default:
+                            rate = 1;
+                            break;
+                    }
+
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
                 }
 
                 if(marketTokens.length > 0)
@@ -1700,9 +1734,13 @@ module.exports = {
             ]).toArray();
 
             let rates = await this.getPriceRate();
-            let listRate = [];
+            let listRate_ela = [], listRate_eth = [];
             for(var i=0; i < rates.length; i++) {
-                listRate[rates[i].type] = rates[i].rate;
+                if(rates[i].marketPlace == config.elaChain) {
+                    listRate_ela[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.ethChain) {
+                    listRate_eth[rates[i].type] = rates[i].rate;
+                }
             }
 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
@@ -1715,7 +1753,21 @@ module.exports = {
                 let convertToken = marketTokens[i].quoteToken;
                 if(marketTokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
+
+                let rate = 1;
+                switch(marketTokens[i].marketPlace) {
+                    case config.elaChain:
+                        rate = listRate_ela[convertToken];
+                        break;
+                    case config.ethChain:
+                        rate = listRate_eth[convertToken];
+                        break;
+                    default:
+                        rate = 1;
+                        break;
+                }
+
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
 
                 marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
@@ -1814,9 +1866,13 @@ module.exports = {
                 baseToken: 1, marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
             let rates = await this.getPriceRate();
-            let listRate = [];
+            let listRate_ela = [], listRate_eth = [];
             for(var i=0; i < rates.length; i++) {
-                listRate[rates[i].type] = rates[i].rate;
+                if(rates[i].marketPlace == config.elaChain) {
+                    listRate_ela[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.ethChain) {
+                    listRate_eth[rates[i].type] = rates[i].rate;
+                }
             }
                 
             let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
@@ -1829,9 +1885,21 @@ module.exports = {
                 let convertToken = marketTokens[i].quoteToken;
                 if(marketTokens[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
+                let rate = 1;
+                switch(marketTokens[i].marketPlace) {
+                    case config.elaChain:
+                        rate = listRate_ela[convertToken];
+                        break;
+                    case config.ethChain:
+                        rate = listRate_eth[convertToken];
+                        break;
+                    default:
+                        rate = 1;
+                        break;
+                }
 
-                marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
+                marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
+
                 if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
                     if(marketTokens[i]['holder'] == marketTokens[i]['royaltyOwner']) {
                         marketTokens[i].saleType = 'Primary Sale';
@@ -1997,6 +2065,15 @@ module.exports = {
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
                 
                 let rates = await this.getPriceRate();
+                let listRate_ela = [], listRate_eth = [];
+                for(var i=0; i < rates.length; i++) {
+                    if(rates[i].marketPlace == config.elaChain) {
+                        listRate_ela[rates[i].type] = rates[i].rate;
+                    } else if(rates[i].marketPlace == config.ethChain) {
+                        listRate_eth[rates[i].type] = rates[i].rate;
+                    }
+                }
+
                 let listRate = [];
                 for(var i=0; i < rates.length; i++) {
                     listRate[rates[i].type] = rates[i].rate;
@@ -2010,7 +2087,21 @@ module.exports = {
                     let convertToken = marketTokens[i].quoteToken;
                     if(marketTokens[i].quoteToken == config.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
-                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * listRate[convertToken] / 10 ** 18;
+
+                    let rate = 1;
+                    switch(marketTokens[i].marketPlace) {
+                        case config.elaChain:
+                            rate = listRate_ela[convertToken];
+                            break;
+                        case config.ethChain:
+                            rate = listRate_eth[convertToken];
+                            break;
+                        default:
+                            rate = 1;
+                            break;
+                    }
+
+                    marketTokens[i].priceCalculated = parseInt(marketTokens[i].price) * rate / 10 ** 18;
 
                     marketTokens[i].priceCalculated = marketTokens[i].priceCalculated ? marketTokens[i].priceCalculated : 0; 
                     if( marketStatus.indexOf(marketTokens[i]['status']) != -1 ) {
@@ -2873,15 +2964,19 @@ module.exports = {
 
             let result = await token_collection.aggregate([
                 { $match: {baseToken: token, orderState: "2", marketPlace: marketPlace}},
-                { $project: {"_id": 0, filled: 1, quoteToken: 1}},
+                { $project: {"_id": 0, filled: 1, quoteToken: 1, marketPlace: 1}},
             ]).toArray();
 
             let total = 0;
 
             let rates = await this.getPriceRate();
-            let listRate = [];
+            let listRate_ela = [], listRate_eth = [];
             for(var i=0; i < rates.length; i++) {
-                listRate[rates[i].type] = rates[i].rate;
+                if(rates[i].marketPlace == config.elaChain) {
+                    listRate_ela[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.ethChain) {
+                    listRate_eth[rates[i].type] = rates[i].rate;
+                }
             }
 
             for(var i = 0; i < result.length; i++) {
@@ -2890,7 +2985,20 @@ module.exports = {
                 if(result[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
-                let price = result[i].filled * listRate[convertToken] / 10 ** 18;
+                let rate = 1;
+                switch(result[i].marketPlace) {
+                    case config.elaChain:
+                        rate = listRate_ela[convertToken];
+                        break;
+                    case config.ethChain:
+                        rate = listRate_eth[convertToken];
+                        break;
+                    default:
+                        rate = 1;
+                        break;
+                }
+
+                let price = result[i].filled * rate / 10 ** 18;
                 total = total + price;
             }
             return {code: 200, message: 'success', data: {total}};
@@ -2921,17 +3029,35 @@ module.exports = {
             ]).toArray();
 
             let rates = await this.getPriceRate();
-            let listRate = [];
+            let listRate_ela = [], listRate_eth = [];
             for(var i=0; i < rates.length; i++) {
-                listRate[rates[i].type] = rates[i].rate;
+                if(rates[i].marketPlace == config.elaChain) {
+                    listRate_ela[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.ethChain) {
+                    listRate_eth[rates[i].type] = rates[i].rate;
+                }
             }
+
             let listPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
                 if(result[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
-                let price = parseInt(result[i].price) * listRate[convertToken] / 10 ** 18;
+                let rate = 1;
+                switch(marketPlace) {
+                    case config.elaChain:
+                        rate = listRate_ela[convertToken];
+                        break;
+                    case config.ethChain:
+                        rate = listRate_eth[convertToken];
+                        break;
+                    default:
+                        rate = 1;
+                        break;
+                }
+
+                let price = parseInt(result[i].price) * rate / 10 ** 18;
                 if(price != 0) {
                     listPrice.push(price);
                 }
