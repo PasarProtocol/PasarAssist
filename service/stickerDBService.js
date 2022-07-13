@@ -2212,8 +2212,8 @@ module.exports = {
             let tokens = await order_collection.aggregate([
                 { $match: {$and: [{sellerAddr: address, orderState: "2"}]} },
                 { $lookup: {from: "pasar_token",
-                    let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
-                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
+                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
+                    pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}]}}],
                     as: "token"}
                 },
                 { $lookup: {from: "pasar_order_event",
