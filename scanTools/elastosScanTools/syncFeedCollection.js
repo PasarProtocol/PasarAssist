@@ -10,7 +10,7 @@ let stickerContractABI = require('../../contractABI/stickerABI');
 let stickerDBService = require('../../service/stickerDBService');
 let jobService = require('../../service/jobService');
 
-const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("../ethereumScanTools/utils");
+const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("./utils");
 
 let token = config.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';
