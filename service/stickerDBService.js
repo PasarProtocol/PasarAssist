@@ -2748,10 +2748,6 @@ module.exports = {
             
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let collections = await token_collection.find({}).toArray();
-            let result = [];
-
-            const temp_collection = mongoClient.db(config.dbName).collection('pasar_token_temp_' + Date.now().toString());
 
             let sortData = {}
             switch(sort) {
@@ -2793,51 +2789,9 @@ module.exports = {
                     break;
             }
 
-            let web3 = new Web3(config.escRpcUrl);
-            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+            let collections = await token_collection.find({}).sort(sortData).toArray();
 
-            await Promise.all(collections.map(async cell => {
-                let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
-                cell.diaBalance = diaBalance / (10 ** 18);
-                let reponse = await this.getTotalCountCollectibles(cell.token, onMarket);
-                cell.collectibles = [];
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalCount = reponse.data.total;
-                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
-                    for(var i = 0; i < endCount; i++) {
-                        cell.collectibles.push(reponse.data.list[i])
-                    }
-                } else {
-                    cell.totalCount = 0;
-                }
-                reponse = await this.getFloorPriceCollectibles(cell.token);
-                if(reponse.code == 200 && reponse.data.price) {
-                    cell.floorPrice = reponse.data.price ;
-                } else {
-                    cell.floorPrice = 0;
-                }
-                reponse = await this.getOwnersOfCollection(cell.token);
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalOwner = reponse.data.total;
-                } else {
-                    cell.totalOwner = 0;
-                }
-                reponse = await this.getTotalPriceCollectibles(cell.token);
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalPrice = reponse.data.total;
-                } else {
-                    cell.totalPrice = 0;
-                }
-
-                result.push(cell);
-            }));
-            let returnValue = {}
-            if(result.length > 0) {
-                await temp_collection.insertMany(result);
-                returnValue = await temp_collection.find({}).sort(sortData).toArray();
-                await temp_collection.drop();
-            }
-            return {code: 200, message: 'success', data: returnValue};
+            return {code: 200, message: 'success', data: collections};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -2880,47 +2834,7 @@ module.exports = {
                     "owners": "$royalty.royaltyOwner", "feeRates": "$royalty.royaltyRates"},},
             ]).toArray();
 
-            let result = [];
-
-            let web3 = new Web3(config.escRpcUrl);
-            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
-
-            await Promise.all(collections.map(async cell => {
-                let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
-                cell.diaBalance = diaBalance / (10 ** 18);
-                let reponse = await this.getTotalCountCollectibles(cell.token);
-                cell.collectibles = [];
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalCount = reponse.data.total;
-                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
-                    for(var i = 0; i < endCount; i++) {
-                        cell.collectibles.push(reponse.data.list[i])
-                    }
-                } else {
-                    cell.totalCount = 0;
-                }
-                reponse = await this.getFloorPriceCollectibles(cell.token);
-                if(reponse.code == 200 && reponse.data.price) {
-                    cell.floorPrice = reponse.data.price ;
-                } else {
-                    cell.floorPrice = 0;
-                }
-                reponse = await this.getOwnersOfCollection(cell.token);
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalOwner = reponse.data.total;
-                } else {
-                    cell.totalOwner = 0;
-                }
-                reponse = await this.getTotalPriceCollectibles(cell.token);
-                if(reponse.code == 200 && reponse.data.total) {
-                    cell.totalPrice = reponse.data.total;
-                } else {
-                    cell.totalPrice = 0;
-                }
-                result.push(cell);
-            }));
-
-            return {code: 200, message: 'success', data: result};
+            return {code: 200, message: 'success', data: collections};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -3367,5 +3281,79 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
-    }
+    },
+
+    updateCollectionInfo: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
+            let collections = await collection.find().toArray();
+            let web3 = new Web3(config.escRpcUrl);
+            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+            
+            await Promise.all(collections.map(async cell => {
+                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, collectibles = [], collectiblesOnMarket=[];
+                let creatorDid = '', creatorName = '', creatorDescription = '';
+
+                let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
+                diaBalance = diaBalance / (10 ** 18);
+                let reponse = await this.getTotalCountCollectibles(cell.token, cell.marketPlace);
+                
+                if(reponse.code == 200 && reponse.data.total) {
+                    totalCount = reponse.data.total;
+                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
+                    for(var i = 0; i < endCount; i++) {
+                        collectibles.push(reponse.data.list[i])
+                    }
+                } else {
+                    totalCount = 0;
+                }
+                
+                reponse = await this.getTotalCountCollectibles(cell.token, cell.marketPlace, true);
+                
+                if(reponse.code == 200 && reponse.data.total) {
+                    let endCount = reponse.data.total > 6 ? 6 : reponse.data.total;
+                    for(var i = 0; i < endCount; i++) {
+                        collectiblesOnMarket.push(reponse.data.list[i])
+                    }
+                }
+
+                reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
+                if(reponse.code == 200 && reponse.data.price) {
+                    floorPrice = reponse.data.price ;
+                } else {
+                    floorPrice = 0;
+                }
+                reponse = await this.getOwnersOfCollection(cell.token, cell.marketPlace);
+                if(reponse.code == 200 && reponse.data.total) {
+                    totalOwner = reponse.data.total;
+                } else {
+                    totalOwner = 0;
+                }
+                reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
+                if(reponse.code == 200 && reponse.data.total) {
+                    totalPrice = reponse.data.total;
+                } else {
+                    totalPrice = 0;
+                }
+                
+                let uriInfo = await jobService.getInfoByIpfsUri(cell.uri);
+                
+                if(uriInfo && uriInfo.creator) {
+                    creatorDid = uriInfo.creator.did ? uriInfo.creator.did : '';
+                    creatorName = uriInfo.creator.name ? uriInfo.creator.name : '';;
+                    creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
+                }
+
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
+            }));
+
+        } catch(err) {
+            logger.error(err);
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }
