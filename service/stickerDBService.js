@@ -2703,16 +2703,16 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getLastRegisterCollectionEvent: async function (token) {
+    getLastRegisterCollectionEvent: async function (token, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
-            let doc = await collection.findOne({token}, {sort:{blockNumber:-1}})
-            if(doc) {
-                return doc.blockNumber
+            let doc = await collection.find({token, marketPlace}).sort({blockNumber: -1}).limit(1).toArray();
+            if(doc && doc.length == 1) {
+                return doc[0].blockNumber
             } else {
-                return 1;
+                return 0;
             }
         } catch (err) {
             logger.error(err);

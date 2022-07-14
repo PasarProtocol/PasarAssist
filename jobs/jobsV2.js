@@ -69,6 +69,7 @@ module.exports = {
         let isTokenRegisteredJobRun = false;
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
+        let isSyncCollectionEventJobRun = false;
         let now = Date.now();
         
         let recipients = [];
@@ -753,7 +754,6 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elaChain}
 
-                let tokenContractWs = new web3Ws.eth.Contract(token721ABI, registeredTokenInfo._token);
                 let tokenContract = new web3Rpc.eth.Contract(token721ABI, registeredTokenInfo._token);
 
                 let [is721, is1155, symbol] = await jobService.makeBatchRequest([
@@ -764,39 +764,7 @@ module.exports = {
 
                 let data = await jobService.getInfoByIpfsUri(registeredTokenInfo._uri)
                 
-                let check721;
-                let lastHeight = await stickerDBService.getLastRegisterCollectionEvent(registeredTokenInfo._token);
-                if(is721){
-                    check721 = true;
-
-                    tokenContractWs.events.Transfer({
-                        fromBlock: lastHeight
-                    }).on("error", function (error) {
-                        logger.info(error);
-                        logger.info("[Contract721] Sync Ending ...")
-                    }).on("data", async function (event) {
-                        console.log("[Contract721] Data: " + JSON.stringify(event))
-                        await jobService.dealWithUsersToken(event,registeredTokenInfo._token, check721, tokenContract, web3Rpc, config.elaChain)
-                    })
-                } else if(is1155) {
-                    check721 = false;
-                    
-                    tokenContractWs = new web3Ws.eth.Contract(token1155ABI, registeredTokenInfo._token);
-                    tokenContract = new web3Rpc.eth.Contract(token1155ABI, registeredTokenInfo._token);
-
-                    tokenContractWs.events.TransferSingle({
-                        fromBlock: lastHeight
-                    }).on("error", function (error) {
-                        logger.info(error);
-                        logger.info("[Contract1155] Sync Ending ...")
-                    }).on("data", async function (event) {
-                        await jobService.dealWithUsersToken(event, registeredTokenInfo._token, check721, tokenContract, web3Rpc, config.elaChain)
-                    })
-                } else {
-                    logger.error("unknown token type");
-                    return;
-                }
-
+                let check721 = is721 ? true : false;
                 let creator = data && data.creator ? data.creator : null;
                 
                 if(creator) {
@@ -806,6 +774,12 @@ module.exports = {
                 await stickerDBService.collectionEvent(registeredTokenDetail);
                 await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
                     registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data, config.elaChain);
+                
+                if(!isSyncCollectionEventJobRun) {
+                    isSyncCollectionEventJobRun = true;
+                    await jobService.startupUsersContractEvents(web3Rpc, config.elaChain);
+                    isSyncCollectionEventJobRun = false;
+                }
             })
         });
 
@@ -1029,7 +1003,11 @@ module.exports = {
             /**
                 *  Start to listen all user's contract events
             */
-            await jobService.startupUsersContractEvents(web3Ws, web3Rpc, config.elaChain);
+            if(!isSyncCollectionEventJobRun) {
+                isSyncCollectionEventJobRun = true;
+                await jobService.startupUsersContractEvents(web3Rpc, config.elaChain);
+                isSyncCollectionEventJobRun = false;
+            }
         })
 
         schedule.scheduleJob('0 * * * * *', async () => {

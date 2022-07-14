@@ -50,7 +50,7 @@ module.exports = {
         ], web3Rpc)
 
         let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
-        this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace);
+        await this.parseData(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace);
         
     },
 
@@ -66,98 +66,16 @@ module.exports = {
             }
             
             this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, jsonData, marketPlace, tokenData)
-        } else if(result.indexOf("Solana") != -1) {
-            result = result.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseSolana(jsonData, token);
+        } else {
+            let uriUrl = result;
+            uriUrl = uriUrl.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
+            uriUrl = uriUrl.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
 
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0xcB262A92e2E3c8C3590b72A1fDe3c6768EE08B7e'.toLocaleLowerCase()) {
-            fetch(result)
+            fetch(uriUrl)
             .then(res => res.text())
             .then(async data => {
                 let jsonData = await JSON.parse(data);
-                let returnData = await this.parsePrimates(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-
-        } else if(token.toLocaleLowerCase() == '0x26b2341d10dC4118110825719BF733a571AB6EC5'.toLocaleLowerCase()) {
-            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseVitrim(jsonData, token);
-
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0xef5f768618139d0f5fa3bcbbbcaaf09fe9d7a07d'.toLocaleLowerCase()) {
-            result = result.replace("https://gateway.pinata.cloud/ipfs", "https://ipfs.ela.city/ipfs");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseBella(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-
-        } else if(token.toLocaleLowerCase() == '0xfDdE60866508263e30C769e8592BB0f8C3274ba7'.toLocaleLowerCase()) {
-            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parsePhantz(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-
-        } else if(token.toLocaleLowerCase() == '0xCc721C2A3a53c6f03c731252D98103963A9729E8'.toLocaleLowerCase()) {
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                console.log(data);
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseLudmila(jsonData);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0xe88b8e977939A3f79e2B045b9cE4365A3512800F'.toLocaleLowerCase() || token.toLocaleLowerCase() == '0x69Cf9fE4a56af7F0dFeE2E4E1a0B33b8D695e4bA'.toLocaleLowerCase()) {
-            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseEliens(jsonData, token);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0x0954133d1a6E12d420602336643fbd6d61cdE91d'.toLocaleLowerCase()) {
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseBunnyLottery(jsonData, token);
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0x78a562065FD208117670B89FcD2701bF4FBda4FE'.toLocaleLowerCase()) {
-            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseHeralds(jsonData, token);
-
-                this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
-            })
-        } else if(token.toLocaleLowerCase() == '0xd5aFf849495487e3c405c9fcA1b878bDd72B9e97'.toLocaleLowerCase()) {
-            result = result.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-            fetch(result)
-            .then(res => res.text())
-            .then(async data => {
-                let jsonData = await JSON.parse(data);
-                let returnData = await this.parseBirdie(jsonData, token);
+                let returnData = await this.parseCustom(jsonData, token);
 
                 this.updateTokenInfo(gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, returnData, marketPlace)
             })
@@ -249,42 +167,27 @@ module.exports = {
         }
     },
 
-    startupUsersContractEvents: async function (web3Ws, web3Rpc, marketPlace) {
+    startupUsersContractEvents: async function (web3Rpc, marketPlace) {
         const stickerDBService = require("./stickerDBService");
         let data = (await stickerDBService.getCollections(0, marketPlace)).data;
 
         for(let x of data) {
-
-            let tokenContractWs = new web3Ws.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
             let tokenContract = new web3Rpc.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
 
-            let result = await stickerDBService.getLastRegisterCollectionEvent(x.token);
-            let fromBlock = result === 0 ? x.blockNumber : result + 1;
+            let result = await stickerDBService.getLastRegisterCollectionEvent(x.token, marketPlace);
+            let startBlock = result == 0 ? x.blockNumber : result + 1;
+            let  endBlock = "latest";
 
-            if(x.is721){
-                tokenContractWs.events.Transfer({
-                    fromBlock
-                }).on("error", function (error) {
-                    logger.info(error);
-                    logger.error(`[User Contract] ${x.token} Sync Starting ...`);
-                }).on("connected", function () {
-                    logger.info(`[User Contract] ${x.token} Sync Starting ...`)
-                }).on("data", async function (event) {
+            const getAllEvents = await tokenContract.getPastEvents(x.is721 ? 'Transfer' : 'TransferSingle', {fromBlock: startBlock, toBlock: endBlock});
+
+            for (var i = 0; i < getAllEvents.length; i++) {
+                try {
                     let jobService = require('./jobService.js');
-                    await jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
-                })
-            } else {
-                tokenContractWs.events.TransferSingle({
-                    fromBlock
-                }).on("error", function (error) {
-                    logger.info(error);
-                    logger.error(`[User Contract] ${x.token} Sync Starting ...`);
-                }).on("connected", function () {
-                    logger.info(`[User Contract] ${x.token} Sync Starting ...`);
-                }).on("data", async function (event) {
-                    let jobService = require('./jobService.js');
-                    await jobService.dealWithUsersToken(event, x.token, x.is721, tokenContract, web3Rpc, marketPlace)
-                })
+                    await jobService.dealWithUsersToken(getAllEvents[i], x.token, x.is721, tokenContract, web3Rpc, marketPlace)
+                } catch(err) {
+                    logger.info(`collection name: ${x.name}`);
+                    logger.info(err);
+                }
             }
         }
     },
@@ -304,44 +207,63 @@ module.exports = {
         return returnValue;
     },
 
-    parseSolana: async function(data, token) {
+    parseCustom: async function(data, token) {
         let returnValue = {};
 
         returnValue.tokenJsonVersion = 1;
-        returnValue.type = data.properties.files[0].type;
         returnValue.name = data.name;
-        returnValue.description = data.description;
-        returnValue.thumbnail = data.image.replace("https://gateway.pinata.cloud", "https://ipfs.pasarprotocol.io");
-        returnValue.asset = data.image.replace("https://gateway.pinata.cloud", "https://ipfs.pasarprotocol.io");
-        returnValue.kind = data.properties.files[0].type;
         returnValue.size = 0;
         returnValue.adult = false;
-        returnValue.attribute={};
-        let listAttributes = data.attributes;
+        returnValue.description = data.description;
 
-        let stickerDBService = require("./stickerDBService");
-        let collection = await stickerDBService.getCollection(token);
-        let attributeOfCollection = {};
-        if(collection && collection.attribute) {
-            attributeOfCollection = collection.attribute;
+        let image = data.image;
+        image = image.replace("https://gateway.pinata.cloud", "https://ipfs.pasarprotocol.io");
+        image = image.replace("ipfs://", "https://ipfs.pasarprotocol.io/ipfs/");
+        image = image.replace("ipfs.ela.city", "ipfs.pasarprotocol.io");
+
+        returnValue.thumbnail = image;
+        returnValue.asset = image;
+
+        if(data.type) {
+            returnValue.type = data.type;
+            returnValue.kind = data.type;
+        } else if(data.properties.files[0].type) {
+            returnValue.type = data.properties.files[0].type;
+            returnValue.kind = data.properties.files[0].type;
+        } else {
+            returnValue.type = 'image';
+            returnValue.kind = 'image';
         }
 
-        listAttributes.forEach(element => {
-            let type = element.trait_type;
-            let value = element.value;
-            returnValue.attribute[type] = value;
-            if(attributeOfCollection[type]) {
-                let listParams = attributeOfCollection[type];
-                if(listParams.indexOf(value) == -1) {
-                    attributeOfCollection[type].push(value);
-                }
-            } else {
-                attributeOfCollection[type] = [value];
+        if(data.attribute) {
+            returnValue.attribute={};
+            let listAttributes = data.attributes;
+
+            let stickerDBService = require("./stickerDBService");
+            let collection = await stickerDBService.getCollection(token);
+            let attributeOfCollection = {};
+            if(collection && collection.attribute) {
+                attributeOfCollection = collection.attribute;
             }
-        });
-        if(attributeOfCollection) {
-            await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+    
+            listAttributes.forEach(element => {
+                let type = element.trait_type;
+                let value = element.value;
+                returnValue.attribute[type] = value;
+                if(attributeOfCollection[type]) {
+                    let listParams = attributeOfCollection[type];
+                    if(listParams.indexOf(value) == -1) {
+                        attributeOfCollection[type].push(value);
+                    }
+                } else {
+                    attributeOfCollection[type] = [value];
+                }
+            });
+            if(attributeOfCollection) {
+                await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
+            }
         }
+        
 
         return returnValue;
     },
