@@ -55,6 +55,9 @@ module.exports = {
     },
 
     parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace) {
+        if(!stickerDBService.checkAddress(tokenInfo._from) || !stickerDBService.checkAddress(tokenInfo._to)) 
+            return;
+
         if(result.indexOf("pasar:json") != -1 || result.indexOf("feeds:json") != -1) {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
