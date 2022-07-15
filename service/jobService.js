@@ -37,7 +37,7 @@ module.exports = {
     },
 
     dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, marketPlace) {
-        if(token == config.stickerContract)
+        if(token == config.stickerContract || token == config.stickerV2Contract || token == config.stickerEthContract)
             return;
             
         let tokenInfo = event.returnValues;
@@ -179,7 +179,7 @@ module.exports = {
             let tokenContract = new web3Rpc.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
 
             let result = await stickerDBService.getLastRegisterCollectionEvent(x.token, marketPlace);
-            let startBlock = result == 0 ? x.blockNumber : result + 1;
+            let startBlock = result == 0 ? "earliest" : result + 1;
             let  endBlock = "latest";
 
             const getAllEvents = await tokenContract.getPastEvents(x.is721 ? 'Transfer' : 'TransferSingle', {fromBlock: startBlock, toBlock: endBlock});
