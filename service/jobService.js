@@ -227,7 +227,7 @@ module.exports = {
         if(data.type) {
             returnValue.type = data.type;
             returnValue.kind = data.type;
-        } else if(data.properties.files[0].type) {
+        } else if(data.properties && data.properties.files && data.properties.files[0].type) {
             returnValue.type = data.properties.files[0].type;
             returnValue.kind = data.properties.files[0].type;
         } else {
