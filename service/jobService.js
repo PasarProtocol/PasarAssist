@@ -55,6 +55,7 @@ module.exports = {
     },
 
     parseData: async function(result, gasFee, blockInfo, tokenInfo, tokenId, event, token, check721, tokenContract, web3Rpc, marketPlace) {
+        let stickerDBService = require("./stickerDBService");
         if(!stickerDBService.checkAddress(tokenInfo._from) || !stickerDBService.checkAddress(tokenInfo._to)) 
             return;
 
