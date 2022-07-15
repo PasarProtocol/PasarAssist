@@ -249,10 +249,10 @@ module.exports = {
             if(collection && collection.attribute) {
                 attributeOfCollection = collection.attribute;
             }
-    
-            listAttributes.forEach(element => {
-                let type = element.trait_type;
-                let value = element.value;
+            
+            for(var i  = 0; i < listAttributes.length; i++) {
+                let type = listAttributes[i].trait_type;
+                let value = listAttributes[i].value;
                 returnValue.attribute[type] = value;
                 if(attributeOfCollection[type]) {
                     let listParams = attributeOfCollection[type];
@@ -262,7 +262,8 @@ module.exports = {
                 } else {
                     attributeOfCollection[type] = [value];
                 }
-            });
+            }
+            
             if(attributeOfCollection) {
                 await stickerDBService.updateCollectionAttribute(token, attributeOfCollection);
             }
