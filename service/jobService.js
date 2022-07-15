@@ -239,7 +239,7 @@ module.exports = {
             returnValue.kind = 'image';
         }
 
-        if(data.attribute) {
+        if(data.attributes) {
             returnValue.attribute={};
             let listAttributes = data.attributes;
 
