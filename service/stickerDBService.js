@@ -3387,12 +3387,15 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
+            let collection_rate = await mongoClient.db(config.dbName).collection("pasar_price_rate");
+            let ethRate = await collection_rate.findOne({type: config.DefaultToken, marketPlace: config.ethChain});
+
             let collections = await collection.find().toArray();
             let web3 = new Web3(config.escRpcUrl);
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
             
             await Promise.all(collections.map(async cell => {
-                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, collectibles = [], collectiblesOnMarket=[];
+                let totalCount = 0, floorPrice = 0, floorElaPrice = 0, totalOwner = 0, totalPrice = 0, totalElaPrice = 0, collectibles = [], collectiblesOnMarket=[];
                 let creatorDid = '', creatorName = '', creatorDescription = '';
 
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
@@ -3420,7 +3423,8 @@ module.exports = {
 
                 reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
-                    floorPrice = reponse.data.price ;
+                    floorPrice = reponse.data.price;
+                    floorElaPrice = ethRate.rate ? reponse.data.price / ethRate.rate : 0;
                 } else {
                     floorPrice = 0;
                 }
@@ -3433,6 +3437,7 @@ module.exports = {
                 reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     totalPrice = reponse.data.total;
+                    totalElaPrice = ethRate.rate ? reponse.data.total / ethRate.rate : 0;
                 } else {
                     totalPrice = 0;
                 }
@@ -3445,7 +3450,7 @@ module.exports = {
                     creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
                 }
 
-                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, totalOwner, totalPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, floorElaPrice, totalOwner, totalPrice, totalElaPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
             }));
 
         } catch(err) {
