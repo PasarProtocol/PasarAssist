@@ -483,10 +483,6 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
 
             await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace: token.marketPlace, holder: {$ne: burnAddress}}, {$set: token});
-            let checkData = await collection.find(token).count();
-            if(checkData == 0) {
-                await this.updateNormalToken(token);
-            }
         } catch (err) {
             logger.error(err);
             throw new Error();
