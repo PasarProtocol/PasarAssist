@@ -124,7 +124,6 @@ module.exports = {
 
                 await stickerDBService.replaceToken(token);
             } catch (e) {
-                logger.info(`[TokenInfo2] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
             }
         }
