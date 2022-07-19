@@ -521,10 +521,10 @@ module.exports = {
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {status}});
             }
 
-            let checkData = await collection.findOne(updateData);
-            if(checkData == null) {
-                await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
-            }
+            // let checkData = await collection.findOne(updateData);
+            // if(checkData == null) {
+            //     await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
+            // }
             
         } catch (err) {
             logger.error(err);
