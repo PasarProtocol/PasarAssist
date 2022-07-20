@@ -2855,6 +2855,10 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let result = await token_collection.findOne({token: token, marketPlace: marketPlace});
+            if(marketPlace != config.elaChain) {
+                result.floorPrice = result.floorEthPrice;
+                result.totalPrice = result.totalEthPrice;
+            } 
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
@@ -2972,6 +2976,7 @@ module.exports = {
             ]).toArray();
 
             let total = 0;
+            let ethTotal = 0;
 
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [];
@@ -2990,11 +2995,17 @@ module.exports = {
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
+                let ethRate = 1;
                 switch(result[i].marketPlace) {
                     case config.elaChain:
                         rate = listRate_ela[convertToken];
                         break;
                     case config.ethChain:
+                        if(convertToken == config.DefaultToken) {
+                            ethRate = 1;
+                        } else {
+                            ethRate = 1/listRate_eth[config.DefaultToken]
+                        }
                         rate = listRate_eth[convertToken];
                         break;
                     default:
@@ -3003,9 +3014,14 @@ module.exports = {
                 }
 
                 let price = result[i].filled * rate / 10 ** 18;
-                total = total + price;
+                let priceEth = result[i].filled * ethRate / 10 ** 18;
+                total += price;
+                ethTotal += priceEth;
             }
-            return {code: 200, message: 'success', data: {total}};
+            if(marketPlace == config.elaChain) {
+                ethTotal = 0;
+            } 
+            return {code: 200, message: 'success', data: {total, ethTotal}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -3043,17 +3059,24 @@ module.exports = {
             }
 
             let listPrice = [];
+            let listEthPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
                 if(result[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
+                let ethRate = 1;
                 switch(marketPlace) {
                     case config.elaChain:
                         rate = listRate_ela[convertToken];
                         break;
                     case config.ethChain:
+                        if(convertToken == config.DefaultToken) {
+                            ethRate = 1;
+                        } else {
+                            ethRate = 1/listRate_eth[config.DefaultToken]
+                        }
                         rate = listRate_eth[convertToken];
                         break;
                     default:
@@ -3062,11 +3085,22 @@ module.exports = {
                 }
 
                 let price = result[i].price * rate / 10 ** 18;
+                
                 if(price != 0) {
                     listPrice.push(price);
                 }
+
+                let priceEth = result[i].price * ethRate / 10 ** 18;
+                if(priceEth != 0) {
+                    listEthPrice.push(priceEth);
+                }
             }
-            return {code: 200, message: 'success', data: {price: listPrice.length == 0 ? 0 : Math.min(...listPrice)}};
+            let price = listPrice.length == 0 ? 0 : Math.min(...listPrice);
+            let ethPrice = listEthPrice.length == 0 ? 0 : Math.min(...listEthPrice);
+            if(marketPlace == config.elaChain) {
+                ethPrice = 0;
+            }
+            return {code: 200, message: 'success', data: {price, ethPrice}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -3428,7 +3462,7 @@ module.exports = {
                 reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
                     floorPrice = reponse.data.price;
-                    floorEthPrice = ethRate.rate ? reponse.data.price / ethRate.rate : 0;
+                    floorEthPrice = reponse.data.ethPrice;
                 } else {
                     floorPrice = 0;
                 }
@@ -3441,7 +3475,7 @@ module.exports = {
                 reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     totalPrice = reponse.data.total;
-                    totalEthPrice = ethRate.rate ? reponse.data.total / ethRate.rate : 0;
+                    totalEthPrice = reponse.data.ethTotal;
                 } else {
                     totalPrice = 0;
                 }
