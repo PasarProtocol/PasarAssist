@@ -3054,7 +3054,7 @@ module.exports = {
                         rate = listRate_ela[convertToken];
                         break;
                     case config.ethChain:
-                        rate = 1;
+                        rate = listRate_eth[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -3399,7 +3399,7 @@ module.exports = {
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
             
             await Promise.all(collections.map(async cell => {
-                let totalCount = 0, floorPrice = 0, floorElaPrice = 0, totalOwner = 0, totalPrice = 0, floorEthPrice = 0, collectibles = [], collectiblesOnMarket=[];
+                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalEthPrice = 0, floorEthPrice = 0, collectibles = [], collectiblesOnMarket=[];
                 let creatorDid = '', creatorName = '', creatorDescription = '';
 
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
@@ -3441,7 +3441,7 @@ module.exports = {
                 reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     totalPrice = reponse.data.total;
-                    totalElaPrice = ethRate.rate ? reponse.data.total / ethRate.rate : 0;
+                    totalEthPrice = ethRate.rate ? reponse.data.total / ethRate.rate : 0;
                 } else {
                     totalPrice = 0;
                 }
@@ -3454,7 +3454,7 @@ module.exports = {
                     creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
                 }
 
-                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, floorEthPrice, totalOwner, totalPrice, totalElaPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, floorEthPrice, totalOwner, totalPrice, totalEthPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
             }));
 
         } catch(err) {
