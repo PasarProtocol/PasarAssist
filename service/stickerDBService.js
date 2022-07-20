@@ -2813,10 +2813,10 @@ module.exports = {
                     sortData = {createdTime: 1}
                     break;
                 case "3":
-                    sortData = {totalPrice: 1}
+                    sortData = {totalUSDPrice: 1}
                     break;
                 case "4":
-                    sortData = {totalPrice: -1}
+                    sortData = {totalUSDPrice: -1}
                     break;
                 case "5":
                     sortData = {totalCount: 1}
@@ -2825,10 +2825,10 @@ module.exports = {
                     sortData = {totalCount: -1}
                     break;
                 case "7":
-                    sortData = {floorPrice: 1}
+                    sortData = {floorUSDPrice: 1}
                     break;
                 case "8":
-                    sortData = {floorPrice: -1}
+                    sortData = {floorUSDPrice: -1}
                     break;
                 case "9":
                     sortData = {totalOwner: 1}
@@ -2976,7 +2976,6 @@ module.exports = {
             ]).toArray();
 
             let total = 0;
-            let ethTotal = 0;
 
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [];
@@ -2995,18 +2994,16 @@ module.exports = {
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
-                let ethRate = 1;
                 switch(result[i].marketPlace) {
                     case config.elaChain:
                         rate = listRate_ela[convertToken];
                         break;
                     case config.ethChain:
                         if(convertToken == config.DefaultToken) {
-                            ethRate = 1;
+                            rate = 1;
                         } else {
-                            ethRate = 1/listRate_eth[config.DefaultToken]
+                            rate = 1/listRate_eth[config.DefaultToken]
                         }
-                        rate = listRate_eth[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -3014,14 +3011,10 @@ module.exports = {
                 }
 
                 let price = result[i].filled * rate / 10 ** 18;
-                let priceEth = result[i].filled * ethRate / 10 ** 18;
                 total += price;
-                ethTotal += priceEth;
             }
-            if(marketPlace == config.elaChain) {
-                ethTotal = 0;
-            } 
-            return {code: 200, message: 'success', data: {total, ethTotal}};
+
+            return {code: 200, message: 'success', data: {total}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -3059,25 +3052,22 @@ module.exports = {
             }
 
             let listPrice = [];
-            let listEthPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
                 if(result[i].quoteToken == config.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
-                let ethRate = 1;
                 switch(marketPlace) {
                     case config.elaChain:
                         rate = listRate_ela[convertToken];
                         break;
                     case config.ethChain:
                         if(convertToken == config.DefaultToken) {
-                            ethRate = 1;
+                            rate = 1;
                         } else {
-                            ethRate = 1/listRate_eth[config.DefaultToken]
+                            rate = 1/listRate_eth[config.DefaultToken]
                         }
-                        rate = listRate_eth[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -3090,17 +3080,10 @@ module.exports = {
                     listPrice.push(price);
                 }
 
-                let priceEth = result[i].price * ethRate / 10 ** 18;
-                if(priceEth != 0) {
-                    listEthPrice.push(priceEth);
-                }
             }
+
             let price = listPrice.length == 0 ? 0 : Math.min(...listPrice);
-            let ethPrice = listEthPrice.length == 0 ? 0 : Math.min(...listEthPrice);
-            if(marketPlace == config.elaChain) {
-                ethPrice = 0;
-            }
-            return {code: 200, message: 'success', data: {price, ethPrice}};
+            return {code: 200, message: 'success', data: {price}};
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
@@ -3431,9 +3414,16 @@ module.exports = {
             let collections = await collection.find().toArray();
             let web3 = new Web3(config.escRpcUrl);
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+
+            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum&vs_currencies=usd');
+            let rateData = await response.json();
             
+            let listRate={};
+            listRate[config.elaChain] = rateData.elastos.usd;
+            listRate[config.ethChain] = rateData.ethereum.usd;
+
             await Promise.all(collections.map(async cell => {
-                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalEthPrice = 0, floorEthPrice = 0, collectibles = [], collectiblesOnMarket=[];
+                let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalUSDPrice = 0, floorUSDPrice = 0, collectibles = [], collectiblesOnMarket=[];
                 let creatorDid = '', creatorName = '', creatorDescription = '';
 
                 let diaBalance = await diaContract.methods.balanceOf(cell.owner).call();
@@ -3462,7 +3452,7 @@ module.exports = {
                 reponse = await this.getFloorPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.price) {
                     floorPrice = reponse.data.price;
-                    floorEthPrice = reponse.data.ethPrice;
+                    floorUSDPrice = reponse.data.price * listRate[cell.marketPlace];
                 } else {
                     floorPrice = 0;
                 }
@@ -3475,7 +3465,7 @@ module.exports = {
                 reponse = await this.getTotalPriceCollectibles(cell.token, cell.marketPlace);
                 if(reponse.code == 200 && reponse.data.total) {
                     totalPrice = reponse.data.total;
-                    totalEthPrice = reponse.data.ethTotal;
+                    totalUSDPrice = reponse.data.total * listRate[cell.marketPlace];
                 } else {
                     totalPrice = 0;
                 }
@@ -3488,7 +3478,7 @@ module.exports = {
                     creatorDescription = uriInfo.creator.description ? uriInfo.creator.description : '';;
                 }
 
-                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, floorEthPrice, totalOwner, totalPrice, totalEthPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
+                await collection.updateOne({_id: ObjectID(cell._id)}, {$set: {totalCount, floorPrice, floorUSDPrice, totalOwner, totalPrice, totalUSDPrice, collectibles, collectiblesOnMarket, diaBalance, creatorDid, creatorName, creatorDescription}})
             }));
 
         } catch(err) {
