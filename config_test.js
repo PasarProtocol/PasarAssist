@@ -34,9 +34,8 @@ module.exports = {
     stickerEthContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     pasarEthRegisterContract: '0xC1d40312232ec4b308E69713A98c3A2b21c8F5E0',
     
-    pasarFusionContract: '0x3EeBa4e850112a9E29F158fB3B3F3a5A5beAe227',
-    stickerFusionContract: '0xd4eF5dbb44048c452578f55322d6938904335D5E',
-    pasarFusionRegisterContract: '0x0acfe829A78CBf78824a9E3a3260640f0b8309d2',
+    pasarFusionContract: '0xa18279eBDfA5747e79DBFc23fa999b4Eaf2A9780',
+    pasarFusionRegisterContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
 
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
@@ -50,7 +49,6 @@ module.exports = {
     pasarEthRegisterContractDeploy: 12565395,
 
     pasarFusionContractDeploy: 1,
-    stickerFusionContractDeploy: 1,
     pasarFusionRegisterContractDeploy: 7333100,
 
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
