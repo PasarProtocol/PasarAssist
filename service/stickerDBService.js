@@ -1488,13 +1488,13 @@ module.exports = {
         let rateEndTime = {};
         switch (order) {
             case '0':
-                sort = {marketTime: -1};
+                sort = {marketTime: -1, createTime: -1};
                 break;
             case '1':
                 sort = {createTime: -1};
                 break;
             case '2':
-                sort = {marketTime: 1};
+                sort = {marketTime: 1, createTime: -1};
                 break;
             case '3':
                 sort = {createTime: 1};
@@ -1953,13 +1953,13 @@ module.exports = {
         let rateEndTime = {};
         switch (order) {
             case 0:
-                sort = {marketTime: -1};
+                sort = {marketTime: -1, createTime: -1};
                 break;
             case 1:
                 sort = {createTime: -1};
                 break;
             case 2:
-                sort = {marketTime: 1};
+                sort = {marketTime: 1, createTime: -1};
                 break;
             case 3:
                 sort = {createTime: 1};
