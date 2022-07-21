@@ -195,6 +195,7 @@ module.exports = {
 
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
+                
                 let token = {orderId: orderInfo._orderId}
                 token.didUri = orderInfo._sellerUri;
                 token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
@@ -202,8 +203,19 @@ module.exports = {
                 if(token.did.KYCedProof != undefined) {
                     await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
                 }
-                logger.info("[OrderDidURI2] " + JSON.stringify(token));
-                // await stickerDBService.replaceToken(token);
+                
+                let updateResult = {};
+                updateResult.orderId = orderInfo._orderId;
+                updateResult.sellerAddr = orderInfo._seller;
+                updateResult.buyerAddr = orderInfo._buyer;
+                updateResult.event = event.event;
+                updateResult.blockNumber = event.blockNumber;
+                updateResult.tHash = event.transactionHash;
+                updateResult.blockHash = event.blockHash;
+                updateResult.v1Event = false;
+                updateResult.marketPlace = config.elaChain;
+
+                await pasarDBService.insertOrderEvent(updateResult);
             })
         });
 
