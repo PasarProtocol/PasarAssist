@@ -1526,11 +1526,8 @@ module.exports = {
                 let collectionTypeArr = collectionType.split(',');
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
-            
-            minPrice *= 10 ** 18;
-            maxPrice *= 10 ** 18;
-            
-            let checkOrder = [{priceNumber: {$gte: minPrice}}, {priceNumber: {$lte: maxPrice}}, {$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
+
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
@@ -1649,8 +1646,8 @@ module.exports = {
             }
 
 
-            let total = await temp_collection.find().count();
-            let returnValue = await temp_collection.find().sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).count();
+            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(total > 0)
                 await temp_collection.drop();
@@ -1685,10 +1682,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            minPrice *= 10 ** 18;
-            maxPrice *= 10 ** 18;
-            
-            let checkOrder = [{priceNumber: {$gte: minPrice}}, {priceNumber: {$lte: maxPrice}}, {$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             checkOrder.push({ $and: [{buyoutPrice: {$ne: null}}, {buyoutPrice: {$ne: "0"}}] });
             let current = Date.now();
             current = Math.floor(current/1000).toString();
@@ -1822,11 +1816,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            minPrice *= 10 ** 18;
-            maxPrice *= 10 ** 18;
-            
-            let checkOrder = [{priceNumber: {$gte: minPrice}}, {priceNumber: {$lte: maxPrice}}, {$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
-            
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             status_condition.push({status: 'MarketBid'});
             status_condition.push({status: 'MarketAuction'});
             checkOrder.push({ $expr:{ $lt:["$lastBid", "$reservePrice"] } });
@@ -1986,11 +1976,7 @@ module.exports = {
                 collectionTypeCheck = {$or: [{tokenJsonVersion: {$in: collectionTypeArr}}, {baseToken: {$in: collectionTypeArr}}]}
             }
 
-            minPrice *= 10 ** 18;
-            maxPrice *= 10 ** 18;
-            
-            let checkOrder = [{priceNumber: {$gte: minPrice}}, {priceNumber: {$lte: maxPrice}}, {$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
-
+            let checkOrder = [{$expr: {$eq: ["$$torderId", "$orderId"]}}, {$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}},  {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}];
             for (let i = 0; i < statusArr.length; i++) {
                 const ele = statusArr[i];
                 if(ele == 'All') {
@@ -2156,8 +2142,8 @@ module.exports = {
                 await temp_collection.updateOne({tokenId: dataBuyNow[i].tokenId}, {$set: dataBuyNow[i]}, {upsert: true});
             }
 
-            let total = await temp_collection.find().count();
-            let returnValue = await temp_collection.find().sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
+            let total = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).count();
+            let returnValue = await temp_collection.find({$and: [{priceCalculated: {$gte: minPrice}}, {priceCalculated: {$lte: maxPrice}}]}).sort(sort).skip((pageNum - 1) * pageSize).limit(pageSize).toArray();
 
             if(total > 0)
                 await temp_collection.drop();

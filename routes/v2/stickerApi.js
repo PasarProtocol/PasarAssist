@@ -341,9 +341,9 @@ router.get('/getDetailedCollectibles', function(req, res) {
             res.json({code: 400, message: 'bad request'})
             return;
         }
-        
-        min = minPrice ? minPrice : 0;
-        max = maxPrice ? maxPrice : 100000000;
+
+        min = minPrice ? minPrice / 10 ** 18 : 0;
+        max = maxPrice ? maxPrice / 10 ** 18 : 100000000;
 
     }catch (e) {
         console.log(e);
@@ -382,8 +382,8 @@ router.post('/getDetailedCollectiblesInCollection', function(req, res) {
             res.json({code: 400, message: 'bad request'})
             return;
         }
-        min = minPrice ? minPrice : 0;
-        max = maxPrice ? maxPrice : 100000000;
+        min = minPrice ? minPrice / 10 ** 18 : 0;
+        max = maxPrice ? maxPrice / 10 ** 18 : 100000000;
     }catch (e) {
         console.log(e);
         res.json({code: 400, message: 'bad request'});
