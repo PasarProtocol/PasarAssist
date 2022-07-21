@@ -4,7 +4,7 @@
 
 const { config, DB_SYNC} = require("./utils");
 const { syncEthRegisterCollection, transferEthCustomCollection } = require('./syncEthImportCollection');
-const { syncPasarCollection, transferSingleEth, transferBatchEth, royaltyFeeEth, orderPriceChangedEth, orderForSaleEth, orderForAuctionEth, orderFilledEth, orderCanceledEth, orderBidEth } = require('./syncEthPasarCollection');
+const { syncPasarCollection, transferSingleEth, transferBatchEth, royaltyFeeEth, orderPriceChangedEth, orderForSaleEth, orderForAuctionEth, orderFilledEth, orderCanceledEth, orderBidEth, orderDIDURI } = require('./syncEthPasarCollection');
 
 let stickerDBService = require('../../service/stickerDBService');
 let currentStep = 0;
@@ -81,6 +81,11 @@ const importDataInDB = async (marketPlace) => {
                     case "OrderFilled":
                         if(cell.baseToken == config.pasarEthContract) {
                             await orderFilledEth(cell.eventData, marketPlace);
+                        }
+                        break;
+                    case "OrderDidURI":
+                        if(cell.baseToken == config.pasarV2Contract) {
+                            await orderDIDURI(cell.eventData, marketPlace);
                         }
                         break;
                 } 

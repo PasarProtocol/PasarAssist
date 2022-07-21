@@ -29,7 +29,7 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
         if(!is721 && is1155) {
             tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
         }
-        console.log(22222222);
+        
         let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
 
         for (var i = 0; i < getAllEvents.length; i++) {

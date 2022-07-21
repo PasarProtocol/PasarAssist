@@ -5,7 +5,7 @@
 const { config, DB_SYNC} = require("./utils");
 const { syncRegisterCollection, transferCustomCollection } = require('./syncImportCollection');
 const { syncFeedCollection, transferSingleV1, royaltyFeeV1, orderPriceChangedV1, orderForSaleV1, orderFilledV1, orderCanceledV1 } = require('./syncFeedCollection');
-const { syncPasarCollection, transferSingleV2, transferBatchV2, royaltyFeeV2, orderPriceChangedV2, orderForSaleV2, orderForAuctionV2, orderFilledV2, orderCanceledV2, orderBidV2 } = require('./syncPasarCollection');
+const { syncPasarCollection, transferSingleV2, transferBatchV2, royaltyFeeV2, orderPriceChangedV2, orderForSaleV2, orderForAuctionV2, orderFilledV2, orderCanceledV2, orderBidV2, orderDIDURI } = require('./syncPasarCollection');
 
 let stickerDBService = require('../../service/stickerDBService');
 let currentStep = 0;
@@ -96,6 +96,11 @@ const importDataInDB = async (marketPlace) => {
                             await orderFilledV1(cell.eventData, marketPlace);
                         } else if(cell.baseToken == config.pasarV2Contract) {
                             await orderFilledV2(cell.eventData, marketPlace);
+                        }
+                        break;
+                    case "OrderDidURI":
+                        if(cell.baseToken == config.pasarV2Contract) {
+                            await orderDIDURI(cell.eventData, marketPlace);
                         }
                         break;
                 } 

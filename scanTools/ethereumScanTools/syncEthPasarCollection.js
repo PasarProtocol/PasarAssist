@@ -300,6 +300,30 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     console.log(`royalty count: ${getAllEvents.length}`);
 };
 
+async function orderDIDURI(event, marketPlace) {
+    let orderInfo = event.returnValues;
+    let token = {orderId: orderInfo._orderId}
+    token.didUri = orderInfo._sellerUri;
+    token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
+    await pasarDBService.updateDid({address: orderInfo._seller, did: token.did});
+    if(token.did.KYCedProof != undefined) {
+        await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
+    }
+    
+    let updateResult = {};
+    updateResult.orderId = orderInfo._orderId;
+    updateResult.sellerAddr = orderInfo._seller;
+    updateResult.buyerAddr = orderInfo._buyer;
+    updateResult.event = event.event;
+    updateResult.blockNumber = event.blockNumber;
+    updateResult.tHash = event.transactionHash;
+    updateResult.blockHash = event.blockHash;
+    updateResult.v1Event = false;
+    updateResult.marketPlace = marketPlace;
+
+    await pasarDBService.insertOrderEvent(updateResult);
+}
+
 const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
@@ -342,6 +366,13 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
         await saveEvent(item, DB_SYNC, config.pasarEthContract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
+
+    getAllEvents = await scanEvents(pasarContract, "OrderDIDURI", startBlock, endBlock);
+
+    for (let item of getAllEvents) {
+        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+    }
+    console.log(`did uri count: ${getAllEvents.length}`);
 };
 
 const syncPasarCollection = async () => {
@@ -371,5 +402,6 @@ module.exports = {
     orderBidEth,
     orderPriceChangedEth,
     orderCanceledEth,
-    orderFilledEth
+    orderFilledEth,
+    orderDIDURI,
 }
