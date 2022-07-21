@@ -19,6 +19,9 @@ module.exports = {
     ethWsUrl: 'wss://ropsten.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
     ethRpcUrl: 'https://ropsten.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
 
+    fusionWsUrl: 'wss://testnet.fusionnetwork.io ',
+    fusionRpcUrl: 'https://testnet.fusionnetwork.io',
+
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     galleriaContract: '0x8b3c7Fc42d0501e0367d29426421D950f45F5041',
@@ -30,6 +33,10 @@ module.exports = {
     pasarEthContract: '0x61EAE56bc110249648fB9eAe7eA4cfa185e0A498',
     stickerEthContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
     pasarEthRegisterContract: '0xC1d40312232ec4b308E69713A98c3A2b21c8F5E0',
+    
+    pasarFusionContract: '0x3EeBa4e850112a9E29F158fB3B3F3a5A5beAe227',
+    stickerFusionContract: '0xd4eF5dbb44048c452578f55322d6938904335D5E',
+    pasarFusionRegisterContract: '0x0acfe829A78CBf78824a9E3a3260640f0b8309d2',
 
     pasarContractDeploy: 7377671,
     stickerContractDeploy: 7377671,
@@ -41,6 +48,10 @@ module.exports = {
     pasarEthContractDeploy: 12565400,
     stickerEthContractDeploy: 12549901,
     pasarEthRegisterContractDeploy: 12565395,
+
+    pasarFusionContractDeploy: 1,
+    stickerFusionContractDeploy: 1,
+    pasarFusionRegisterContractDeploy: 7333100,
 
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 
@@ -68,5 +79,6 @@ module.exports = {
         "0x9f1d0Ed4E041C503BD487E5dc9FC935Ab57F9a57",
     ],
     elaChain: 1,
-    ethChain: 2
+    ethChain: 2,
+    fusionChain: 3,
 }

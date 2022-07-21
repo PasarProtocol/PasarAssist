@@ -35,6 +35,8 @@ module.exports = {
                     return config.stickerContractDeploy;
                 } else if(token == config.stickerEthContract) {
                     return config.stickerEthContractDeploy;
+                } else if(token == config.stickerFusionContract) {
+                    return config.stickerFusionContractDeploy;
                 }
             }
         } catch (err) {
@@ -919,12 +921,14 @@ module.exports = {
             let sum = 0;
             
             let rates = await this.getPriceRate();
-            let listRate_ela = [], listRate_eth = [];
+            let listRate_ela = [], listRate_eth = [], listRate_fusion=[];
             for(var i=0; i < rates.length; i++) {
                 if(rates[i].marketPlace == config.elaChain) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethChain) {
                     listRate_eth[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.fusionChain) {
+                    listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
@@ -941,6 +945,9 @@ module.exports = {
                         break;
                     case config.ethChain:
                         rate = listRate_eth[convertToken];
+                        break;
+                    case config.fusionChain:
+                        rate = listRate_fusion[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -1554,7 +1561,7 @@ module.exports = {
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1593,12 +1600,14 @@ module.exports = {
                 ]).toArray();
 
                 let rates = await this.getPriceRate();
-                let listRate_ela = [], listRate_eth = [];
+                let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
                     if(rates[i].marketPlace == config.elaChain) {
                         listRate_ela[rates[i].type] = rates[i].rate;
                     } else if(rates[i].marketPlace == config.ethChain) {
                         listRate_eth[rates[i].type] = rates[i].rate;
+                    } else if(rates[i].marketPlace == config.fusionChain) {
+                        listRate_fusion[rates[i].type] = rates[i].rate;
                     }
                 }
                 
@@ -1614,6 +1623,9 @@ module.exports = {
                             break;
                         case config.ethChain:
                             rate = listRate_eth[convertToken];
+                            break;
+                        case config.fusionChain:
+                            rate = listRate_fusion[convertToken];
                             break;
                         default:
                             rate = 1;
@@ -1709,7 +1721,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1738,12 +1750,14 @@ module.exports = {
             ]).toArray();
 
             let rates = await this.getPriceRate();
-            let listRate_ela = [], listRate_eth = [];
+            let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
                 if(rates[i].marketPlace == config.elaChain) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethChain) {
                     listRate_eth[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.fusionChain) {
+                    listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
@@ -1765,6 +1779,9 @@ module.exports = {
                         break;
                     case config.ethChain:
                         rate = listRate_eth[convertToken];
+                        break;
+                    case config.fusionChain:
+                        rate = listRate_fusion[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -1843,7 +1860,7 @@ module.exports = {
             // }
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1870,12 +1887,14 @@ module.exports = {
                 baseToken: 1, marketPlace: 1, reservePrice: "$tokenOrder.reservePrice",currentBid: 1, thumbnail: 1, kind: 1, lastBid: "$tokenOrder.lastBid", v1State: 1 },},
             ]).toArray();
             let rates = await this.getPriceRate();
-            let listRate_ela = [], listRate_eth = [];
+            let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
                 if(rates[i].marketPlace == config.elaChain) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethChain) {
                     listRate_eth[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.fusionChain) {
+                    listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
                 
@@ -1896,6 +1915,9 @@ module.exports = {
                         break;
                     case config.ethChain:
                         rate = listRate_eth[convertToken];
+                        break;
+                    case config.fusionChain:
+                        rate = listRate_fusion[convertToken];
                         break;
                     default:
                         rate = 1;
@@ -2039,7 +2061,7 @@ module.exports = {
                 }
                 let checkMarketPlace;
                 if(marketPlace == 0) {
-                    checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                    checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
                 } else {
                     checkMarketPlace = {marketPlace : marketPlace}
                 }
@@ -2069,13 +2091,15 @@ module.exports = {
                 let marketStatus = ['MarketSale', 'MarketAuction', 'MarketBid', 'MarketPriceChanged'];
                 
                 let rates = await this.getPriceRate();
-                let listRate_ela = [], listRate_eth = [];
+                let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
                     if(rates[i].marketPlace == config.elaChain) {
                         listRate_ela[rates[i].type] = rates[i].rate;
                     } else if(rates[i].marketPlace == config.ethChain) {
                         listRate_eth[rates[i].type] = rates[i].rate;
-                    }
+                    } else if(rates[i].marketPlace == config.fusionChain) {
+                        listRate_fusion[rates[i].type] = rates[i].rate;
+                    } 
                 }
 
                 let listRate = [];
@@ -2099,6 +2123,9 @@ module.exports = {
                             break;
                         case config.ethChain:
                             rate = listRate_eth[convertToken];
+                            break;
+                        case config.fusionChain:
+                            rate = listRate_fusion[convertToken];
                             break;
                         default:
                             rate = 1;
@@ -2698,7 +2725,14 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.pasarRegisterContractDeploy;
+                if(marketPlace == config.elaChain) {
+                    return config.pasarRegisterContractDeploy;
+                } else if(marketPlace == config.ethChain) {
+                    return config.pasarEthRegisterContractDeploy;
+                } else if(marketPlace == config.fusionChain) {
+                    return config.pasarFusionRegisterContractDeploy;
+                }
+                
             }
         } catch (err) {
             logger.error(err);
@@ -2793,7 +2827,7 @@ module.exports = {
         try {
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2873,7 +2907,7 @@ module.exports = {
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2978,12 +3012,14 @@ module.exports = {
             let total = 0;
 
             let rates = await this.getPriceRate();
-            let listRate_ela = [], listRate_eth = [];
+            let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
                 if(rates[i].marketPlace == config.elaChain) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethChain) {
                     listRate_eth[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.fusionChain) {
+                    listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
@@ -3003,6 +3039,13 @@ module.exports = {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
+                        }
+                        break;
+                    case config.fusionChain:
+                        if(convertToken == config.DefaultToken) {
+                            rate = 1;
+                        } else {
+                            rate = 1/listRate_fusion[config.DefaultToken]
                         }
                         break;
                     default:
@@ -3042,12 +3085,14 @@ module.exports = {
             ]).toArray();
 
             let rates = await this.getPriceRate();
-            let listRate_ela = [], listRate_eth = [];
+            let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
                 if(rates[i].marketPlace == config.elaChain) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethChain) {
                     listRate_eth[rates[i].type] = rates[i].rate;
+                } else if(rates[i].marketPlace == config.fusionChain) {
+                    listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
@@ -3067,6 +3112,13 @@ module.exports = {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
+                        }
+                        break;
+                    case config.fusionChain:
+                        if(convertToken == config.DefaultToken) {
+                            rate = 1;
+                        } else {
+                            rate = 1/listRate_fusion[config.DefaultToken]
                         }
                         break;
                     default:
@@ -3415,12 +3467,13 @@ module.exports = {
             let web3 = new Web3(config.escRpcUrl);
             let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
 
-            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum&vs_currencies=usd');
+            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum,fsn&vs_currencies=usd');
             let rateData = await response.json();
             
             let listRate={};
             listRate[config.elaChain] = rateData.elastos.usd;
             listRate[config.ethChain] = rateData.ethereum.usd;
+            listRate[config.fusionChain] = rateData.fsn.usd;
 
             await Promise.all(collections.map(async cell => {
                 let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalUSDPrice = 0, floorUSDPrice = 0, collectibles = [], collectiblesOnMarket=[];
