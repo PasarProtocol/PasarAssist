@@ -60,7 +60,7 @@ DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 
 jobs.run()
 jobsV2.run()
-jobsEth.run();s
+jobsEth.run();
 // jobsFusion.run();
 
 module.exports = app;
