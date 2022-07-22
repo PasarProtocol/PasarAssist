@@ -634,7 +634,7 @@ module.exports = {
             /**
                 *  Get the rate of token for ela
             */
-            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,FUS&vs_currencies=usd');
+            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,fsn&vs_currencies=usd');
             let jsonData = await response.json();
             
             let rate = jsonData.fsn.usd / jsonData.elastos.usd;
