@@ -784,8 +784,9 @@ module.exports = {
             // fetch order evetns
             let rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_order] }},
+                { $addFields: {timestamp: {$toInt : "$timestamp"}}},
                 { $project:{'_id': 0, event: 1, tHash: 1, from: "$sellerAddr", to: "$buyerAddr", orderId: 1,
-                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1, v1Event: 1} },
+                timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, royaltyFee: 1, data: 1, gasFee: 1, v1Event: 1, marketPlace: 1} },
             ]).toArray();
             if(rows.length > 0)
                 await temp_collection.insertMany(rows);
@@ -794,8 +795,9 @@ module.exports = {
             collection = mongoClient.db(config.dbName).collection('pasar_token_event');
             rows = await collection.aggregate([
                 { $match: { $and: [methodCondition_token] } },
+                { $addFields: {timestamp: {$toInt : "$timestamp"}}},
                 { $project: {'_id': 0, event: "notSetYet", tHash: "$txHash", from: 1, to: 1, gasFee: 1,
-                timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0"} }
+                timestamp: 1, memo: 1, tokenId: 1, blockNumber: 1, royaltyFee: "0", marketPlace: 1} }
             ]).toArray();
             if(rows.length > 0)
                 await temp_collection.insertMany(rows);
@@ -810,7 +812,7 @@ module.exports = {
             //     await temp_collection.insertMany(rows);
 
             // fetch results from temporary collection
-            let result = await temp_collection.find().sort({blockNumber: parseInt(timeOrder)}).toArray();
+            let result = await temp_collection.find().sort({timestamp: parseInt(timeOrder)}).toArray();
             await temp_collection.drop();
             for(var i = (pageNum - 1) * pageSize; i < pageSize * pageNum; i++)
             {
