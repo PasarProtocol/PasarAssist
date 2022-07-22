@@ -1005,7 +1005,7 @@ module.exports = {
             })
         }
 
-        schedule.scheduleJob('0 */10 * * * *', async () => {
+        schedule.scheduleJob('0 */2 * * * *', async () => {
             /**
                 *  Start to listen all user's contract events
             */
