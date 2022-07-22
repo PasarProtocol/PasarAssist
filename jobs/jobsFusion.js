@@ -54,13 +54,9 @@ module.exports = {
         let isGetForOrderPriceChangedJobRun = false;
         let isGetForOrderCancelledJobRun = false;
         let isGetForOrderFilledJobRun = false;
-        let isGetTokenInfoJobRun = false;
-        let isGetTokenInfoWithMemoJobRun = false;
         let isGetOrderForAuctionJobRun = false;
         let isGetOrderBidJobRun = false;
         let isOrderDidURIJobRun = false;
-        let isTokenTransferBatchJobRun = false;
-        let isGetTokenInfoWithBatchMemoJobRun = false;
         let isTokenRegisteredJobRun = false;
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
@@ -413,7 +409,7 @@ module.exports = {
 
             isTokenRegisteredJobRun = true;
 
-            logger.info(`[tokenRegistered] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[tokenRegistered] Sync start from height: ${config.pasarFusionRegisterContractDeploy}`);
 
             pasarRegisterWs.events.TokenRegistered({
                 fromBlock: lastHeight + 1
@@ -464,7 +460,7 @@ module.exports = {
 
             isRoyaltyChangedJobRun = true;
 
-            logger.info(`[TokenRoyaltyChanged] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[TokenRoyaltyChanged] Sync start from height: ${config.pasarFusionContractDeploy}`);
 
             pasarRegisterWs.events.TokenRoyaltyChanged({
                 fromBlock: lastHeight + 1
@@ -523,9 +519,6 @@ module.exports = {
                 orderFilledJobId.reschedule(new Date(now + 30 * 1000));
             if(!isGetForOrderCancelledJobRun)
                 orderCanceledJobId.reschedule(new Date(now + 40 * 1000));
-            if(!isGetTokenInfoWithMemoJobRun) {
-                tokenInfoWithMemoSyncJobId.reschedule(new Date(now + 60 * 1000))
-            }
             if(!isGetOrderForAuctionJobRun)
                 orderForAuctionJobId.reschedule(new Date(now + 100 * 1000))
             if(!isGetOrderBidJobRun)
