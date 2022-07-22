@@ -3548,6 +3548,7 @@ module.exports = {
           config.pasarContract,
           config.pasarV2Contract,
           config.pasarEthContract,
+          config.pasarFusionContract,
           null,
         ]
         if(listCheckingAddress.indexOf(address) == -1) {
