@@ -24,7 +24,6 @@ module.exports = {
 
     pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
     stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
-    galleriaContract: '0x8b3c7Fc42d0501e0367d29426421D950f45F5041',
     pasarV2Contract: '0x19088c509C390F996802B90bdc4bFe6dc3F5AAA7',
     stickerV2Contract: '0x32496388d7c0CDdbF4e12BDc84D39B9E42ee4CB0',
     pasarRegisterContract: '0x2b304ffC302b402785294629674A8C2b64cEF897',
@@ -41,7 +40,6 @@ module.exports = {
     stickerContractDeploy: 7377671,
     pasarV2ContractDeploy: 12311847,
     stickerV2ContractDeploy: 12311834,
-    galleriaContractDeploy: 10242686,
     pasarRegisterContractDeploy: 12311838,
     
     pasarEthContractDeploy: 12565400,

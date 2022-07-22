@@ -13,7 +13,6 @@
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "follow-redirects": "^1.14.8",
-    "ioredis": "^4.28.3",
     "jsonwebtoken": "^8.5.1",
     "log4js": "^6.3.0",
     "mongodb": "^3.6.1",
