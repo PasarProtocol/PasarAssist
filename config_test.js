@@ -47,7 +47,7 @@ module.exports = {
     pasarEthRegisterContractDeploy: 12565395,
 
     pasarFusionContractDeploy: 1,
-    pasarFusionRegisterContractDeploy: 7333100,
+    pasarFusionRegisterContractDeploy: 1,
 
     ipfsNodeUrl: 'https://ipfs-test.pasarprotocol.io/ipfs/',
 

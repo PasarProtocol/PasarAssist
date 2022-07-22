@@ -17,7 +17,7 @@ module.exports = {
                 if(marketPlace == config.ethChain) {
                     return config.pasarEthContractDeploy;
                 } else if(marketPlace == config.fusionChain) {
-                    return config.pasarFusionRegisterContract;
+                    return config.pasarFusionContractDeploy;
                 } else if(v1Event) {
                     return config.pasarContractDeploy;
                 } else {
