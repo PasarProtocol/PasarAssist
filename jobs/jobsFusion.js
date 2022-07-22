@@ -457,7 +457,7 @@ module.exports = {
         });
 
         let royaltyChangedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged');
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged', config.fusionChain);
 
             isRoyaltyChangedJobRun = true;
 
