@@ -82,14 +82,7 @@ module.exports = {
 
             }).on("data", async function (event) {
                 let orderInfo = event.returnValues;
-                let token = {orderId: orderInfo._orderId}
-                token.didUri = orderInfo._sellerUri;
-                token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
-                await pasarDBService.updateDid({address: orderInfo._seller, did: token.did});
-                if(token.did.KYCedProof != undefined) {
-                    await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
-                }
-                
+
                 let updateResult = {};
                 updateResult.orderId = orderInfo._orderId;
                 updateResult.sellerAddr = orderInfo._seller;
@@ -102,6 +95,14 @@ module.exports = {
                 updateResult.marketPlace = config.fusionChain;
 
                 await pasarDBService.insertOrderEvent(updateResult);
+
+                let token = {orderId: orderInfo._orderId}
+                token.didUri = orderInfo._sellerUri;
+                token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
+                await pasarDBService.updateDid({address: orderInfo._seller, did: token.did});
+                if(token.did.KYCedProof != undefined) {
+                    await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
+                }  
             })
         });
 
