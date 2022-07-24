@@ -19,8 +19,8 @@ module.exports = {
     ethWsUrl: 'wss://mainnet.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
     ethRpcUrl: 'https://mainnet.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
 
-    fusionWsUrl: 'wss://testnet.fusionnetwork.io ',
-    fusionRpcUrl: 'https://testnet.fusionnetwork.io',
+    fusionWsUrl: 'wss://mainnet.fusionnetwork.io',
+    fusionRpcUrl: 'https://mainnet.fusionnetwork.io',
 
     pasarContract: '0x02E8AD0687D583e2F6A7e5b82144025f30e26aA0',
     stickerContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
