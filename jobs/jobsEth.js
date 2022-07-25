@@ -69,6 +69,8 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
+        let runOrderDid = false;
+
         let now = Date.now();
         
         let recipients = [];
@@ -193,8 +195,12 @@ module.exports = {
                 isOrderDidURIJobRun = false;
 
             }).on("data", async function (event) {
+                if(runOrderDid) {
+                    return;
+                }
+                runOrderDid = true;
                 let orderInfo = event.returnValues;
-
+                
                 let updateResult = {};
                 updateResult.orderId = orderInfo._orderId;
                 updateResult.sellerAddr = orderInfo._seller;
@@ -215,7 +221,7 @@ module.exports = {
                 if(token.did.KYCedProof != undefined) {
                     await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
                 }
-                
+                runOrderDid = false;
                 
             })
         });

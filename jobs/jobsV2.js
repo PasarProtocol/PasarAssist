@@ -70,6 +70,7 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
+        let runOrderDid = false;
         let now = Date.now();
         
         let recipients = [];
@@ -194,6 +195,9 @@ module.exports = {
                 isOrderDidURIJobRun = false;
 
             }).on("data", async function (event) {
+                if(runOrderDid) 
+                    return;
+                runOrderDid = true;
                 let orderInfo = event.returnValues;
 
                 let updateResult = {};
@@ -213,9 +217,11 @@ module.exports = {
                 token.didUri = orderInfo._sellerUri;
                 token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
                 await pasarDBService.updateDid({address: orderInfo._seller, did: token.did});
+                
                 if(token.did.KYCedProof != undefined) {
                     await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
                 }
+                runOrderDid = false;
             })
         });
 
