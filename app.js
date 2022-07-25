@@ -5,6 +5,7 @@ let routeV2 = require('./routes/v2/route');
 let jobs = require('./jobs/jobs');
 let jobsV2 = require('./jobs/jobsV2');
 let jobsEth = require('./jobs/jobsEth');
+let jobsFusion = require('./jobs/jobsFusion');
 let log4js = require('log4js');
 let cors = require('cors');
 let { DefaultDIDAdapter } =  require('@elastosfoundation/did-js-sdk');
@@ -60,5 +61,6 @@ DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 jobs.run()
 jobsV2.run()
 jobsEth.run();
+jobsFusion.run();
 
 module.exports = app;

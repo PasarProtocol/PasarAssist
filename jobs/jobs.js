@@ -98,7 +98,6 @@ module.exports = {
                 token.orderId = null;
                 await stickerDBService.replaceToken(token);
             } catch (e) {
-                logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
             }
         }

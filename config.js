@@ -19,9 +19,11 @@ module.exports = {
     ethWsUrl: 'wss://mainnet.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
     ethRpcUrl: 'https://mainnet.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
 
+    fusionWsUrl: 'wss://mainnet.fusionnetwork.io',
+    fusionRpcUrl: 'https://mainnet.fusionnetwork.io',
+
     pasarContract: '0x02E8AD0687D583e2F6A7e5b82144025f30e26aA0',
     stickerContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
-    galleriaContract: '0xE91F413953A82E15B92Ffb93818d8a7b87C3939B',
     pasarV2Contract: '0xaeA699E4dA22986eB6fa2d714F5AC737Fe93a998',
     stickerV2Contract: '0xF63f820F4a0bC6E966D61A4b20d24916713Ebb95',
     pasarRegisterContract: '0x3d0AD66765C319c2A1c6330C1d815608543dcc19',
@@ -31,9 +33,11 @@ module.exports = {
     stickerEthContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
     pasarEthRegisterContract: '0x24A7af00c8d03F2FeEb89045B2B93c1D7C3ffB08',
 
+    pasarFusionContract: '0xa18279eBDfA5747e79DBFc23fa999b4Eaf2A9780',
+    pasarFusionRegisterContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
+
     pasarContractDeploy: 7744408,
     stickerContractDeploy: 7744408,
-    galleriaContractDeploy: 10527413,
     pasarV2ContractDeploy: 12698149,
     stickerV2ContractDeploy: 12695430,
     pasarRegisterContractDeploy: 12698059,
@@ -41,6 +45,9 @@ module.exports = {
     pasarEthContractDeploy: 15126947,
     stickerEthContractDeploy: 15126909,
     pasarEthRegisterContractDeploy: 15126930,
+
+    pasarFusionContractDeploy: 1,
+    pasarFusionRegisterContractDeploy: 1,
 
     ipfsNodeUrl:  "https://ipfs.pasarprotocol.io/ipfs/",
 
@@ -55,6 +62,7 @@ module.exports = {
     ],
     ELAToken:'0x0000000000000000000000000000000000000000',
     ELATokenOnETH:'0xe6fd75ff38Adca4B97FBCD938c86b98772431867',
+    ELATokenOnFusion: '0x471a525f12804f3eb45573f60b7c4ac29b3460e2',
     DefaultToken:'0x0000000000000000000000000000000000000000',
     listToken: [
         '0x0000000000000000000000000000000000000000',
@@ -68,5 +76,7 @@ module.exports = {
     ],
     elaChain: 1,
     ethChain: 2,
+    fusionChain: 3,
+
     curNetwork: 'testNet'
 }

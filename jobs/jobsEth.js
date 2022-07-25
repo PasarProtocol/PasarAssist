@@ -69,6 +69,8 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
+        let runOrderDid = false;
+
         let now = Date.now();
         
         let recipients = [];
@@ -123,7 +125,6 @@ module.exports = {
 
                 await stickerDBService.replaceToken(token);
             } catch (e) {
-                logger.info(`[TokenInfo2] Sync error at ${blockNumber} ${tokenId}`);
                 logger.info(e);
             }
         }
@@ -194,7 +195,25 @@ module.exports = {
                 isOrderDidURIJobRun = false;
 
             }).on("data", async function (event) {
+                if(runOrderDid) {
+                    return;
+                }
+                runOrderDid = true;
                 let orderInfo = event.returnValues;
+                
+                let updateResult = {};
+                updateResult.orderId = orderInfo._orderId;
+                updateResult.sellerAddr = orderInfo._seller;
+                updateResult.buyerAddr = orderInfo._buyer;
+                updateResult.event = event.event;
+                updateResult.blockNumber = event.blockNumber;
+                updateResult.tHash = event.transactionHash;
+                updateResult.blockHash = event.blockHash;
+                updateResult.v1Event = false;
+                updateResult.marketPlace = config.ethChain;
+
+                await pasarDBService.insertOrderEvent(updateResult);
+
                 let token = {orderId: orderInfo._orderId}
                 token.didUri = orderInfo._sellerUri;
                 token.did = await jobService.getInfoByIpfsUri(orderInfo._sellerUri);
@@ -202,8 +221,8 @@ module.exports = {
                 if(token.did.KYCedProof != undefined) {
                     await authService.verifyKyc(token.did.KYCedProof, token.did.did, orderInfo._seller);
                 }
-                logger.info("[OrderDidURI2] " + JSON.stringify(token));
-                // await stickerDBService.replaceToken(token);
+                runOrderDid = false;
+                
             })
         });
 
@@ -784,11 +803,11 @@ module.exports = {
         });
 
         let royaltyChangedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged');
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged', config.ethChain);
 
             isRoyaltyChangedJobRun = true;
 
-            logger.info(`[TokenRoyaltyChanged] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[TokenRoyaltyChanged2] Sync start from height: ${config.pasarRegisterContractDeploy}`);
 
             pasarRegisterWs.events.TokenRoyaltyChanged({
                 fromBlock: lastHeight + 1
@@ -840,11 +859,6 @@ module.exports = {
 
             if(!isGetForSaleOrderJobRun) {
                 orderForSaleJobId.reschedule(new Date(now + 10 * 1000));
-
-                if(config.galleriaContract !== '' && config.galleriaContractDeploy !== 0) {
-                    // panelCreatedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
-                    // panelRemovedSyncJobId.reschedule(new Date(now + 4 * 60 * 1000));
-                }
             }
             if(!isGetForOrderPriceChangedJobRun)
                 orderPriceChangedJobId.reschedule(new Date(now + 20 * 1000));
@@ -999,7 +1013,7 @@ module.exports = {
             })
         }
 
-        schedule.scheduleJob('0 */10 * * * *', async () => {
+        schedule.scheduleJob('0 */2 * * * *', async () => {
             /**
                 *  Start to listen all user's contract events
             */
