@@ -461,7 +461,7 @@ module.exports = {
 
             isRoyaltyChangedJobRun = true;
 
-            logger.info(`[TokenRoyaltyChanged] Sync start from height: ${config.pasarFusionContractDeploy}`);
+            logger.info(`[TokenRoyaltyChanged3] Sync start from height: ${config.pasarFusionContractDeploy}`);
 
             pasarRegisterWs.events.TokenRoyaltyChanged({
                 fromBlock: lastHeight + 1
