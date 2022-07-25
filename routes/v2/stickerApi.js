@@ -413,7 +413,9 @@ router.get('/getAttributeOfCollection/:token', function(req, res) {
 router.get('/getListedCollectiblesByAddress/:address', function(req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
-    stickerDBService.getListedCollectiblesByAddress(address, orderType).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+
+    stickerDBService.getListedCollectiblesByAddress(address, orderType, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -424,7 +426,9 @@ router.get('/getListedCollectiblesByAddress/:address', function(req, res) {
 router.get('/getOwnCollectiblesByAddress/:address', function (req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
-    stickerDBService.getOwnCollectiblesByAddress(address, orderType).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+
+    stickerDBService.getOwnCollectiblesByAddress(address, orderType, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -435,7 +439,9 @@ router.get('/getOwnCollectiblesByAddress/:address', function (req, res) {
 router.get('/getBidCollectiblesByAddress/:address', function (req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
-    stickerDBService.getBidCollectiblesByAddress(address, orderType).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+
+    stickerDBService.getBidCollectiblesByAddress(address, orderType, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -446,7 +452,9 @@ router.get('/getBidCollectiblesByAddress/:address', function (req, res) {
 router.get('/getCreatedCollectiblesByAddress/:address', function(req, res) {
     let address = req.params.address;
     let orderType = req.query.orderType;
-    stickerDBService.getCreatedCollectiblesByAddress(address, orderType).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) :  0;
+
+    stickerDBService.getCreatedCollectiblesByAddress(address, orderType, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
@@ -457,7 +465,9 @@ router.get('/getCreatedCollectiblesByAddress/:address', function(req, res) {
 router.get('/getSoldCollectiblesByAddress/:address', function (req, res) {
     let address = req.params.address;
     let orderType = req.query.order;
-    stickerDBService.getSoldCollectiblesByAddress(address, orderType).then(result => {
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+
+    stickerDBService.getSoldCollectiblesByAddress(address, orderType, marketPlace).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);
