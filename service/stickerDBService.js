@@ -2891,10 +2891,6 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let result = await token_collection.findOne({token: token, marketPlace: marketPlace});
-            if(marketPlace != config.elaChain) {
-                result.floorPrice = result.floorEthPrice;
-                result.totalPrice = result.totalEthPrice;
-            } 
             return {code: 200, message: 'success', data: result};
         } catch(err) {
             return {code: 500, message: 'server error'};
