@@ -1106,7 +1106,7 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_token_event');
 
             let result = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {to: {$ne: config.pasarContract}}] }},
+                { $match: {$and: [{tokenId: tokenId}, {token: baseToken},{to: {$ne: config.pasarContract}}] }},
                 { $sort: {tokenId: 1, blockNumber: -1}},
                 { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
