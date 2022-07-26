@@ -171,7 +171,7 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
 
 const syncRegisterCollection = async (marketPlace) => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.pasarRegisterContractDeploy;
+    let startBlock = config.pasarFusionRegisterContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;
