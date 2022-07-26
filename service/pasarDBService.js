@@ -101,7 +101,7 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order_event');
 
-            let length = await collection.find({tokenId: orderEventDetail.tokenId, baseToken: orderEventDetail.baseToken, marketPlace: orderEventDetail.marketPlace, blockNumber: orderEventDetail.blockNumber}).count();
+            let length = await collection.find({tokenId: orderEventDetail.tokenId, event: orderEventDetail.event, baseToken: orderEventDetail.baseToken, marketPlace: orderEventDetail.marketPlace, blockNumber: orderEventDetail.blockNumber}).count();
             if(length == 0) {
                 await collection.insertOne(orderEventDetail);
             }
