@@ -14,7 +14,7 @@ let jobService = require('../../service/jobService');
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.ethRpcUrl);
+let web3Rpc = new Web3(config.fusionRpcUrl);
 let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarFusionContract);
 
 async function orderForSale(event, marketPlace) {
