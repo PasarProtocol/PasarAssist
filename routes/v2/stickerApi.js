@@ -534,9 +534,9 @@ router.get('/getLatestElaPrice', function(req, res) {
 
 router.get('/getCollection', function(req, res) {
     let sort = req.query.sort;
-    
     let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
-    stickerDBService.getCollections(sort, marketPlace).then(result => {
+    let category = req.query.category ? parseInt(req.query.category) : 0;
+    stickerDBService.getCollections(sort, marketPlace, category).then(result => {
         res.json(result);
     }).catch(error => {
         console.log(error);

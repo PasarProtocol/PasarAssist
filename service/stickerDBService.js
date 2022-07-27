@@ -2856,7 +2856,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function(sort = 0, marketPlace) {
+    getCollections: async function(sort = 0, marketPlace, category) {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2865,6 +2865,14 @@ module.exports = {
                 checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
+            }
+            
+            let listCategories= [null, 'general', 'art', 'collectibles', 'photography', 'trading Cards', 'utility', 'domains']
+            let checkCategory;
+            if(category == 0) {
+                checkCategory = {"tokenJson.data.category": {$in: listCategories}};
+            } else {
+                checkCategory = {"tokenJson.data.category" : listCategories[category]}
             }
             
             await mongoClient.connect();
@@ -2910,7 +2918,7 @@ module.exports = {
                     break;
             }
 
-            let collections = await token_collection.find(checkMarketPlace).sort(sortData).toArray();
+            let collections = await token_collection.find({ $and: [checkMarketPlace, checkCategory]}).sort(sortData).toArray();
             return {code: 200, message: 'success', data: collections};
         } catch(err) {
             return {code: 500, message: 'server error'};
