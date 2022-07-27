@@ -2867,7 +2867,7 @@ module.exports = {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
             
-            let listCategories= [null, 'general', 'art', 'collectibles', 'photography', 'trading Cards', 'utility', 'domains']
+            let listCategories= [null, 'general', 'art', 'collectibles', 'photography', 'trading cards', 'utility', 'domains']
             let checkCategory;
             if(category == 0) {
                 checkCategory = {"tokenJson.data.category": {$in: listCategories}};
