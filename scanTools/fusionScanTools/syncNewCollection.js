@@ -14,7 +14,7 @@ let web3Rpc = new Web3(config.fusionRpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       
-    {name: "Test2", address: '0x0aC5d975876DE8a21F709e632CBb700561276EAD'},
+    {name: "Test2", address: '0x2461Bf38AB64C161eC9eFC7468a2A96d845C296c'},
 ];
 
 const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
@@ -30,6 +30,9 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
             tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
         }
         
+        if(config.curNetwork != "testNet") {
+            startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.address);
+        }
         let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
 
         for (var i = 0; i < getAllEvents.length; i++) {
