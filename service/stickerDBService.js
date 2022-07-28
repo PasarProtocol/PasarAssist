@@ -35,8 +35,6 @@ module.exports = {
                     return config.stickerContractDeploy;
                 } else if(token == config.stickerEthContract) {
                     return config.stickerEthContractDeploy;
-                } else if(token == config.stickerFusionContract) {
-                    return config.stickerFusionContractDeploy;
                 }
             }
         } catch (err) {
@@ -2856,7 +2854,7 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getCollections: async function(sort = 0, marketPlace, category) {
+    getCollections: async function(sort = 0, marketPlace, category=0) {
 
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

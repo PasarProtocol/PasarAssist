@@ -1,4 +1,5 @@
 const { json } = require("body-parser");
+const { curNetwork } = require("../config");
 let config = require("../config");
 const config_test = require("../config_test");
 const token1155ABI = require("../contractABI/token1155ABI");
@@ -182,6 +183,10 @@ module.exports = {
             let startBlock = result == 0 ? "earliest" : result + 1;
             let  endBlock = "latest";
 
+            if(result == 0 && marketPlace == config.fusionChain && curNetwork != "testNet") {
+                startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
+            }
+
             const getAllEvents = await tokenContract.getPastEvents(x.is721 ? 'Transfer' : 'TransferSingle', {fromBlock: startBlock, toBlock: endBlock});
 
             for (var i = 0; i < getAllEvents.length; i++) {
@@ -269,7 +274,16 @@ module.exports = {
             }
         }
         
-
         return returnValue;
     },
+
+    getFirstBlockNumberOnFusionChain: async function(address) {
+        let response = await fetch(`https://api.fsnscan.com/txs?p=1&ps=50&t=6&a=${address}`);
+        let data = await response.json();
+        let page = Math.ceil(data.total/50);
+        response = await fetch(`https://api.fsnscan.com/txs?p=${page}&ps=50&t=6&a=${address}`);
+        data = await response.json(); 
+        let blockNumber = data.list[data.list.length - 1].block_height;
+        return blockNumber;
+    }
 }
