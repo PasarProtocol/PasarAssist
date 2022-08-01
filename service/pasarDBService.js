@@ -58,7 +58,10 @@ module.exports = {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_order');
             await collection.updateOne({orderId, tokenId, baseToken, marketPlace}, {$set: rest}, {upsert: true});
-            return true;
+            let checkData = await collection.findOne(pasarOrder);
+            if(!checkData) {
+                await this.updateOrInsert(pasarOrder);
+            }
         } catch (err) {
             logger.error(err);
             throw new Error();
