@@ -524,7 +524,9 @@ module.exports = {
                 updateData.status = status;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {status}});
             }
-
+            updateData.tokenId = tokenId;
+            updateData.baseToken = baseToken;
+            updateData.marketPlace = marketPlace;
             let checkData = await collection.findOne(updateData);
             if(checkData == null) {
                 await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
