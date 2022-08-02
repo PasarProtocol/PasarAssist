@@ -24,7 +24,7 @@ module.exports = {
 
         const burnAddress = '0x0000000000000000000000000000000000000000';
 
-        let web3WsProvider = new Web3.providers.WebsocketProvider(config.ethWsUrl, {
+        let web3WsProvider = new Web3.providers.WebsocketProvider(config.ethereum.wsUrl, {
             //timeout: 30000, // ms
             // Useful for credentialed urls, e.g: ws://username:password@localhost:8546
             //headers: {
@@ -45,13 +45,13 @@ module.exports = {
             },
         })
         let web3Ws = new Web3(web3WsProvider);
-        let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarEthContract);
-        let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerEthContract);
-        let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.pasarEthRegisterContract)
+        let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.ethereum.pasarContract);
+        let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.ethereum.stickerContract);
+        let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.ethereum.pasarRegisterContract)
 
-        let web3Rpc = new Web3(config.ethRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
-        let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
+        let web3Rpc = new Web3(config.ethereum.rpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.ethereum.pasarContract);
+        let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.ethereum.stickerContract);
 
         let isGetForSaleOrderJobRun = false;
         let isGetForOrderPriceChangedJobRun = false;
@@ -116,7 +116,7 @@ module.exports = {
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
-                token.baseToken = config.stickerEthContract;
+                token.baseToken = config.ethereum.stickerContract;
 
                 let creator = data.creator ? data.creator : null;
                 if(creator) {
@@ -170,7 +170,7 @@ module.exports = {
                     token.status = "Not on sale";
                     token.endTime = null;
                     token.orderId = null;
-                    token.baseToken = config.stickerEthContract;
+                    token.baseToken = config.ethereum.stickerContract;
                     tokens.push(token);
                     await stickerDBService.replaceToken(tokens);
                 })
@@ -181,7 +181,7 @@ module.exports = {
         }
 
         let orderDidURIJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderDIDURI', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderDIDURI', config.ethereum.chainType);
 
             isOrderDidURIJobRun = true;
 
@@ -210,7 +210,7 @@ module.exports = {
                 updateResult.tHash = event.transactionHash;
                 updateResult.blockHash = event.blockHash;
                 updateResult.v1Event = false;
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
 
                 await pasarDBService.insertOrderEvent(updateResult);
 
@@ -227,7 +227,7 @@ module.exports = {
         });
 
         let orderForSaleJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForSale', config.ethereum.chainType);
             // if(isGetForSaleOrderJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForSale');
@@ -256,7 +256,7 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, quoteToken:orderInfo._quoteToken, baseToken: orderInfo._baseToken,
-                    price: result.price, timestamp: result.updateTime, gasFee, marketPlace: config.ethChain}
+                    price: result.price, timestamp: result.updateTime, gasFee, marketPlace: config.ethereum.chainType}
 
                 let updateResult = {...result};
 
@@ -270,16 +270,16 @@ module.exports = {
                 updateResult.buyoutPrice = 0;
                 updateResult.createTime = orderInfo._startTime;
                 updateResult.endTime = 0;
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
         
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
             })
         });
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.ethereum.chainType);
             // if(isGetForOrderPriceChangedJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderPriceChanged');
@@ -311,7 +311,7 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice, oldReservePrice: orderInfo._oldReservePrice, newReservePrice: orderInfo._newReservePrice,
                     oldBuyoutPrice: orderInfo._oldBuyoutPrice, newBuyoutPrice: orderInfo._newBuyoutPrice, oldQuoteToken: orderInfo._oldQuoteToken, newQuoteToken: orderInfo._newQuoteToken},
-                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace: config.ethChain,
+                    sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, marketPlace: config.ethereum.chainType,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, quoteToken:orderInfo._newQuoteToken, baseToken: token.baseToken,timestamp: result.updateTime, gasFee}
 
                 let updateResult = {...result};
@@ -321,16 +321,16 @@ module.exports = {
                 updateResult.buyoutPrice = orderInfo._newBuyoutPrice;
                 updateResult.price = orderInfo._newPrice;
                 updateResult.quoteToken = orderInfo._newQuoteToken;
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, null, null, null, updateResult.sellerAddr, event.blockNumber, orderEventDetail.quoteToken, token.baseToken, config.ethereum.chainType);
             })
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.ethereum.chainType);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -360,10 +360,10 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
                     royaltyFee: orderInfo._royaltyFee, royaltyOwner:orderInfo._royaltyOwner, tokenId: result.tokenId, quoteToken:orderInfo._quoteToken,
-                    baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee, marketPlace: config.ethChain}
+                    baseToken: orderInfo._baseToken, price: orderInfo._price, timestamp: result.updateTime, gasFee, marketPlace: config.ethereum.chainType}
 
                 let orderEventFeeDetail = {orderId: orderInfo._orderId, blockNumber: event.blockNumber, txHash: event.transactionHash,
-                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace: config.ethChain};
+                    txIndex: event.transactionIndex, platformAddr: orderInfo._platformAddress, platformFee: orderInfo._platformFee, marketPlace: config.ethereum.chainType};
 
                 let updateResult = {...result};
                 updateResult.sellerAddr = orderInfo._seller;
@@ -374,17 +374,17 @@ module.exports = {
                 updateResult.royaltyFee = orderInfo._royaltyFee;
                 updateResult.quoteToken = orderInfo._quoteToken;
                 updateResult.baseToken = orderInfo._baseToken;
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
             })
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.ethereum.chainType);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
@@ -415,15 +415,15 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace: config.ethChain};
+                    baseToken: token.baseToken, quoteToken: token.quoteToken, marketPlace: config.ethereum.chainType};
 
                 let updateResult = {...result};
                 updateResult.sellerAddr = orderInfo._seller
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.ethereum.chainType);
             })
         });
 
@@ -457,7 +457,7 @@ module.exports = {
         });
 
         let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.stickerEthContract);
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.ethereum.stickerContract);
             // if(isGetTokenInfoJobRun == false) {
             //     //initial state
             //     stickerDBService.removeTokenInfoByHeight(lastHeight);
@@ -481,7 +481,7 @@ module.exports = {
                 let to = event.returnValues._to;
 
                 //After contract upgrade, this job just deal Mint and Burn event
-                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.ethereum.upgradeBlock) {
                 //     return;
                 // }
 
@@ -495,24 +495,24 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace: config.ethChain};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.ethereum.stickerContract, marketPlace: config.ethereum.chainType};
 
                 if(stickerDBService.checkAddress(transferEvent.to) && stickerDBService.checkAddress(transferEvent.from)) {
                     await stickerDBService.replaceEvent(transferEvent);
                 }
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnToken(tokenId, config.stickerEthContract, config.ethChain);
+                    await stickerDBService.burnToken(tokenId, config.ethereum.stickerContract, config.ethereum.chainType);
                 } else if(from === burnAddress) {
-                    await dealWithNewToken(blockNumber, tokenId, config.ethChain)
+                    await dealWithNewToken(blockNumber, tokenId, config.ethereum.chainType)
                 } else {
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, config.ethChain);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.ethereum.stickerContract, config.ethereum.chainType);
                 }
             })
         });
 
         let tokenTransferBatchSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.stickerEthContract);
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.ethereum.stickerContract);
             isTokenTransferBatchJobRun = true;
             logger.info(`[TransferBatch] Sync Starting ... from block ${lastHeight + 1}`)
 
@@ -530,7 +530,7 @@ module.exports = {
                 let to = event.returnValues._to;
 
                 //After contract upgrade, this job just deal Mint and Burn event
-                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.ethereum.upgradeBlock) {
                 //     return;
                 // }
 
@@ -547,7 +547,7 @@ module.exports = {
                 for(var i = 0; i < tokenIds.length; i++) {
                     let tokenId = tokenIds[i];
                     let value = values[i];
-                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace: config.ethChain};
+                    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.ethereum.stickerContract, marketPlace: config.ethereum.chainType};
                     logger.info(`[TransferBatch] tokenEvent: ${JSON.stringify(transferEvent)}`)
                     if(stickerDBService.checkAddress(transferEvent.to) && stickerDBService.checkAddress(transferEvent.from)) {
                         await stickerDBService.replaceEvent(transferEvent);
@@ -556,9 +556,9 @@ module.exports = {
 
 
                 if(to === burnAddress) {
-                    await stickerDBService.burnTokenBatch(tokenIds, config.stickerEthContract, config.ethChain);
+                    await stickerDBService.burnTokenBatch(tokenIds, config.ethereum.stickerContract, config.ethereum.chainType);
                 } else if(from === burnAddress) {
-                    await dealWithNewTokenBatch(blockNumber, tokenIds, config.ethChain)
+                    await dealWithNewTokenBatch(blockNumber, tokenIds, config.ethereum.chainType)
                 } else {
                     // await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber);
                 }
@@ -566,7 +566,7 @@ module.exports = {
         });
 
         let tokenInfoWithMemoSyncJobId = schedule.scheduleJob(new Date(now + 20 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.stickerEthContract);
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.ethereum.stickerContract);
             // if(isGetTokenInfoWithMemoJobRun == false) {
             //     //initial state
             //     stickerDBService.removeTokenInfoByHeight(lastHeight);
@@ -607,7 +607,7 @@ module.exports = {
         });
 
         let tokenInfoWithBatchMemoSyncJobId = schedule.scheduleJob(new Date(now + 20 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.stickerEthContract);
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.ethereum.stickerContract);
             // if(isGetTokenInfoWithMemoJobRun == false) {
             //     //initial state
             //     stickerDBService.removeTokenInfoByHeight(lastHeight);
@@ -654,7 +654,7 @@ module.exports = {
         });
 
         let orderForAuctionJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderForAuction', config.ethereum.chainType);
             // if(isGetOrderForAuctionJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderForAuction');
@@ -685,7 +685,7 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: orderInfo._tokenId, baseToken: orderInfo._baseToken, amount: orderInfo._amount,
-                    quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace: config.ethChain,
+                    quoteToken:orderInfo._quoteToken, reservePrice: orderInfo._reservePrice, marketPlace: config.ethereum.chainType,
                     buyoutPrice: orderInfo._buyoutPrice, startTime: orderInfo._startTime, endTime: orderInfo._endTime, price: orderInfo._minPrice, timestamp: result.updateTime, gasFee}
 
                 let updateResult = {...result};
@@ -699,16 +699,16 @@ module.exports = {
                 updateResult.buyoutPrice = orderInfo._buyoutPrice;
                 updateResult.createTime = orderInfo._startTime;
                 updateResult.endTime = orderInfo._endTime;
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
             })
         });
 
         let orderBidJobId = schedule.scheduleJob(new Date(now + 110 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid', config.ethChain);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderBid', config.ethereum.chainType);
             // if(isGetOrderBidJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderBid');
@@ -739,24 +739,24 @@ module.exports = {
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer,
-                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace: config.ethChain,
+                    royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: orderInfo._price, marketPlace: config.ethereum.chainType,
                     quoteToken: token.quoteToken, baseToken: token.baseToken, timestamp: result.updateTime, gasFee}
                 
                 let updateResult = {...result}
-                updateResult.marketPlace = config.ethChain;
+                updateResult.marketPlace = config.ethereum.chainType;
             
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
-                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, config.ethChain);
+                await stickerDBService.updateTokenInfo(updateResult.tokenId, orderInfo._price, orderEventDetail.orderId, null, updateResult.endTime, 'MarketBid', null, event.blockNumber, token.quoteToken, token.baseToken, config.ethereum.chainType);
             })
         });
 
         let tokenRegisteredJobId = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered', config.ethChain);
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRegistered', config.ethereum.chainType);
 
             isTokenRegisteredJobRun = true;
 
-            logger.info(`[tokenRegistered] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[tokenRegistered] Sync start from height: ${config.ethereum.pasarRegisterContractDeploy}`);
 
             pasarRegisterWs.events.TokenRegistered({
                 fromBlock: lastHeight + 1
@@ -769,7 +769,7 @@ module.exports = {
 
                 let registeredTokenDetail = {token: registeredTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethChain}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethereum.chainType}
 
                 let tokenContract = new web3Rpc.eth.Contract(token721ABI, registeredTokenInfo._token);
 
@@ -791,11 +791,11 @@ module.exports = {
 
                 await stickerDBService.collectionEvent(registeredTokenDetail);
                 await stickerDBService.registerCollection(registeredTokenInfo._token, registeredTokenInfo._owner,
-                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data, config.ethChain);
+                    registeredTokenInfo._name, registeredTokenInfo._uri, symbol, check721, event.blockNumber, data, config.ethereum.chainType);
 
                 if(!isSyncCollectionEventJobRun) {
                     isSyncCollectionEventJobRun = true;
-                    await jobService.startupUsersContractEvents(web3Rpc, config.ethChain);
+                    await jobService.startupUsersContractEvents(web3Rpc, config.ethereum.chainType);
                     isSyncCollectionEventJobRun = false;
                 }
                 
@@ -803,11 +803,11 @@ module.exports = {
         });
 
         let royaltyChangedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged', config.ethChain);
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenRoyaltyChanged', config.ethereum.chainType);
 
             isRoyaltyChangedJobRun = true;
 
-            logger.info(`[TokenRoyaltyChanged2] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[TokenRoyaltyChanged2] Sync start from height: ${config.ethereum.pasarRegisterContractDeploy}`);
 
             pasarRegisterWs.events.TokenRoyaltyChanged({
                 fromBlock: lastHeight + 1
@@ -821,19 +821,19 @@ module.exports = {
 
                 let orderEventDetail = {token: orderInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethChain}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethereum.chainType}
 
                 await stickerDBService.collectionEvent(orderEventDetail);
-                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates, config.ethChain);
+                await stickerDBService.changeCollectionRoyalty(orderInfo._token, orderInfo._royaltyOwners, orderInfo._royaltyRates, config.ethereum.chainType);
             })
         });
 
         let tokenInfoUpdatedJobRun = schedule.scheduleJob(new Date(now + 40 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenInfoUpdated', config.ethChain);
+            let lastHeight = await stickerDBService.getLastCollectionEventSyncHeight('TokenInfoUpdated', config.ethereum.chainType);
 
             isTokenInfoUpdatedJobRun = true;
 
-            logger.info(`[TokenInfoUpdated] Sync start from height: ${config.pasarRegisterContractDeploy}`);
+            logger.info(`[TokenInfoUpdated] Sync start from height: ${config.ethereum.pasarRegisterContractDeploy}`);
 
             pasarRegisterWs.events.TokenInfoUpdated({
                 fromBlock: lastHeight + 1
@@ -847,10 +847,10 @@ module.exports = {
 
                 let updatedTokenDetail = {token: updatedTokenInfo._token, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
-                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethChain}
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.ethereum.chainType}
 
                 await stickerDBService.collectionEvent(updatedTokenDetail);
-                await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber, config.ethChain);
+                await stickerDBService.updateCollection(updatedTokenInfo._token, updatedTokenInfo._name, updatedTokenInfo._uri, event.blockNumber, config.ethereum.chainType);
             })
         });
 
@@ -926,7 +926,7 @@ module.exports = {
         /**
          *  Pasar order event volume check
          */
-        let pasarOrderEventCheckBlockNumber = config.pasarContractDeploy;
+        let pasarOrderEventCheckBlockNumber = config.ethereum.pasarContractDeploy;
         schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '*/2 * * * *'}, async () => {
             let nowBlock = await web3Rpc.eth.getBlockNumber();
             let fromBlock = pasarOrderEventCheckBlockNumber;
@@ -954,7 +954,7 @@ module.exports = {
         /**
          *  Sticker transfer event volume check
          */
-        let stickerEventCheckBlockNumber = config.stickerContractDeploy;
+        let stickerEventCheckBlockNumber = config.ethereum.stickerContractDeploy;
         schedule.scheduleJob({start: new Date(now + 60 * 1000), rule: '*/2 * * * *'}, async () => {
             let nowBlock = await web3Rpc.eth.getBlockNumber();
             let fromBlock = stickerEventCheckBlockNumber;
@@ -981,7 +981,7 @@ module.exports = {
          */
         let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890};
         let coins2 = {"FSN": 2530, "ELA": 2492, "TLOS": 4660}
-        if(config.cmcApiKeys.length > 0) {
+        if(config.ethereum.cmcApiKeys.length > 0) {
             schedule.scheduleJob('*/4 * * * *', async () => {
                 let x = Math.floor(Math.random() * config.cmcApiKeys.length);
                 let headers = {'Content-Type': 'application/json', 'X-CMC_PRO_API_KEY': config.cmcApiKeys[x]}
@@ -1019,7 +1019,7 @@ module.exports = {
             */
             if(!isSyncCollectionEventJobRun) {
                 isSyncCollectionEventJobRun = true;
-                await jobService.startupUsersContractEvents(web3Rpc, config.ethChain);
+                await jobService.startupUsersContractEvents(web3Rpc, config.ethereum.chainType);
                 isSyncCollectionEventJobRun = false;
             }
         })
@@ -1032,8 +1032,8 @@ module.exports = {
             let jsonData = await response.json();
             
             let rate = jsonData.ethereum.usd / jsonData.elastos.usd;
-            stickerDBService.updatePriceRate(config.ELATokenOnETH, 1, config.ethChain)
-            stickerDBService.updatePriceRate(config.DefaultToken, rate, config.ethChain)
+            stickerDBService.updatePriceRate(config.ethereum.ELAToken, 1, config.ethereum.chainType)
+            stickerDBService.updatePriceRate(config.DefaultToken, rate, config.ethereum.chainType)
         })
     }
 }
