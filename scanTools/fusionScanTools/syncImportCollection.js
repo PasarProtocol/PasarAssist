@@ -14,8 +14,8 @@ let jobService = require('../../service/jobService');
 let stickerDBService = require('../../service/stickerDBService');
 let pasarDBService = require('../../service/pasarDBService');
 
-let web3Rpc = new Web3(config.fusionRpcUrl);
-let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarFusionRegisterContract);
+let web3Rpc = new Web3(config.fusion.rpcUrl);
+let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.fusion.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register_fusion";
 
 const transferCustomCollection = async (event, token, marketPlace) => {
@@ -171,7 +171,7 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
 
 const syncRegisterCollection = async (marketPlace) => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.pasarFusionRegisterContractDeploy;
+    let startBlock = config.fusion.pasarRegisterContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;

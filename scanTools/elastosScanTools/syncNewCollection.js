@@ -10,7 +10,7 @@ const { scanEvents, config } = require("./utils");
 
 let jobService = require('../../service/jobService');
 
-let web3Rpc = new Web3(config.escRpcUrl);
+let web3Rpc = new Web3(config.elastos.rpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       

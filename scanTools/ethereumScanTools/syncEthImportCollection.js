@@ -14,8 +14,8 @@ let jobService = require('../../service/jobService');
 let stickerDBService = require('../../service/stickerDBService');
 let pasarDBService = require('../../service/pasarDBService');
 
-let web3Rpc = new Web3(config.ethRpcUrl);
-let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarEthRegisterContract);
+let web3Rpc = new Web3(config.ethereum.rpcUrl);
+let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.ethereum.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register_eth";
 
 const transferEthCustomCollection = async (event, token, marketPlace) => {
@@ -171,7 +171,7 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
 
 const syncEthRegisterCollection = async (marketPlace) => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.pasarRegisterContractDeploy;
+    let startBlock = config.ethereum.pasarRegisterContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfRegister(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;
