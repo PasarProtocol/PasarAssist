@@ -82,7 +82,7 @@ module.exports = {
             return false;
         }
     },
-    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.stickerV2Contract) {
+    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.elastos.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -370,7 +370,7 @@ module.exports = {
         }
     },
 
-    burnToken: async function (tokenId, baseToken, marketPlace=config.elaChain) {
+    burnToken: async function (tokenId, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -386,7 +386,7 @@ module.exports = {
         }
     },
 
-    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elaChain) {
+    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -516,7 +516,7 @@ module.exports = {
             }
 
             await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: updateData});
-            if(holder != config.elastos.pasarV2Contract && holder != config.elastos.pasarContract && holder != config.ethereum.pasarContract && holder != null) {
+            if(this.checkAddress(holder)) {
                 updateData.holder = holder;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {holder}});
             }
@@ -2690,7 +2690,7 @@ module.exports = {
 
             for(var i = 0; i < tokens.length; i++) {
                 let token = tokens[i];
-                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
+                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.elasto.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
                 let holder, price = 0, orderId = null, marketTime = null, endTime = null, status = "Not on sale";
                 if(token_event.length > 0)
                     holder = token_event[0]['to'];

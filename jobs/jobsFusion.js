@@ -542,7 +542,7 @@ module.exports = {
             let orderCountContract = parseInt(await pasarContract.methods.getOrderCount().call());
             logger.info(`[Order Count Check] DbCount: ${orderCount}   ContractCount: ${orderCountContract}`)
             if(orderCountContract !== orderCount) {
-                await sendMail(`Pasar Order Sync [${config.fusion.serviceName}]`,
+                await sendMail(`Pasar Order Sync [${config.serviceName}]`,
                     `pasar assist sync service sync failed!\nDbCount: ${orderCount}   ContractCount: ${orderCountContract}`,
                     recipients.join());
             }

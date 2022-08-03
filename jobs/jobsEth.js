@@ -981,7 +981,7 @@ module.exports = {
          */
         let coins = {"BTC": 1, "BNB": 1839, "HT": 2502, "AVAX": 5805, "ETH": 1027, "FTM": 3513, "MATIC": 3890};
         let coins2 = {"FSN": 2530, "ELA": 2492, "TLOS": 4660}
-        if(config.ethereum.cmcApiKeys.length > 0) {
+        if(config.cmcApiKeys.length > 0) {
             schedule.scheduleJob('*/4 * * * *', async () => {
                 let x = Math.floor(Math.random() * config.cmcApiKeys.length);
                 let headers = {'Content-Type': 'application/json', 'X-CMC_PRO_API_KEY': config.cmcApiKeys[x]}
