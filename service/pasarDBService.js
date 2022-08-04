@@ -5,7 +5,7 @@ const config_test = require("../config_test");
 config = config.curNetwork == 'testNet'? config_test : config;
 
 module.exports = {
-    getLastPasarOrderSyncHeight: async function (event, marketPlace = config.elaChain, v1Event=null) {
+    getLastPasarOrderSyncHeight: async function (event, marketPlace = config.elastos.chainType, v1Event=null) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -14,14 +14,14 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(marketPlace == config.ethChain) {
-                    return config.pasarEthContractDeploy;
-                } else if(marketPlace == config.fusionChain) {
-                    return config.pasarFusionContractDeploy;
+                if(marketPlace == config.ethereum.chainType) {
+                    return config.ethereum.pasarContractDeploy;
+                } else if(marketPlace == config.fusion.chainType) {
+                    return config.fusion.pasarContractDeploy;
                 } else if(v1Event) {
-                    return config.pasarContractDeploy;
+                    return config.elastos.pasarContractDeploy;
                 } else {
-                    return config.pasarV2ContractDeploy
+                    return config.elastos.pasarV2ContractDeploy;
                 }
             }
         } catch (err) {

@@ -20,7 +20,7 @@ const burnAddress = '0x0000000000000000000000000000000000000000';
 const ELAToken = '0x0000000000000000000000000000000000000000';
 
 module.exports = {
-    getLastStickerSyncHeight: async function (token=config.stickerV2Contract) {
+    getLastStickerSyncHeight: async function (token=config.elastos.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -29,12 +29,12 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(token == config.stickerV2Contract) {
-                    return config.stickerV2ContractDeploy;
-                } else if(token == config.stickerContract){
-                    return config.stickerContractDeploy;
-                } else if(token == config.stickerEthContract) {
-                    return config.stickerEthContractDeploy;
+                if(token == config.elastos.stickerV2Contract) {
+                    return config.elastos.stickerV2ContractDeploy;
+                } else if(token == config.elastos.stickerContract){
+                    return config.elastos.stickerContractDeploy;
+                } else if(token == config.ethereum.stickerContract) {
+                    return config.ethereum.stickerContractDeploy;
                 }
             }
         } catch (err) {
@@ -82,7 +82,7 @@ module.exports = {
             return false;
         }
     },
-    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.stickerV2Contract) {
+    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.elastos.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -370,7 +370,7 @@ module.exports = {
         }
     },
 
-    burnToken: async function (tokenId, baseToken, marketPlace=config.elaChain) {
+    burnToken: async function (tokenId, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -386,7 +386,7 @@ module.exports = {
         }
     },
 
-    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elaChain) {
+    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -448,8 +448,8 @@ module.exports = {
         }
     },
 
-    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.stickerV2Contract, marketPlace=config.elaChain) {
-        if(holder == config.pasarContract || holder == config.pasarV2Contract || holder == config.pasarEthContract)
+    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.elastos.stickerV2Contract, marketPlace=config.elastos.chainType) {
+        if(holder == config.elastos.pasarContract || holder == config.elastos.pasarV2Contract || holder == config.ethereum.pasarContract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -495,7 +495,7 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null, marketPlace=config.elaChain) {
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null, marketPlace=config.elastos.chainType) {
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -516,7 +516,7 @@ module.exports = {
             }
 
             await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: updateData});
-            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != config.pasarEthContract && holder != null) {
+            if(this.checkAddress(holder)) {
                 updateData.holder = holder;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {holder}});
             }
@@ -549,7 +549,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.stickerContractDeploy;
+                return config.elastos.stickerContractDeploy;
             }
         } catch (err) {
             logger.error(err);
@@ -925,30 +925,30 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion=[];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
             result.forEach(ele => {
                 let convertToken = ele['quoteToken'];
-                if(ele['quoteToken'] == config.diaTokenContract)
+                if(ele['quoteToken'] == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
                 let rate = 1;
                 switch(ele.marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -1106,7 +1106,7 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_token_event');
 
             let result = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {token: baseToken},{to: {$ne: config.pasarContract}}] }},
+                { $match: {$and: [{tokenId: tokenId}, {token: baseToken},{to: {$ne: config.elastos.pasarContract}}] }},
                 { $sort: {tokenId: 1, blockNumber: -1}},
                 { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
@@ -1563,7 +1563,7 @@ module.exports = {
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1604,29 +1604,29 @@ module.exports = {
                 let rates = await this.getPriceRate();
                 let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
-                    if(rates[i].marketPlace == config.elaChain) {
+                    if(rates[i].marketPlace == config.elastos.chainType) {
                         listRate_ela[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.ethChain) {
+                    } else if(rates[i].marketPlace == config.ethereum.chainType) {
                         listRate_eth[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.fusionChain) {
+                    } else if(rates[i].marketPlace == config.fusion.chainType) {
                         listRate_fusion[rates[i].type] = rates[i].rate;
                     }
                 }
                 
                 for(var i = 0; i < marketTokens.length; i++) {
                     let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                     let rate = 1;
                     switch(marketTokens[i].marketPlace) {
-                        case config.elaChain:
+                        case config.elastos.chainType:
                             rate = listRate_ela[convertToken];
                             break;
-                        case config.ethChain:
+                        case config.ethereum.chainType:
                             rate = listRate_eth[convertToken];
                             break;
-                        case config.fusionChain:
+                        case config.fusion.chainType:
                             rate = listRate_fusion[convertToken];
                             break;
                         default:
@@ -1723,7 +1723,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1754,11 +1754,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -1771,18 +1771,18 @@ module.exports = {
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
                 let convertToken = marketTokens[i].quoteToken;
-                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                 let rate = 1;
                 switch(marketTokens[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -1862,7 +1862,7 @@ module.exports = {
             // }
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1891,11 +1891,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -1908,17 +1908,17 @@ module.exports = {
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
                 let convertToken = marketTokens[i].quoteToken;
-                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 let rate = 1;
                 switch(marketTokens[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -2063,7 +2063,7 @@ module.exports = {
                 }
                 let checkMarketPlace;
                 if(marketPlace == 0) {
-                    checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                    checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
                 } else {
                     checkMarketPlace = {marketPlace : marketPlace}
                 }
@@ -2095,11 +2095,11 @@ module.exports = {
                 let rates = await this.getPriceRate();
                 let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
-                    if(rates[i].marketPlace == config.elaChain) {
+                    if(rates[i].marketPlace == config.elastos.chainType) {
                         listRate_ela[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.ethChain) {
+                    } else if(rates[i].marketPlace == config.ethereum.chainType) {
                         listRate_eth[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.fusionChain) {
+                    } else if(rates[i].marketPlace == config.fusion.chainType) {
                         listRate_fusion[rates[i].type] = rates[i].rate;
                     } 
                 }
@@ -2115,18 +2115,18 @@ module.exports = {
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
                     let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                     let rate = 1;
                     switch(marketTokens[i].marketPlace) {
-                        case config.elaChain:
+                        case config.elastos.chainType:
                             rate = listRate_ela[convertToken];
                             break;
-                        case config.ethChain:
+                        case config.ethereum.chainType:
                             rate = listRate_eth[convertToken];
                             break;
-                        case config.fusionChain:
+                        case config.fusion.chainType:
                             rate = listRate_fusion[convertToken];
                             break;
                         default:
@@ -2231,7 +2231,7 @@ module.exports = {
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2300,7 +2300,7 @@ module.exports = {
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2377,7 +2377,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2451,7 +2451,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2520,7 +2520,7 @@ module.exports = {
             }
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2555,7 +2555,7 @@ module.exports = {
             let rate = 1;
             if(tokens[i].quoteToken && tokens[i].quoteToken != ELAToken) {
                 let convertToken = tokens[i].quoteToken;
-                if(tokens[i].quoteToken == config.diaTokenContract)
+                if(tokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 let rateToken = await this.getERC20TokenPrice(convertToken);
                 rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -2610,8 +2610,8 @@ module.exports = {
     },
 
     updateOrder: async function(result, blockNumber, orderId) {
-        let web3Rpc = new Web3(config.escRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+        let web3Rpc = new Web3(config.elastos.rpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elasto.pasarContract);
         try {
             // let result = await pasarContract.methods.getOrderById(orderId).call();
             let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
@@ -2663,7 +2663,7 @@ module.exports = {
             for(var i = 0; i < tokens.length; i++) {
                 let tokenId = tokens[i].tokenId;
                 let result = await token_event_collection.aggregate([
-                    { $match: {$and: [{tokenId}, {to: {$ne: config.pasarContract}}] } },
+                    { $match: {$and: [{tokenId}, {to: {$ne: config.elastos.pasarContract}}] } },
                     { $sort: {tokenId: 1, blockNumber: -1} },
                     { $limit: 1 }
                 ]).toArray();
@@ -2690,7 +2690,7 @@ module.exports = {
 
             for(var i = 0; i < tokens.length; i++) {
                 let token = tokens[i];
-                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
+                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.elasto.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
                 let holder, price = 0, orderId = null, marketTime = null, endTime = null, status = "Not on sale";
                 if(token_event.length > 0)
                     holder = token_event[0]['to'];
@@ -2760,12 +2760,12 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(marketPlace == config.elaChain) {
-                    return config.pasarRegisterContractDeploy;
-                } else if(marketPlace == config.ethChain) {
-                    return config.pasarEthRegisterContractDeploy;
-                } else if(marketPlace == config.fusionChain) {
-                    return config.pasarFusionRegisterContractDeploy;
+                if(marketPlace == config.elastos.chainType) {
+                    return config.elastos.pasarRegisterContractDeploy;
+                } else if(marketPlace == config.ethereum.chainType) {
+                    return config.ethereum.pasarRegisterContractDeploy;
+                } else if(marketPlace == config.fusion.chainType) {
+                    return config.fusion.pasarRegisterContractDeploy;
                 }
                 
             }
@@ -2862,7 +2862,7 @@ module.exports = {
         try {
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2946,7 +2946,7 @@ module.exports = {
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -3053,11 +3053,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elasto.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -3065,22 +3065,22 @@ module.exports = {
             for(var i = 0; i < result.length; i++) {
 
                 let convertToken = result[i].quoteToken;
-                if(result[i].quoteToken == config.diaTokenContract)
+                if(result[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
                 switch(result[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
                         }
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
@@ -3126,11 +3126,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -3138,22 +3138,22 @@ module.exports = {
             let listPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
-                if(result[i].quoteToken == config.diaTokenContract)
+                if(result[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
                 switch(marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
                         }
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
@@ -3292,7 +3292,7 @@ module.exports = {
         }
     },
     getDiaTokenPrice: async function () {
-        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let walletConnectWeb3 = new Web3(config.elastos.rpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
 
         const graphQLParams = {
@@ -3316,8 +3316,8 @@ module.exports = {
         return response.data.data;
     },
     checkV1NFTByWallet: async function(address) {
-        let web3Rpc = new Web3(config.escRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+        let web3Rpc = new Web3(config.elastos.rpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarContract);
         let sellerInfo = await pasarContract.methods.getSellerByAddr(address).call();
         
         if(sellerInfo && sellerInfo.openCount != '0') {
@@ -3367,7 +3367,7 @@ module.exports = {
         }
     },
     getERC20TokenPrice: async function(tokenAddress) {
-        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let walletConnectWeb3 = new Web3(config.elastos.rpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
         console.log(tokenAddress);
         const graphQLParams = {
@@ -3484,7 +3484,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
-            let result = await collection.find({$and: [{token: {$ne: config.stickerContract}}, {token: {$ne: config.stickerV2Contract}}]}).toArray();
+            let result = await collection.find({$and: [{token: {$ne: config.elastos.stickerContract}}, {token: {$ne: config.elastos.stickerV2Contract}}]}).toArray();
             return result;
         } catch(err) {
             logger.error(err);
@@ -3500,19 +3500,19 @@ module.exports = {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
             let collection_rate = await mongoClient.db(config.dbName).collection("pasar_price_rate");
-            let ethRate = await collection_rate.findOne({type: config.DefaultToken, marketPlace: config.ethChain});
+            let ethRate = await collection_rate.findOne({type: config.DefaultToken, marketPlace: config.ethereum.chainType});
 
             let collections = await collection.find().toArray();
-            let web3 = new Web3(config.escRpcUrl);
-            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+            let web3 = new Web3(config.elastos.rpcUrl);
+            let diaContract = new web3.eth.Contract(diaContractABI, config.elastos.diaTokenContract);
 
             let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum,fsn&vs_currencies=usd');
             let rateData = await response.json();
             
             let listRate={};
-            listRate[config.elaChain] = rateData.elastos.usd;
-            listRate[config.ethChain] = rateData.ethereum.usd;
-            listRate[config.fusionChain] = rateData.fsn.usd;
+            listRate[config.elastos.chainType] = rateData.elastos.usd;
+            listRate[config.ethereum.chainType] = rateData.ethereum.usd;
+            listRate[config.fusion.chainType] = rateData.fsn.usd;
 
             await Promise.all(collections.map(async cell => {
                 let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalUSDPrice = 0, floorUSDPrice = 0, collectibles = [], collectiblesOnMarket=[];
@@ -3583,11 +3583,11 @@ module.exports = {
 
     checkAddress: function (address) {
         let listCheckingAddress = [
-          config.stickerContract,
-          config.pasarContract,
-          config.pasarV2Contract,
-          config.pasarEthContract,
-          config.pasarFusionContract,
+          config.elastos.stickerContract,
+          config.elastos.pasarContract,
+          config.elastos.pasarV2Contract,
+          config.ethereum.pasarContract,
+          config.fusion.pasarContract,
           null,
         ]
         if(listCheckingAddress.indexOf(address) == -1) {

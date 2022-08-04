@@ -19,7 +19,7 @@ module.exports = {
         const burnAddress = '0x0000000000000000000000000000000000000000';
         const quoteToken = '0x0000000000000000000000000000000000000000';
 
-        let web3WsProvider = new Web3.providers.WebsocketProvider(config.escWsUrl, {
+        let web3WsProvider = new Web3.providers.WebsocketProvider(config.elastos.wsUrl, {
             //timeout: 30000, // ms
             // Useful for credentialed urls, e.g: ws://username:password@localhost:8546
             //headers: {
@@ -40,12 +40,12 @@ module.exports = {
             },
         })
         let web3Ws = new Web3(web3WsProvider);
-        let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.pasarContract);
-        let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.stickerContract);
+        let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.elastos.pasarContract);
+        let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.elastos.stickerContract);
 
-        let web3Rpc = new Web3(config.escRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
-        let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
+        let web3Rpc = new Web3(config.elastos.rpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarContract);
+        let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.elastos.stickerContract);
 
         let isGetForOrderPriceChangedJobRun = false;
         let isGetForOrderCancelledJobRun = false;
@@ -65,7 +65,7 @@ module.exports = {
     
                 let token = {blockNumber, tokenIndex: result.tokenIndex, tokenId, quantity: result.tokenSupply,
                     royalties:result.royaltyFee, royaltyOwner: result.royaltyOwner, holder: result.royaltyOwner,
-                    createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
+                    createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elastos.chainType}
         
                 token.tokenIdHex = '0x' + BigInt(tokenId).toString(16);
                 let data = await jobService.getInfoByIpfsUri(result.tokenUri);
@@ -74,7 +74,7 @@ module.exports = {
                 token.name = data.name ? data.name : '';
                 token.description = data.description ? data.description : '';
                 token.properties = data.properties ? data.properties : '';
-                token.baseToken = config.stickerContract;
+                token.baseToken = config.elastos.stickerContract;
     
                 if(token.type === 'feeds-channel') {
                     token.tippingAddress = data.tippingAddress;
@@ -103,7 +103,7 @@ module.exports = {
         }
 
         let orderPriceChangedJobId = schedule.scheduleJob(new Date(now + 60 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.elaChain, true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderPriceChanged', config.elastos.chainType, true);
             isGetForOrderPriceChangedJobRun = true;
 
             pasarContractWs.events.OrderPriceChanged({
@@ -126,20 +126,20 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id,
                     data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elastos.chainType}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: orderInfo._tokenId, amount: result.amount, price:orderInfo._newPrice, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elastos.chainType}
 
                 let updateTokenInfo = {
                     tokenId: orderInfo._tokenId,
                     price: orderInfo._newPrice,
-                    baseToken: config.stickerContract,
-                    marketPlace: config.elaChain,
+                    baseToken: config.elastos.stickerContract,
+                    marketPlace: config.elastos.chainType,
                 };
 
                 logger.info(`[OrderPriceChanged] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
@@ -150,7 +150,7 @@ module.exports = {
         });
 
         let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.elaChain, true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.elastos.chainType, true);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderFilled');
@@ -180,14 +180,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elastos.chainType}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
-                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elastos.chainType}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -199,9 +199,9 @@ module.exports = {
                     status: 'Not on sale',
                     blockNumber: event.blockNumber,
                     updateTime: event.updateTime,
-                    baseToken: config.stickerContract,
+                    baseToken: config.elastos.stickerContract,
                     v1State: false,
-                    marketPlace: config.elaChain
+                    marketPlace: config.elastos.chainType
                 };
 
                 await pasarDBService.insertOrderEvent(orderEventDetail);
@@ -211,7 +211,7 @@ module.exports = {
         });
 
         let orderCanceledJobId = schedule.scheduleJob(new Date(now + 100 * 1000), async () => {
-            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.elaChain, true);
+            let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderCanceled', config.elastos.chainType, true);
             // if(isGetForOrderCancelledJobRun == false) {
             //     //initial state
             //     stickerDBService.removePasarOrderByHeight(lastHeight, 'OrderCanceled');
@@ -241,14 +241,14 @@ module.exports = {
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
                     royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-                    baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: config.elastos.chainType}
                 
                 let resultData = {orderType: result.orderType, orderState: result.orderState,
                     tokenId: result.tokenId, amount: result.amount, price:result.price, startTime: result.startTime, endTime: result.endTime,
                     sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
                     lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-                    baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
-                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elaChain}
+                    baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+                    minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: config.elastos.chainType}
 
                 let updateTokenInfo = {
                     tokenId: result.tokenId,
@@ -258,9 +258,9 @@ module.exports = {
                     status: 'Not on sale',
                     blockNumber: event.blockNumber,
                     updateTime: event.updateTime,
-                    baseToken: config.stickerContract,
+                    baseToken: config.elastos.stickerContract,
                     v1State: false,
-                    marketPlace: config.elaChain
+                    marketPlace: config.elastos.chainType
                 };
 
                 logger.info(`[OrderCanceled] orderEventDetail: ${JSON.stringify(orderEventDetail)}`)
@@ -302,7 +302,7 @@ module.exports = {
         });
 
         let tokenInfoSyncJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
-            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.stickerContract);
+            let lastHeight = await stickerDBService.getLastStickerSyncHeight(config.elastos.stickerContract);
             if(isGetTokenInfoJobRun == false) {
                 //initial state
                 stickerDBService.removeTokenInfoByHeight(lastHeight);
@@ -326,7 +326,7 @@ module.exports = {
                 let to = event.returnValues._to;
 
                 //After contract upgrade, this job just deal Mint and Burn event
-                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.upgradeBlock) {
+                // if(from !== burnAddress && to !== burnAddress && blockNumber > config.elastos.upgradeBlock) {
                 //     return;
                 // }
 
@@ -340,18 +340,18 @@ module.exports = {
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let timestamp = blockInfo.timestamp;
 
-                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract, marketPlace: config.elaChain};
+                let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.elastos.stickerContract, marketPlace: config.elastos.chainType};
                 logger.info(`[TokenInfo] tokenEvent: ${JSON.stringify(transferEvent)}`)
 
                 if(to === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
-                    await stickerDBService.burnToken(tokenId, config.stickerContract, config.elaChain);
+                    await stickerDBService.burnToken(tokenId, config.elastos.stickerContract, config.elastos.chainType);
                 } else if(from === burnAddress) {
                     await stickerDBService.replaceEvent(transferEvent);
                     await dealWithNewToken(blockNumber, tokenId)
                 } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
                     await stickerDBService.replaceEvent(transferEvent);
-                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, config.elaChain);
+                    await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elastos.stickerContract, config.elastos.chainType);
                 }
             })
         });

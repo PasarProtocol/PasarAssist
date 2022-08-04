@@ -14,9 +14,9 @@ let jobService = require('../../service/jobService');
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.ethRpcUrl);
-let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarEthContract);
-let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerEthContract);
+let web3Rpc = new Web3(config.ethereum.rpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.ethereum.pasarContract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.ethereum.stickerContract);
 
 
 async function transferSingleEth(event, marketPlace) {
@@ -37,17 +37,17 @@ async function transferSingleEth(event, marketPlace) {
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     let timestamp = blockInfo.timestamp;
 
-    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
+    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.ethereum.stickerV2Contract, marketPlace};
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+        await stickerDBService.burnToken(tokenId, config.ethereum.stickerContract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.ethereum.stickerContract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.ethereum.stickerContract, marketPlace);
     }
 }
 
@@ -72,17 +72,17 @@ async function transferBatchEth(event, marketPlace) {
     {
         let tokenId = tokenIds[i];
         let value = values[i];
-        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerEthContract, marketPlace};
+        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.ethereum.stickerContract, marketPlace};
 
         if(to === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.burnToken(tokenId, config.stickerEthContract, marketPlace);
+            await stickerDBService.burnToken(tokenId, config.ethereum.stickerContract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerEthContract, marketPlace)
+            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.ethereum.stickerContract, marketPlace)
         } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerEthContract, marketPlace);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.ethereum.stickerContract, marketPlace);
         }
     }
 }
@@ -91,7 +91,7 @@ async function royaltyFeeEth(event, marketPlace) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerEthContract, marketPlace);
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.ethereum.stickerContract, marketPlace);
 }
 
 async function orderForSaleEth(event, marketPlace) {
@@ -281,21 +281,21 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.stickerContract);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "TransferBatch", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.stickerContract);
     }
     console.log(`collectible batch count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.stickerContract);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
@@ -328,56 +328,56 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderForAuction", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`auction count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderBid", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`bid count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderDIDURI", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.ethereum.pasarContract);
     }
     console.log(`did uri count: ${getAllEvents.length}`);
 };
 
 const syncPasarCollection = async () => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.stickerEthContractDeploy;
+    let startBlock = config.ethereum.stickerContractDeploy;
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
     console.log("Total Pasar Collection: " + stickerCountContract);
     while(startBlock < lastBlock) {
@@ -385,7 +385,7 @@ const syncPasarCollection = async () => {
         startBlock = startBlock + 1000000;
     };
     
-    startBlock = config.pasarEthContractDeploy;
+    startBlock = config.ethereum.pasarContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;

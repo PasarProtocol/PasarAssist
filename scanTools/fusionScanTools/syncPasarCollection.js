@@ -14,8 +14,8 @@ let jobService = require('../../service/jobService');
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.fusionRpcUrl);
-let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarFusionContract);
+let web3Rpc = new Web3(config.fusion.rpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.fusion.pasarContract);
 
 async function orderForSale(event, marketPlace) {
     let orderInfo = event.returnValues;
@@ -228,56 +228,56 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderForAuction", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`auction count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderBid", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`bid count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarEthContract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderDIDURI", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.fusion.pasarContract);
     }
     console.log(`did uri count: ${getAllEvents.length}`);
 };
 
 const syncPasarCollection = async () => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.pasarFusionContractDeploy;
+    let startBlock = config.fusion.pasarContractDeploy;
     
     while(startBlock < lastBlock) {
         await getTotalEventsOfPasar(startBlock, startBlock + 1000000);

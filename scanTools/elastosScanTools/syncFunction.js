@@ -31,75 +31,75 @@ const importDataInDB = async (marketPlace) => {
                 let cell = listDoc[i];
                 switch(cell.eventType) {
                     case "TransferSingle":
-                        if(cell.baseToken == config.stickerContract) {
+                        if(cell.baseToken == config.elastos.stickerContract) {
                             await transferSingleV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.stickerV2Contract) {
+                        } else if(cell.baseToken == config.elastos.stickerV2Contract) {
                             await transferSingleV2(cell.eventData, marketPlace);
                         } else {
                             await transferCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "Transfer":
-                        if(cell.baseToken == config.stickerContract) {
+                        if(cell.baseToken == config.elastos.stickerContract) {
                             await transferSingleV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.stickerV2Contract) {
+                        } else if(cell.baseToken == config.elastos.stickerV2Contract) {
                             await transferSingleV2(cell.eventData, marketPlace);
                         } else {
                             await transferCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "TransferBatch":
-                        if(cell.baseToken == config.stickerV2Contract) {
+                        if(cell.baseToken == config.elastos.stickerV2Contract) {
                             await transferBatchV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "RoyaltyFee":
-                        if(cell.baseToken == config.stickerContract) {
+                        if(cell.baseToken == config.elastos.stickerContract) {
                             await royaltyFeeV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.stickerV2Contract) {
+                        } else if(cell.baseToken == config.elastos.stickerV2Contract) {
                             await royaltyFeeV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForSale":
-                        if(cell.baseToken == config.pasarContract) {
+                        if(cell.baseToken == config.elastos.pasarContract) {
                             await orderForSaleV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.pasarV2Contract) {
+                        } else if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderForSaleV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForAuction":
-                        if(cell.baseToken == config.pasarV2Contract) {
+                        if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderForAuctionV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderBid":
-                        if(cell.baseToken == config.pasarV2Contract) {
+                        if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderBidV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderPriceChanged":
-                        if(cell.baseToken == config.pasarContract) {
+                        if(cell.baseToken == config.elastos.pasarContract) {
                             await orderPriceChangedV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.pasarV2Contract) {
+                        } else if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderPriceChangedV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderCanceled":
-                        if(cell.baseToken == config.pasarContract) {
+                        if(cell.baseToken == config.elastos.pasarContract) {
                             await orderCanceledV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.pasarV2Contract) {
+                        } else if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderCanceledV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderFilled":
-                        if(cell.baseToken == config.pasarContract) {
+                        if(cell.baseToken == config.elastos.pasarContract) {
                             await orderFilledV1(cell.eventData, marketPlace);
-                        } else if(cell.baseToken == config.pasarV2Contract) {
+                        } else if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderFilledV2(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderDidURI":
-                        if(cell.baseToken == config.pasarV2Contract) {
+                        if(cell.baseToken == config.elastos.pasarV2Contract) {
                             await orderDIDURI(cell.eventData, marketPlace);
                         }
                         break;
@@ -124,9 +124,9 @@ const importDataInDB = async (marketPlace) => {
 
 if (require.main == module) {
     (async ()=> {
-        await syncRegisterCollection(config.elaChain);
+        await syncRegisterCollection(config.elastos.chainType);
         await syncFeedCollection();
         await syncPasarCollection();
-        await importDataInDB(config.elaChain);
+        await importDataInDB(config.elastos.chainType);
     })();
 }

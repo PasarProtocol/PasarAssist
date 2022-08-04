@@ -30,61 +30,61 @@ const importDataInDB = async (marketPlace) => {
                 let cell = listDoc[i];
                 switch(cell.eventType) {
                     case "TransferSingle":
-                        if(cell.baseToken == config.stickerEthContract) {
+                        if(cell.baseToken == config.ethereum.stickerContract) {
                             await transferSingleEth(cell.eventData, marketPlace);
                         } else {
                             await transferEthCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "Transfer":
-                        if(cell.baseToken == config.stickerEthContract) {
+                        if(cell.baseToken == config.ethereum.stickerContract) {
                             await transferSingleEth(cell.eventData, marketPlace);
                         } else {
                             await transferEthCustomCollection(cell.eventData, cell.baseToken, marketPlace);
                         }
                         break;
                     case "TransferBatch":
-                        if(cell.baseToken == config.stickerEthContract) {
+                        if(cell.baseToken == config.ethereum.stickerContract) {
                             await transferBatchEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "RoyaltyFee":
-                        if(cell.baseToken == config.stickerEthContract) {
+                        if(cell.baseToken == config.ethereum.stickerContract) {
                             await royaltyFeeEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForSale":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderForSaleEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderForAuction":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderForAuctionEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderBid":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderBidEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderPriceChanged":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderPriceChangedEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderCanceled":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderCanceledEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderFilled":
-                        if(cell.baseToken == config.pasarEthContract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderFilledEth(cell.eventData, marketPlace);
                         }
                         break;
                     case "OrderDidURI":
-                        if(cell.baseToken == config.pasarV2Contract) {
+                        if(cell.baseToken == config.ethereum.pasarContract) {
                             await orderDIDURI(cell.eventData, marketPlace);
                         }
                         break;
@@ -109,8 +109,8 @@ const importDataInDB = async (marketPlace) => {
 
 if (require.main == module) {
     (async ()=> {
-        await syncEthRegisterCollection(config.ethChain);
+        await syncEthRegisterCollection(config.ethereum.chainType);
         await syncPasarCollection();
-        await importDataInDB(config.ethChain);
+        await importDataInDB(config.ethereum.chainType);
     })();
 }

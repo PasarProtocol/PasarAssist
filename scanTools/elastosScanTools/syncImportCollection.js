@@ -14,8 +14,8 @@ let jobService = require('../../service/jobService');
 let stickerDBService = require('../../service/stickerDBService');
 let pasarDBService = require('../../service/pasarDBService');
 
-let web3Rpc = new Web3(config.escRpcUrl);
-let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.pasarRegisterContract);
+let web3Rpc = new Web3(config.elastos.rpcUrl);
+let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.elastos.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register";
 
 const transferCustomCollection = async (event, token, marketPlace) => {
@@ -171,7 +171,7 @@ const getTotalEventsOfRegister = async (startBlock, endBlock) => {
 
 const syncRegisterCollection = async (marketPlace) => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.pasarRegisterContractDeploy;
+    let startBlock = config.elastos.pasarRegisterContractDeploy;
 
     while(startBlock < lastBlock) {
         await getTotalEventsOfRegister(startBlock, startBlock + 1000000);

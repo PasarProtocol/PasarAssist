@@ -38,7 +38,7 @@ module.exports = {
     },
 
     dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, marketPlace) {
-        if(token == config.stickerContract || token == config.stickerV2Contract || token == config.stickerEthContract)
+        if(token == config.elastos.stickerContract || token == config.elastos.stickerV2Contract || token == config.ethereum.stickerContract)
             return;
             
         let tokenInfo = event.returnValues;
@@ -64,7 +64,7 @@ module.exports = {
             let jsonData = await this.getInfoByIpfsUri(result);
             jsonData = this.parsePasar(jsonData);
             let tokenData = {};
-            if(token == config.stickerV2Contract) {
+            if(token == config.elastos.stickerV2Contract) {
                 [tokenData] = await this.makeBatchRequest([
                     {method: tokenContract.methods.tokenInfo(tokenId).call, params: {}},
                 ], web3Rpc);
@@ -183,7 +183,7 @@ module.exports = {
             let startBlock = result == 0 ? "earliest" : result + 1;
             let  endBlock = "latest";
 
-            if(result == 0 && marketPlace == config.fusionChain && curNetwork != "testNet") {
+            if(result == 0 && marketPlace == config.fusion.chainType && curNetwork != "testNet") {
                 startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
             }
 

@@ -76,8 +76,8 @@ const importDataInDB = async (marketPlace) => {
 
 if (require.main == module) {
     (async ()=> {
-        await syncRegisterCollection(config.fusionChain);
+        await syncRegisterCollection(config.fusion.chainType);
         await syncPasarCollection();
-        await importDataInDB(config.fusionChain);
+        await importDataInDB(config.fusion.chainType);
     })();
 }

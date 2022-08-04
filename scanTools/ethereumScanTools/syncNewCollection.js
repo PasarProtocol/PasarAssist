@@ -10,7 +10,7 @@ const { scanEvents, config } = require("./utils");
 
 let jobService = require('../../service/jobService');
 
-let web3Rpc = new Web3(config.ethRpcUrl);
+let web3Rpc = new Web3(config.ethereum.rpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       
@@ -47,6 +47,6 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
 
 if (require.main == module) {
     (async () => {
-      await getTotalEvents(config.ethChain);
+      await getTotalEvents(config.ethereum.chainType);
     })();
 }
