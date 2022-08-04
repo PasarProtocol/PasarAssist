@@ -53,7 +53,7 @@ module.exports = {
     },
 
     fusion: {
-        wsUrl: 'wss://testnet.fusionnetwork.io ',
+        wsUrl: 'wss://testnet.fusionnetwork.io',
         rpcUrl: 'https://testnet.fusionnetwork.io',
 
         pasarFusionContract: '0xa18279eBDfA5747e79DBFc23fa999b4Eaf2A9780',
