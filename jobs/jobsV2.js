@@ -1027,7 +1027,7 @@ module.exports = {
                 *  Get the rate of token for ela
             */
              for(var i = 0; i < config.listToken.length; i++) {
-                if(config.elastos.listToken[i] == config.elastos.ELAToken) {
+                if(config.listToken[i] == config.elastos.ELAToken) {
                     stickerDBService.updatePriceRate(config.listToken[i], 1, config.elastos.chainType)
                 } else {
                     let rateToken = await stickerDBService.getERC20TokenPrice(config.listToken[i]);
