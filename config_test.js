@@ -56,8 +56,8 @@ module.exports = {
         wsUrl: 'wss://testnet.fusionnetwork.io',
         rpcUrl: 'https://testnet.fusionnetwork.io',
 
-        pasarFusionContract: '0xa18279eBDfA5747e79DBFc23fa999b4Eaf2A9780',
-        pasarFusionRegisterContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
+        pasarContract: '0xa18279eBDfA5747e79DBFc23fa999b4Eaf2A9780',
+        pasarRegisterContract: '0x020c7303664bc88ae92cE3D380BF361E03B78B81',
 
         pasarContractDeploy: 1,
         pasarRegisterContractDeploy: 1,
