@@ -38,7 +38,7 @@ module.exports = {
     },
 
     dealWithUsersToken: async function(event, token, check721, tokenContract, web3Rpc, marketPlace) {
-        if(token == config.elastos.stickerContract || token == config.elastols.stickerV2Contract || token == config.ethereum.stickerContract)
+        if(token == config.elastos.stickerContract || token == config.elastos.stickerV2Contract || token == config.ethereum.stickerContract)
             return;
             
         let tokenInfo = event.returnValues;
