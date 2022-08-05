@@ -2611,9 +2611,7 @@ module.exports = {
 
     updateOrder: async function(result, blockNumber, orderId) {
         let web3Rpc = new Web3(config.elastos.rpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elasto.pasarContract);
         try {
-            // let result = await pasarContract.methods.getOrderById(orderId).call();
             let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
                 tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
                 sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
@@ -2690,7 +2688,7 @@ module.exports = {
 
             for(var i = 0; i < tokens.length; i++) {
                 let token = tokens[i];
-                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.elasto.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
+                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.elastos.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
                 let holder, price = 0, orderId = null, marketTime = null, endTime = null, status = "Not on sale";
                 if(token_event.length > 0)
                     holder = token_event[0]['to'];
@@ -3053,7 +3051,7 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elasto.chainType) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
                 } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
