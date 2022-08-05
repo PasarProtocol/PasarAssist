@@ -3277,12 +3277,12 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getTokenInfo: async function(tokenId, orderId) {
+    getTokenInfo: async function(tokenId, orderId, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_order');
-            let result = await collection.findOne({tokenId, orderId});
+            let result = await collection.findOne({tokenId, orderId, marketPlace});
             return result;
         } catch(err) {
             logger.error(err);

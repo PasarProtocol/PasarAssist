@@ -184,7 +184,7 @@ module.exports = {
                 ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId);
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType);
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -288,7 +288,7 @@ module.exports = {
                     {method: web3Rpc.eth.getTransaction, params: event.transactionHash}
                 ], web3Rpc)
 
-                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType);
                 
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
@@ -388,7 +388,7 @@ module.exports = {
                 ], web3Rpc)
                 let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+                let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType)
 
                 let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,

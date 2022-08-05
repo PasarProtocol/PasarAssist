@@ -57,7 +57,7 @@ async function orderPriceChanged(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId);
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType);
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id,
@@ -89,7 +89,7 @@ async function orderCanceled(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType)
 
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -184,7 +184,7 @@ async function orderBid(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.fusion.chainType)
 
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
