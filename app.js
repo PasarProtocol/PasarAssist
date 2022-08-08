@@ -58,9 +58,9 @@ app.use('/api/v2', routeV2);
 let resolverUrl = "https://api.trinity-tech.cn/eid";
 DIDBackend.initialize(new DefaultDIDAdapter(resolverUrl));
 
-jobs.run()
+// jobs.run()
 jobsV2.run()
-jobsEth.run();
-jobsFusion.run();
+// jobsEth.run();
+// jobsFusion.run();
 
 module.exports = app;

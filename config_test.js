@@ -19,16 +19,16 @@ module.exports = {
 
         pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
         stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
-        pasarV2Contract: '0x19088c509C390F996802B90bdc4bFe6dc3F5AAA7',
-        stickerV2Contract: '0x32496388d7c0CDdbF4e12BDc84D39B9E42ee4CB0',
-        pasarRegisterContract: '0x2b304ffC302b402785294629674A8C2b64cEF897',
+        pasarV2Contract: '0x1e7541354dBd283a8999a25b16C3BfEB7D3470c3',
+        stickerV2Contract: '0x045f6D2a910c12A8bc5E87a1b894681234d2a835',
+        pasarRegisterContract: '0xC8C92b0788E00062C100BfAca94118c770B46f78',
         diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
 
         pasarContractDeploy: 7377671,
         stickerContractDeploy: 7377671,
-        pasarV2ContractDeploy: 12311847,
-        stickerV2ContractDeploy: 12311834,
-        pasarRegisterContractDeploy: 12311838,
+        pasarV2ContractDeploy: 13623332,
+        stickerV2ContractDeploy: 13623320,
+        pasarRegisterContractDeploy: 13623324,
 
         chainType: 1,
 
