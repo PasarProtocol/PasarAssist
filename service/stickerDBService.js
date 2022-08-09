@@ -1240,7 +1240,7 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
 
-            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, false, '0');
+            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0', 0);
             let assets = 0;
             if(createdNft.code == 200) {
                 assets = createdNft.data.length;
@@ -1262,7 +1262,7 @@ module.exports = {
 
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
 
-            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, false, '0');
+            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0', 0);
             let count_sold = 0;
             if(createdNft.code == 200) {
                 count_sold = soldNft.data.length;
@@ -2219,7 +2219,7 @@ module.exports = {
         
     },
 
-    getListedCollectiblesByAddress: async function(address, did, orderType, marketPlace) {
+    getListedCollectiblesByAddress: async function(address, orderType, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2255,7 +2255,7 @@ module.exports = {
                     sort = {updateTime: -1}
             }
             let checkAddress = address;
-            if(did) {
+            if(address.indexOf("did:elastos") !== -1) {
                 let addressList = await this.getAddressListFromDid(address);
                 checkAddress = {$in: addressList}
             }
@@ -2292,7 +2292,7 @@ module.exports = {
         }
     },
 
-    getOwnCollectiblesByAddress: async function(address, did, orderType, marketPlace) {
+    getOwnCollectiblesByAddress: async function(address, orderType, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2329,7 +2329,7 @@ module.exports = {
             }
 
             let checkAddress = address;
-            if(did) {
+            if(address.indexOf("did:elastos") !== -1) {
                 let addressList = await this.getAddressListFromDid(address);
                 checkAddress = {$in: addressList}
             }
@@ -2364,7 +2364,7 @@ module.exports = {
         }
     },
 
-    getSoldCollectiblesByAddress: async function(address, did, orderType, marketPlace) {
+    getSoldCollectiblesByAddress: async function(address, orderType, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2401,7 +2401,7 @@ module.exports = {
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             
             let checkAddress = address;
-            if(did) {
+            if(address.indexOf("did:elastos") !== -1) {
                 let addressList = await this.getAddressListFromDid(address);
                 checkAddress = {$in: addressList}
             }
@@ -2436,7 +2436,7 @@ module.exports = {
         }
     },
 
-    getBidCollectiblesByAddress: async function(address, did, orderType, marketPlace) {
+    getBidCollectiblesByAddress: async function(address, orderType, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2474,7 +2474,7 @@ module.exports = {
             }
 
             let checkAddress = address;
-            if(did) {
+            if(address.indexOf("did:elastos") !== -1) {
                 let addressList = await this.getAddressListFromDid(address);
                 checkAddress = {$in: addressList}
             }
@@ -2519,7 +2519,7 @@ module.exports = {
         }
     },
 
-    getCreatedCollectiblesByAddress: async function(address, did, orderType, marketPlace) {
+    getCreatedCollectiblesByAddress: async function(address, orderType, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -2549,7 +2549,7 @@ module.exports = {
             }
 
             let checkAddress = address;
-            if(did) {
+            if(address.indexOf("did:elastos") !== -1) {
                 let addressList = await this.getAddressListFromDid(address);
                 checkAddress = {$in: addressList}
             }
@@ -2978,8 +2978,17 @@ module.exports = {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
+            let checkAddress = owner;
+            
+            if(owner.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(owner);
+                checkAddress = {$in: addressList}
+            }
+
+            console.log(checkAddress);
+
             let collections = await token_collection.aggregate([
-                { $match: {$and: [{owner: owner}, checkMarketPlace]} },
+                { $match: {$and: [{owner: checkAddress}, checkMarketPlace]} },
                 { $lookup: {from: "pasar_collection_royalty",
                     let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttoken", "$token"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
