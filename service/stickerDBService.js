@@ -3650,5 +3650,57 @@ module.exports = {
         } finally {
             await mongoClient.close();
         }
-    }
+    },
+    getNftList: async function (event, duration, pageNum, pageSize) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_order');
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+
+            let fields = {_id: 0, tokenId: "$_id.tokenId", saleType: "$_id.saleType", quantity: "$_id.quantity", royalties: "$_id.royalties", royaltyOwner: "$_id.royaltyOwner", holder: "$_id.holder",
+                createTime: "$_id.createTime", updateTime: "$_id.updateTime", tokenIdHex: "$_id.tokenIdHex", tokenJsonVersion: "$_id.tokenJsonVersion", type: "$_id.type", name: "$_id.name", description: "$_id.description", properties: "$_id.properties",
+                data: "$_id.data", asset: "$_id.asset", adult: "$_id.adult", quoteToken: "$_id.quoteToken", price: "$_id.price",
+                marketTime:"$_id.marketTime", status: "$_id.status", baseToken: "$_id.baseToken", thumbnail: "$_id.thumbnail", marketPlace: "$_id.marketPlace"}
+
+            let group = {tokenId: "$tokenId", saleType: "$saleType", quantity: "$token.quantity", royalties: "$token.royalties", royaltyOwner: "$token.royaltyOwner", holder: "$token.holder",
+                createTime: "$token.createTime", updateTime: "$token.updateTime", tokenIdHex: "$token.tokenIdHex", tokenJsonVersion: "$token.tokenJsonVersion", type: "$token.type", name: "$token.name", description: "$token.description", properties: "$token.properties",
+                data: "$token.data", asset: "$token.asset", adult: "$token.adult", quoteToken: "$token.quoteToken", price: "$price",
+                marketTime:"$token.marketTime", status: "$token.status", baseToken: "$token.baseToken", thumbnail: "$token.thumbnail", marketPlace: "$marketPlace"}
+
+            let result = await collection.aggregate([
+                { $match: {$and: [{orderState: "2"}]}},
+                { $sort: {blockNumber: -1} },
+                { $limit :pageSize},
+                { $lookup: {
+                    from: "pasar_token",
+                    let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                    pipeline: [
+                        {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                    ],
+                    as: "token"}
+                },
+                { $unwind: "$token"},
+                {$group: {
+                    _id: group,
+                    count: {$sum: 1}
+                }},
+                { $project: fields},
+            ]).toArray();
+
+            // for(var i = 0; i < result.length; i++) {
+            //     await temp_collection.insertMany(marketTokens);
+            // }
+            
+            // let result1 = await temp_collection.find().sort().toArray();
+            // await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: result};
+        } catch(err){
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }
