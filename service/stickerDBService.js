@@ -3659,6 +3659,36 @@ module.exports = {
             let collection_order = await mongoClient.db(config.dbName).collection('pasar_order');
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
 
+            let checkDate = 0;
+            switch(duration) {
+                case "7":
+                    checkDate =  new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
+                    break;
+                case "14":
+                    checkDate =  new Date().getTime() - 14 * 24 * 60 * 60 * 1000;
+                    break;
+                case "30":
+                    checkDate =  new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+                    break;
+                case "60":
+                    checkDate =  new Date().getTime() - 60 * 24 * 60 * 60 * 1000;
+                    break;
+                case "90":
+                    checkDate =  new Date().getTime() - 90 * 24 * 60 * 60 * 1000;
+                    break;
+                case "year":
+                    checkDate =  new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
+                    break;
+                case "all":
+                    checkDate =  0;
+                    break;
+                default: 
+                    checkDate = 0;
+                    break;
+            }
+
+            checkDate = Math.floor(checkDate/1000);
+
             let listEvents = event.split(',');
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
                         quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1}
@@ -3681,6 +3711,7 @@ module.exports = {
                     { $project: fields},
                 ]).toArray();
                 for(var i = 0; i < result.length; i++) {
+                    result[i].marketTime = parseInt(result[i].marketTime);
                     await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
                 }
             }
@@ -3703,24 +3734,25 @@ module.exports = {
                     { $project: fields},
                 ]).toArray();
                 for(var i = 0; i < result.length; i++) {
+                    result[i].marketTime = parseInt(result[i].marketTime);
                     await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
                 }
             }
 
             if(listEvents.indexOf("minted") >= 0) {
                 let result = await collection.find({status: "Not on sale", holder: {$ne: config.burnAddress}}).toArray();
-                console.log(result);
                 for(var i = 0; i < result.length; i++) {
                     let check = await collection_order.find({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken, orderState: {$ne: "3"}}).count();
                     if(check == 0) {
                         result[i].type = "Minted";
+                        result[i].marketTime = parseInt(result[i].marketTime);
                         await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
                     }
                 }
             }
 
-            let total = await temp_collection.find().count();
-            let returnValue = await temp_collection.find().sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
+            let total = await temp_collection.find({marketTime: {$gte: checkDate}}).count();
+            let returnValue = await temp_collection.find({marketTime: {$gte: checkDate}}).sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
             if(total > 0)
                 await temp_collection.drop();
 
