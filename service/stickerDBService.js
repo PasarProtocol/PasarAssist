@@ -3691,7 +3691,7 @@ module.exports = {
 
             let listEvents = event.split(',');
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
-                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1}
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
 
             if(listEvents.indexOf("sale") >= 0) {
                 let result = await collection.aggregate([
@@ -3706,7 +3706,17 @@ module.exports = {
                         ],
                         as: "order"}
                     },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
                     { $unwind: "$order"},
+                    { $unwind: "$collection"},
                     { $addFields: {type: "Sale"}},
                     { $project: fields},
                 ]).toArray();
@@ -3729,7 +3739,17 @@ module.exports = {
                         ],
                         as: "order"}
                     },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
                     { $unwind: "$order"},
+                    { $unwind: "$collection"},
                     { $addFields: {type: "Listed"}},
                     { $project: fields},
                 ]).toArray();
@@ -3740,11 +3760,25 @@ module.exports = {
             }
 
             if(listEvents.indexOf("minted") >= 0) {
-                let result = await collection.find({status: "Not on sale", holder: {$ne: config.burnAddress}}).toArray();
+                let result = await collection.aggregate([
+                    { $match: {$and: [{status: "Not on sale"}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Minted"}},
+                    { $project: fields},
+                ]).toArray();
                 for(var i = 0; i < result.length; i++) {
                     let check = await collection_order.find({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken, orderState: {$ne: "3"}}).count();
                     if(check == 0) {
-                        result[i].type = "Minted";
                         result[i].marketTime = parseInt(result[i].marketTime);
                         await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
                     }
