@@ -3661,25 +3661,25 @@ module.exports = {
 
             let checkDate = 0;
             switch(duration) {
-                case "7":
+                case "0":
                     checkDate =  new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
                     break;
-                case "14":
+                case "1":
                     checkDate =  new Date().getTime() - 14 * 24 * 60 * 60 * 1000;
                     break;
-                case "30":
+                case "2":
                     checkDate =  new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
                     break;
-                case "60":
+                case "3":
                     checkDate =  new Date().getTime() - 60 * 24 * 60 * 60 * 1000;
                     break;
-                case "90":
+                case "4":
                     checkDate =  new Date().getTime() - 90 * 24 * 60 * 60 * 1000;
                     break;
-                case "year":
+                case "5":
                     checkDate =  new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
                     break;
-                case "all":
+                case "6":
                     checkDate =  0;
                     break;
                 default: 
