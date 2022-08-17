@@ -3657,6 +3657,7 @@ module.exports = {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order = await mongoClient.db(config.dbName).collection('pasar_order');
+            let collection_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
 
             let checkDate = 0;
@@ -3692,6 +3693,10 @@ module.exports = {
             let listEvents = event.split(',');
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
                         quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
+
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
+            await collection_collection.ensureIndex({ "token": 1, "marketPlace": 1});
 
             if(listEvents.indexOf("sale") >= 0) {
                 let result = await collection.aggregate([
