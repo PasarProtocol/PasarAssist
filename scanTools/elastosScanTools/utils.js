@@ -95,6 +95,8 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.status = "Not on sale";
       token.endTime = null;
       token.orderId = null;
+      token.sold = 0;
+      token.listed = 0;
       token.marketPlace = marketPlace;
 
       await stickerDBService.replaceToken(token);

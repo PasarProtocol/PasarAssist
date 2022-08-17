@@ -123,6 +123,7 @@ async function orderForSaleEth(event, marketPlace) {
         await pasarDBService.insertOrderEvent(orderEventDetail);
         await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
         await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+        await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.ethereum.chainType);
 }
 
 async function orderPriceChangedEth(event, marketPlace) {
@@ -181,6 +182,7 @@ async function orderCanceledEth(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, updateResult.tokenId, token.baseToken, config.ethereum.chainType);
 }
 
 async function orderFilledEth(event, marketPlace) {
@@ -216,6 +218,7 @@ async function orderFilledEth(event, marketPlace) {
     await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, updateResult.tokenId, orderInfo._baseToken, config.ethereum.chainType);
 }
 
 async function orderForAuctionEth(event, marketPlace) {
@@ -250,6 +253,7 @@ async function orderForAuctionEth(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.ethereum.chainType);
 }
 
 async function orderBidEth(event, marketPlace) {

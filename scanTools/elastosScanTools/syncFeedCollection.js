@@ -96,6 +96,7 @@ async function orderForSaleV1(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);                
     await stickerDBService.updateNormalToken(updateTokenInfo);
+    await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, token, config.elastos.chainType)
 }
 
 async function orderPriceChangedV1(event, marketPlace) {
@@ -172,6 +173,7 @@ async function orderCanceledV1(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateNormalToken(updateTokenInfo);
+    await stickerDBService.updateTokenStatus(event.event, result.tokenId, config.elastos.stickerContract, config.elastos.chainType)
 }
 
 async function orderFilledV1(event, marketPlace) {
@@ -215,6 +217,7 @@ async function orderFilledV1(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateNormalToken(updateTokenInfo);
+    await stickerDBService.updateTokenStatus(event.event, result.tokenId, config.elastos.stickerContract, config.elastos.chainType)
 }
 
 const getTotalEventsOfSticker = async (startBlock, endBlock) => {

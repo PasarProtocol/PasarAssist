@@ -279,7 +279,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
-                await stickerDBService.updateTokenStatus(event.event, result.tokenId, orderInfo._baseToken, config.ethereum.chainType)
+                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.ethereum.chainType)
             })
         });
 
