@@ -117,7 +117,8 @@ module.exports = {
                 token.endTime = null;
                 token.orderId = null;
                 token.baseToken = config.elastos.stickerV2Contract;
-
+                token.sold = 0;
+                token.listed = 0;
                 let creator = data.creator ? data.creator : null;
                 if(creator) {
                     await pasarDBService.updateDid({address: result.royaltyOwner, did: creator});
@@ -171,6 +172,8 @@ module.exports = {
                     token.endTime = null;
                     token.orderId = null;
                     token.baseToken = config.elastos.stickerV2Contract;
+                    token.sold = 0;
+                    token.listed = 0;
                     tokens.push(token);
                     await stickerDBService.replaceToken(tokens);
                 })
@@ -274,6 +277,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 
@@ -379,6 +383,7 @@ module.exports = {
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 
@@ -423,6 +428,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.elastos.chainType);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, token.baseToken, config.elastos.chainType)
             })
         });
 
@@ -704,6 +710,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
+                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 

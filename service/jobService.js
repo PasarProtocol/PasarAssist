@@ -136,7 +136,9 @@ module.exports = {
             tokenDetail.adult = data.adult;
             tokenDetail.attribute = data.attribute ? data.attribute : null;
             tokenDetail.properties = data.properties ? data.properties : null;
-
+            token.sold = 0;
+            token.listed = 0;
+            
             let creator = data.creator ? data.creator : null;
             if(creator) {
                 await pasarDBService.updateDid({address: tokenInfo._to, did: creator});

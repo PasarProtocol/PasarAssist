@@ -96,6 +96,9 @@ module.exports = {
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
+                token.sold = 0;
+                token.listed = 0;
+                
                 await stickerDBService.replaceToken(token);
             } catch (e) {
                 logger.info(e);
@@ -207,6 +210,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, config.elastos.stickerContract, config.elastos.chainType)
             })
         });
 
@@ -267,6 +271,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(resultData, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateNormalToken(updateTokenInfo);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, config.elastos.stickerContract, config.elastos.chainType)
             })
         });
 

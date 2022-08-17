@@ -3803,4 +3803,30 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    updateTokenStatus: async function(event, tokenId, baseToken, marketPlace) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let currentToken = await collection.findOne({tokenId, baseToken, marketPlace});
+            let sold = currentToken.sold;
+            let listed = currentToken.listed;
+
+            if(event == "OrderForSale" || event == "OrderForAuction") {
+                listed = 1;
+            } else if(event == "OrderFilled") {
+                sold = 1;
+                listed = 0;
+            } else if(event == "OrderCanceled") {
+                listed = 0;
+            }
+
+            await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {sold, listed}});
+        } catch(err){
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    }
 }
