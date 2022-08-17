@@ -15,9 +15,9 @@ let authService  = require('../../service/authService')
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC} = require("./utils");
 const burnAddress = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.escRpcUrl);
-let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarV2Contract);
-let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerV2Contract);
+let web3Rpc = new Web3(config.elastos.rpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarV2Contract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.elastos.stickerV2Contract);
 
 
 async function transferSingleV2(event, marketPlace) {
@@ -37,17 +37,17 @@ async function transferSingleV2(event, marketPlace) {
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     let timestamp = blockInfo.timestamp;
 
-    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
+    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.elastos.stickerV2Contract, marketPlace};
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
+        await stickerDBService.burnToken(tokenId, config.elastos.stickerV2Contract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.elastos.stickerV2Contract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elastos.stickerV2Contract, marketPlace);
     }
 }
 
@@ -72,17 +72,17 @@ async function transferBatchV2(event, marketPlace) {
     {
         let tokenId = tokenIds[i];
         let value = values[i];
-        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerV2Contract, marketPlace};
+        let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.elastos.stickerV2Contract, marketPlace};
 
         if(to === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.burnToken(tokenId, config.stickerV2Contract, marketPlace);
+            await stickerDBService.burnToken(tokenId, config.elastos.stickerV2Contract, marketPlace);
         } else if(from === burnAddress) {
             await stickerDBService.replaceEvent(transferEvent);
-            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerV2Contract, marketPlace)
+            await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.elastos.stickerV2Contract, marketPlace)
         } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
             await stickerDBService.replaceEvent(transferEvent);
-            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerV2Contract, marketPlace);
+            await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elastos.stickerV2Contract, marketPlace);
         }
     }
 }
@@ -91,7 +91,7 @@ async function royaltyFeeV2(event, marketPlace) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerV2Contract, marketPlace);
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.elastos.stickerV2Contract, marketPlace);
 }
 
 async function orderForSaleV2(event, marketPlace) {
@@ -134,7 +134,7 @@ async function orderPriceChangedV2(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId);
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.elastos.chainType);
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id,
@@ -166,7 +166,7 @@ async function orderCanceledV2(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
 
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.elastos.chainType)
 
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -261,7 +261,7 @@ async function orderBidV2(event, marketPlace) {
     ], web3Rpc)
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     
-    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId)
+    let token = await stickerDBService.getTokenInfo(result.tokenId, orderInfo._orderId, config.elastos.chainType)
 
     let orderEventDetail = {orderId: orderInfo._orderId, event: event.event, blockNumber: event.blockNumber,
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
@@ -281,21 +281,21 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.stickerV2Contract);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "TransferBatch", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.stickerV2Contract);
     }
     console.log(`collectible batch count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.stickerV2Contract);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
@@ -328,56 +328,56 @@ const getTotalEventsOfPasar = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderForAuction", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`auction count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderBid", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`bid count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderDIDURI", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarV2Contract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarV2Contract);
     }
     console.log(`did uri count: ${getAllEvents.length}`);
 };
 
 const syncPasarCollection = async () => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.stickerV2ContractDeploy;
+    let startBlock = config.elastos.stickerV2ContractDeploy;
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
     console.log("Total Pasar Collection: " + stickerCountContract);
     while(startBlock < lastBlock) {
@@ -385,7 +385,7 @@ const syncPasarCollection = async () => {
         startBlock = startBlock + 1000000;
     };
     
-    startBlock = config.pasarV2ContractDeploy;
+    startBlock = config.elastos.pasarV2ContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfPasar(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;

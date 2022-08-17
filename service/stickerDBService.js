@@ -20,7 +20,7 @@ const burnAddress = '0x0000000000000000000000000000000000000000';
 const ELAToken = '0x0000000000000000000000000000000000000000';
 
 module.exports = {
-    getLastStickerSyncHeight: async function (token=config.stickerV2Contract) {
+    getLastStickerSyncHeight: async function (token=config.elastos.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -29,12 +29,12 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(token == config.stickerV2Contract) {
-                    return config.stickerV2ContractDeploy;
-                } else if(token == config.stickerContract){
-                    return config.stickerContractDeploy;
-                } else if(token == config.stickerEthContract) {
-                    return config.stickerEthContractDeploy;
+                if(token == config.elastos.stickerV2Contract) {
+                    return config.elastos.stickerV2ContractDeploy;
+                } else if(token == config.elastos.stickerContract){
+                    return config.elastos.stickerContractDeploy;
+                } else if(token == config.ethereum.stickerContract) {
+                    return config.ethereum.stickerContractDeploy;
                 }
             }
         } catch (err) {
@@ -82,7 +82,7 @@ module.exports = {
             return false;
         }
     },
-    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.stickerV2Contract) {
+    removeTokenInfoByHeight: async function(lastHeight, baseToken=config.elastos.stickerV2Contract) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -370,7 +370,7 @@ module.exports = {
         }
     },
 
-    burnToken: async function (tokenId, baseToken, marketPlace=config.elaChain) {
+    burnToken: async function (tokenId, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -386,7 +386,7 @@ module.exports = {
         }
     },
 
-    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elaChain) {
+    burnTokenBatch: async function (tokenIds, baseToken, marketPlace=config.elastos.chainType) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
@@ -448,8 +448,8 @@ module.exports = {
         }
     },
 
-    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.stickerV2Contract, marketPlace=config.elaChain) {
-        if(holder == config.pasarContract || holder == config.pasarV2Contract || holder == config.pasarEthContract)
+    updateToken: async function (tokenId, holder, timestamp, blockNumber, baseToken=config.elastos.stickerV2Contract, marketPlace=config.elastos.chainType) {
+        if(holder == config.elastos.pasarContract || holder == config.elastos.pasarV2Contract || holder == config.ethereum.pasarContract)
             return;
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -495,7 +495,7 @@ module.exports = {
         }
     },
 
-    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null, marketPlace=config.elaChain) {
+    updateTokenInfo: async function(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken=null, baseToken=null, marketPlace=config.elastos.chainType) {
         price = parseInt(price);
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -516,7 +516,7 @@ module.exports = {
             }
 
             await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: updateData});
-            if(holder != config.pasarV2Contract && holder != config.pasarContract && holder != config.pasarEthContract && holder != null) {
+            if(this.checkAddress(holder)) {
                 updateData.holder = holder;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {holder}});
             }
@@ -524,7 +524,9 @@ module.exports = {
                 updateData.status = status;
                 await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {status}});
             }
-
+            updateData.tokenId = tokenId;
+            updateData.baseToken = baseToken;
+            updateData.marketPlace = marketPlace;
             let checkData = await collection.findOne(updateData);
             if(checkData == null) {
                 await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
@@ -547,7 +549,7 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                return config.stickerContractDeploy;
+                return config.elastos.stickerContractDeploy;
             }
         } catch (err) {
             logger.error(err);
@@ -923,30 +925,30 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion=[];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
 
             result.forEach(ele => {
                 let convertToken = ele['quoteToken'];
-                if(ele['quoteToken'] == config.diaTokenContract)
+                if(ele['quoteToken'] == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let amount = ele['amount'] ? parseInt(ele['amount']) : 1;
                 let rate = 1;
                 switch(ele.marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -1065,7 +1067,7 @@ module.exports = {
                 { $unwind: "$token" },
                 { $unwind: {path: "$order", preserveNullAndEmptyArrays: true}},
                 { $project: {event: 1, tHash: 1, from: 1, to: 1, timestamp: 1, price: 1, tokenId: 1, blockNumber: 1, data: 1, name: "$token.name", marketPlace: 1
-                , royalties: "$token.royalties", asset: "$token.asset", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: "$order.quoteToken", v1Event: true }},
+                , royalties: "$token.royalties", asset: "$token.asset", endTime: "$token.endTime", royaltyFee: 1, royaltyOwner: "$token.royaltyOwner", orderId: 1, gasFee: 1, quoteToken: "$order.quoteToken", v1Event: true }},
                 { $sort: {blockNumber: parseInt(timeOrder)} }
             ]).toArray();
             let collection_platformFee = mongoClient.db(config.dbName).collection('pasar_order_platform_fee');
@@ -1104,7 +1106,7 @@ module.exports = {
             let collection = client.db(config.dbName).collection('pasar_token_event');
 
             let result = await collection.aggregate([
-                { $match: {$and: [{tokenId: tokenId}, {token: baseToken},{to: {$ne: config.pasarContract}}] }},
+                { $match: {$and: [{tokenId: tokenId}, {token: baseToken},{to: {$ne: config.elastos.pasarContract}}] }},
                 { $sort: {tokenId: 1, blockNumber: -1}},
                 { $limit: 1},
                 { $group: {_id: "$tokenId", doc: {$first: "$$ROOT"}}},
@@ -1238,7 +1240,7 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
 
-            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0');
+            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0', 0);
             let assets = 0;
             if(createdNft.code == 200) {
                 assets = createdNft.data.length;
@@ -1260,7 +1262,7 @@ module.exports = {
 
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
 
-            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0');
+            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0', 0);
             let count_sold = 0;
             if(createdNft.code == 200) {
                 count_sold = soldNft.data.length;
@@ -1561,7 +1563,7 @@ module.exports = {
             let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1602,29 +1604,29 @@ module.exports = {
                 let rates = await this.getPriceRate();
                 let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
-                    if(rates[i].marketPlace == config.elaChain) {
+                    if(rates[i].marketPlace == config.elastos.chainType) {
                         listRate_ela[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.ethChain) {
+                    } else if(rates[i].marketPlace == config.ethereum.chainType) {
                         listRate_eth[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.fusionChain) {
+                    } else if(rates[i].marketPlace == config.fusion.chainType) {
                         listRate_fusion[rates[i].type] = rates[i].rate;
                     }
                 }
                 
                 for(var i = 0; i < marketTokens.length; i++) {
                     let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                     let rate = 1;
                     switch(marketTokens[i].marketPlace) {
-                        case config.elaChain:
+                        case config.elastos.chainType:
                             rate = listRate_ela[convertToken];
                             break;
-                        case config.ethChain:
+                        case config.ethereum.chainType:
                             rate = listRate_eth[convertToken];
                             break;
-                        case config.fusionChain:
+                        case config.fusion.chainType:
                             rate = listRate_fusion[convertToken];
                             break;
                         default:
@@ -1721,7 +1723,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1752,11 +1754,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -1769,18 +1771,18 @@ module.exports = {
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
                 let convertToken = marketTokens[i].quoteToken;
-                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                 let rate = 1;
                 switch(marketTokens[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -1860,7 +1862,7 @@ module.exports = {
             // }
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -1889,11 +1891,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -1906,17 +1908,17 @@ module.exports = {
                 marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
 
                 let convertToken = marketTokens[i].quoteToken;
-                if(marketTokens[i].quoteToken == config.diaTokenContract)
+                if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 let rate = 1;
                 switch(marketTokens[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         rate = listRate_eth[convertToken];
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         rate = listRate_fusion[convertToken];
                         break;
                     default:
@@ -2061,7 +2063,7 @@ module.exports = {
                 }
                 let checkMarketPlace;
                 if(marketPlace == 0) {
-                    checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                    checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
                 } else {
                     checkMarketPlace = {marketPlace : marketPlace}
                 }
@@ -2093,11 +2095,11 @@ module.exports = {
                 let rates = await this.getPriceRate();
                 let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
                 for(var i=0; i < rates.length; i++) {
-                    if(rates[i].marketPlace == config.elaChain) {
+                    if(rates[i].marketPlace == config.elastos.chainType) {
                         listRate_ela[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.ethChain) {
+                    } else if(rates[i].marketPlace == config.ethereum.chainType) {
                         listRate_eth[rates[i].type] = rates[i].rate;
-                    } else if(rates[i].marketPlace == config.fusionChain) {
+                    } else if(rates[i].marketPlace == config.fusion.chainType) {
                         listRate_fusion[rates[i].type] = rates[i].rate;
                     } 
                 }
@@ -2113,18 +2115,18 @@ module.exports = {
                     marketTokens[i].marketTime = marketTokens[i].marketTime ? parseInt(marketTokens[i].marketTime) : 0;
                     
                     let convertToken = marketTokens[i].quoteToken;
-                    if(marketTokens[i].quoteToken == config.diaTokenContract)
+                    if(marketTokens[i].quoteToken == config.elastos.diaTokenContract)
                         convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
 
                     let rate = 1;
                     switch(marketTokens[i].marketPlace) {
-                        case config.elaChain:
+                        case config.elastos.chainType:
                             rate = listRate_ela[convertToken];
                             break;
-                        case config.ethChain:
+                        case config.ethereum.chainType:
                             rate = listRate_eth[convertToken];
                             break;
-                        case config.fusionChain:
+                        case config.fusion.chainType:
                             rate = listRate_fusion[convertToken];
                             break;
                         default:
@@ -2224,12 +2226,13 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
             let collection_order_event  = mongoClient.db(config.dbName).collection('pasar_order_event');
+            
             await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2251,11 +2254,15 @@ module.exports = {
                 default:
                     sort = {updateTime: -1}
             }
-
+            let checkAddress = address;
+            if(address.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(address);
+                checkAddress = {$in: addressList}
+            }
 
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let result = await collection.aggregate([
-                { $match: {$and: [{holder: address}, market_condition, checkMarketPlace]} },
+                { $match: {$and: [{holder: checkAddress}, market_condition, checkMarketPlace]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2298,7 +2305,7 @@ module.exports = {
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1});
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2321,8 +2328,14 @@ module.exports = {
                     sort = {marketTime: -1}
             }
 
+            let checkAddress = address;
+            if(address.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(address);
+                checkAddress = {$in: addressList}
+            }
+
             let tokens = await token_collection.aggregate([
-                { $match: {$and: [{holder: address}, checkMarketPlace]} },
+                { $match: {$and: [{holder: checkAddress}, checkMarketPlace]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2375,7 +2388,7 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2386,9 +2399,15 @@ module.exports = {
             await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await order_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
-            console.log(address);
+            
+            let checkAddress = address;
+            if(address.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(address);
+                checkAddress = {$in: addressList}
+            }
+
             let tokens = await order_collection.aggregate([
-                { $match: {$and: [{sellerAddr: address, orderState: "2"}, checkMarketPlace]} },
+                { $match: {$and: [{sellerAddr: checkAddress, orderState: "2"}, checkMarketPlace]} },
                 { $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
@@ -2449,13 +2468,19 @@ module.exports = {
 
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
+            let checkAddress = address;
+            if(address.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(address);
+                checkAddress = {$in: addressList}
+            }
+
             let tokens = await event_collection.aggregate([
-                { $match: {$and: [{buyerAddr: address}, {event : "OrderBid"}, checkMarketPlace]}},
+                { $match: {$and: [{buyerAddr: checkAddress}, {event : "OrderBid"}, checkMarketPlace]}},
                 { $lookup: {
                     from: "pasar_token",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2518,13 +2543,19 @@ module.exports = {
             }
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
+            let checkAddress = address;
+            if(address.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(address);
+                checkAddress = {$in: addressList}
+            }
+
             let tokens = await collection.aggregate([
-                { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}, checkMarketPlace]} },
+                { $match: {$and: [{royaltyOwner: checkAddress}, {holder: {$ne: config.burnAddress}}, checkMarketPlace]} },
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
@@ -2553,7 +2584,7 @@ module.exports = {
             let rate = 1;
             if(tokens[i].quoteToken && tokens[i].quoteToken != ELAToken) {
                 let convertToken = tokens[i].quoteToken;
-                if(tokens[i].quoteToken == config.diaTokenContract)
+                if(tokens[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 let rateToken = await this.getERC20TokenPrice(convertToken);
                 rate = rateToken ? rateToken.token.derivedELA : 1;
@@ -2608,10 +2639,8 @@ module.exports = {
     },
 
     updateOrder: async function(result, blockNumber, orderId) {
-        let web3Rpc = new Web3(config.escRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+        let web3Rpc = new Web3(config.elastos.rpcUrl);
         try {
-            // let result = await pasarContract.methods.getOrderById(orderId).call();
             let pasarOrder = {orderId: orderId, orderType: result.orderType, orderState: result.orderState,
                 tokenId: result.tokenId, amount: result.amount, price:result.price, priceNumber: parseInt(result.price), startTime: result.startTime, endTime: result.endTime,
                 sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
@@ -2661,7 +2690,7 @@ module.exports = {
             for(var i = 0; i < tokens.length; i++) {
                 let tokenId = tokens[i].tokenId;
                 let result = await token_event_collection.aggregate([
-                    { $match: {$and: [{tokenId}, {to: {$ne: config.pasarContract}}] } },
+                    { $match: {$and: [{tokenId}, {to: {$ne: config.elastos.pasarContract}}] } },
                     { $sort: {tokenId: 1, blockNumber: -1} },
                     { $limit: 1 }
                 ]).toArray();
@@ -2688,7 +2717,7 @@ module.exports = {
 
             for(var i = 0; i < tokens.length; i++) {
                 let token = tokens[i];
-                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
+                let token_event = await token_event_collection.find({$and: [{to: {$ne: config.elastos.pasarContract}}, {tokenId: token['tokenId']}]}).sort({blockNumber: -1}).limit(1).toArray();
                 let holder, price = 0, orderId = null, marketTime = null, endTime = null, status = "Not on sale";
                 if(token_event.length > 0)
                     holder = token_event[0]['to'];
@@ -2758,12 +2787,12 @@ module.exports = {
             if(doc) {
                 return doc.blockNumber
             } else {
-                if(marketPlace == config.elaChain) {
-                    return config.pasarRegisterContractDeploy;
-                } else if(marketPlace == config.ethChain) {
-                    return config.pasarEthRegisterContractDeploy;
-                } else if(marketPlace == config.fusionChain) {
-                    return config.pasarFusionRegisterContractDeploy;
+                if(marketPlace == config.elastos.chainType) {
+                    return config.elastos.pasarRegisterContractDeploy;
+                } else if(marketPlace == config.ethereum.chainType) {
+                    return config.ethereum.pasarRegisterContractDeploy;
+                } else if(marketPlace == config.fusion.chainType) {
+                    return config.fusion.pasarRegisterContractDeploy;
                 }
                 
             }
@@ -2860,7 +2889,7 @@ module.exports = {
         try {
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
@@ -2944,13 +2973,22 @@ module.exports = {
             const token_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
             let checkMarketPlace;
             if(marketPlace == 0) {
-                checkMarketPlace = {marketPlace: {$in: [config.elaChain, config.ethChain, config.fusionChain]}};
+                checkMarketPlace = {marketPlace: {$in: [config.elastos.chainType, config.ethereum.chainType, config.fusion.chainType]}};
             } else {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
+            let checkAddress = owner;
+            
+            if(owner.indexOf("did:elastos") !== -1) {
+                let addressList = await this.getAddressListFromDid(owner);
+                checkAddress = {$in: addressList}
+            }
+
+            console.log(checkAddress);
+
             let collections = await token_collection.aggregate([
-                { $match: {$and: [{owner: owner}, checkMarketPlace]} },
+                { $match: {$and: [{owner: checkAddress}, checkMarketPlace]} },
                 { $lookup: {from: "pasar_collection_royalty",
                     let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttoken", "$token"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
@@ -3051,11 +3089,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -3063,22 +3101,22 @@ module.exports = {
             for(var i = 0; i < result.length; i++) {
 
                 let convertToken = result[i].quoteToken;
-                if(result[i].quoteToken == config.diaTokenContract)
+                if(result[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
                 switch(result[i].marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
                         }
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
@@ -3124,11 +3162,11 @@ module.exports = {
             let rates = await this.getPriceRate();
             let listRate_ela = [], listRate_eth = [], listRate_fusion = [];
             for(var i=0; i < rates.length; i++) {
-                if(rates[i].marketPlace == config.elaChain) {
+                if(rates[i].marketPlace == config.elastos.chainType) {
                     listRate_ela[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.ethChain) {
+                } else if(rates[i].marketPlace == config.ethereum.chainType) {
                     listRate_eth[rates[i].type] = rates[i].rate;
-                } else if(rates[i].marketPlace == config.fusionChain) {
+                } else if(rates[i].marketPlace == config.fusion.chainType) {
                     listRate_fusion[rates[i].type] = rates[i].rate;
                 }
             }
@@ -3136,22 +3174,22 @@ module.exports = {
             let listPrice = [];
             for(var i=0; i < result.length; i++) {
                 let convertToken = result[i].quoteToken;
-                if(result[i].quoteToken == config.diaTokenContract)
+                if(result[i].quoteToken == config.elastos.diaTokenContract)
                     convertToken = '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5';
                 
                 let rate = 1;
                 switch(marketPlace) {
-                    case config.elaChain:
+                    case config.elastos.chainType:
                         rate = listRate_ela[convertToken];
                         break;
-                    case config.ethChain:
+                    case config.ethereum.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
                             rate = 1/listRate_eth[config.DefaultToken]
                         }
                         break;
-                    case config.fusionChain:
+                    case config.fusion.chainType:
                         if(convertToken == config.DefaultToken) {
                             rate = 1;
                         } else {
@@ -3275,12 +3313,12 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    getTokenInfo: async function(tokenId, orderId) {
+    getTokenInfo: async function(tokenId, orderId, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection('pasar_order');
-            let result = await collection.findOne({tokenId, orderId});
+            let result = await collection.findOne({tokenId, orderId, marketPlace});
             return result;
         } catch(err) {
             logger.error(err);
@@ -3290,7 +3328,7 @@ module.exports = {
         }
     },
     getDiaTokenPrice: async function () {
-        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let walletConnectWeb3 = new Web3(config.elastos.rpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
 
         const graphQLParams = {
@@ -3314,8 +3352,8 @@ module.exports = {
         return response.data.data;
     },
     checkV1NFTByWallet: async function(address) {
-        let web3Rpc = new Web3(config.escRpcUrl);
-        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
+        let web3Rpc = new Web3(config.elastos.rpcUrl);
+        let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarContract);
         let sellerInfo = await pasarContract.methods.getSellerByAddr(address).call();
         
         if(sellerInfo && sellerInfo.openCount != '0') {
@@ -3365,7 +3403,7 @@ module.exports = {
         }
     },
     getERC20TokenPrice: async function(tokenAddress) {
-        let walletConnectWeb3 = new Web3(config.escRpcUrl); 
+        let walletConnectWeb3 = new Web3(config.elastos.rpcUrl); 
         let blocknum = await walletConnectWeb3.eth.getBlockNumber();
         console.log(tokenAddress);
         const graphQLParams = {
@@ -3482,7 +3520,7 @@ module.exports = {
         try {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
-            let result = await collection.find({$and: [{token: {$ne: config.stickerContract}}, {token: {$ne: config.stickerV2Contract}}]}).toArray();
+            let result = await collection.find({$and: [{token: {$ne: config.elastos.stickerContract}}, {token: {$ne: config.elastos.stickerV2Contract}}]}).toArray();
             return result;
         } catch(err) {
             logger.error(err);
@@ -3498,19 +3536,19 @@ module.exports = {
             await mongoClient.connect();
             let collection = await mongoClient.db(config.dbName).collection("pasar_collection");
             let collection_rate = await mongoClient.db(config.dbName).collection("pasar_price_rate");
-            let ethRate = await collection_rate.findOne({type: config.DefaultToken, marketPlace: config.ethChain});
+            let ethRate = await collection_rate.findOne({type: config.DefaultToken, marketPlace: config.ethereum.chainType});
 
             let collections = await collection.find().toArray();
-            let web3 = new Web3(config.escRpcUrl);
-            let diaContract = new web3.eth.Contract(diaContractABI, config.diaTokenContract);
+            let web3 = new Web3(config.elastos.rpcUrl);
+            let diaContract = new web3.eth.Contract(diaContractABI, config.elastos.diaTokenContract);
 
             let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum,fsn&vs_currencies=usd');
             let rateData = await response.json();
             
             let listRate={};
-            listRate[config.elaChain] = rateData.elastos.usd;
-            listRate[config.ethChain] = rateData.ethereum.usd;
-            listRate[config.fusionChain] = rateData.fsn.usd;
+            listRate[config.elastos.chainType] = rateData.elastos.usd;
+            listRate[config.ethereum.chainType] = rateData.ethereum.usd;
+            listRate[config.fusion.chainType] = rateData.fsn.usd;
 
             await Promise.all(collections.map(async cell => {
                 let totalCount = 0, floorPrice = 0, totalOwner = 0, totalPrice = 0, totalUSDPrice = 0, floorUSDPrice = 0, collectibles = [], collectiblesOnMarket=[];
@@ -3581,11 +3619,11 @@ module.exports = {
 
     checkAddress: function (address) {
         let listCheckingAddress = [
-          config.stickerContract,
-          config.pasarContract,
-          config.pasarV2Contract,
-          config.pasarEthContract,
-          config.pasarFusionContract,
+          config.elastos.stickerContract,
+          config.elastos.pasarContract,
+          config.elastos.pasarV2Contract,
+          config.ethereum.pasarContract,
+          config.fusion.pasarContract,
           null,
         ]
         if(listCheckingAddress.indexOf(address) == -1) {
@@ -3593,5 +3631,171 @@ module.exports = {
         } else {
           false;
         }
-    }
+    },
+
+    getAddressListFromDid: async function(did) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection_address_did  = mongoClient.db(config.dbName).collection('pasar_address_did');
+            let data = await collection_address_did.find({"did.did": did}).toArray();
+            let listAddress = [];
+            for(var i = 0; i < data.length; i++) {
+                listAddress.push(data[i].address);
+            }
+            return listAddress;
+        } catch(err) {
+            logger.error(err);
+            return null;
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getNftList: async function (event, duration, pageNum, pageSize) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_order = await mongoClient.db(config.dbName).collection('pasar_order');
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+
+            let checkDate = 0;
+            switch(duration) {
+                case "0":
+                    checkDate =  new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
+                    break;
+                case "1":
+                    checkDate =  new Date().getTime() - 14 * 24 * 60 * 60 * 1000;
+                    break;
+                case "2":
+                    checkDate =  new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+                    break;
+                case "3":
+                    checkDate =  new Date().getTime() - 60 * 24 * 60 * 60 * 1000;
+                    break;
+                case "4":
+                    checkDate =  new Date().getTime() - 90 * 24 * 60 * 60 * 1000;
+                    break;
+                case "5":
+                    checkDate =  new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
+                    break;
+                case "6":
+                    checkDate =  0;
+                    break;
+                default: 
+                    checkDate = 0;
+                    break;
+            }
+
+            checkDate = Math.floor(checkDate/1000);
+
+            let listEvents = event.split(',');
+            let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
+
+            if(listEvents.indexOf("sale") >= 0) {
+                let result = await collection.aggregate([
+                    { $match: {$and: [{status: "Not on sale"}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_order",
+                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "order"}
+                    },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$order"},
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Sale"}},
+                    { $project: fields},
+                ]).toArray();
+                for(var i = 0; i < result.length; i++) {
+                    result[i].marketTime = parseInt(result[i].marketTime);
+                    await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
+                }
+            }
+            
+            if(listEvents.indexOf("listed") >= 0) {
+                let result = await collection.aggregate([
+                    { $match: {$and: [{status: {$ne:"Not on sale"}}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_order",
+                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "order"}
+                    },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$order"},
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Listed"}},
+                    { $project: fields},
+                ]).toArray();
+                for(var i = 0; i < result.length; i++) {
+                    result[i].marketTime = parseInt(result[i].marketTime);
+                    await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
+                }
+            }
+
+            if(listEvents.indexOf("minted") >= 0) {
+                let result = await collection.aggregate([
+                    { $match: {$and: [{status: "Not on sale"}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Minted"}},
+                    { $project: fields},
+                ]).toArray();
+                for(var i = 0; i < result.length; i++) {
+                    let check = await collection_order.find({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken, orderState: {$ne: "3"}}).count();
+                    if(check == 0) {
+                        result[i].marketTime = parseInt(result[i].marketTime);
+                        await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
+                    }
+                }
+            }
+
+            let total = await temp_collection.find({marketTime: {$gte: checkDate}}).count();
+            let returnValue = await temp_collection.find({marketTime: {$gte: checkDate}}).sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
+            if(total > 0)
+                await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: {total: total, data: returnValue}};
+        } catch(err){
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
 }

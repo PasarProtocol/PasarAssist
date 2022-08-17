@@ -10,7 +10,7 @@ const { scanEvents, config } = require("./utils");
 
 let jobService = require('../../service/jobService');
 
-let web3Rpc = new Web3(config.fusionRpcUrl);
+let web3Rpc = new Web3(config.fusion.rpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       
@@ -50,6 +50,6 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
 
 if (require.main == module) {
     (async () => {
-      await getTotalEvents(config.fusionChain);
+      await getTotalEvents(config.fusion.chainType);
     })();
 }

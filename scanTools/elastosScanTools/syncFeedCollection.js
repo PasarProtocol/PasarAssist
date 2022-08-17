@@ -12,13 +12,13 @@ let jobService = require('../../service/jobService');
 
 const { scanEvents, saveEvent, dealWithNewToken, config, DB_SYNC } = require("./utils");
 
-let token = config.stickerContract;
+let token = config.elastos.stickerContract;
 const burnAddress = '0x0000000000000000000000000000000000000000';
 const quoteToken = '0x0000000000000000000000000000000000000000';
 
-let web3Rpc = new Web3(config.escRpcUrl);
-let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.pasarContract);
-let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.stickerContract);
+let web3Rpc = new Web3(config.elastos.rpcUrl);
+let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarContract);
+let stickerContract = new web3Rpc.eth.Contract(stickerContractABI, config.elastos.stickerContract);
 
 async function transferSingleV1(event, marketPlace) {
     let blockNumber = event.blockNumber;
@@ -37,17 +37,17 @@ async function transferSingleV1(event, marketPlace) {
     let gasFee = txInfo.gas * txInfo.gasPrice / (10 ** 18);
     let timestamp = blockInfo.timestamp;
 
-    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.stickerContract, marketPlace: marketPlace};
+    let transferEvent = {tokenId, blockNumber, timestamp,txHash, txIndex, from, to, value, gasFee, token: config.elastos.stickerContract, marketPlace: marketPlace};
 
     if(to === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.burnToken(tokenId, config.stickerContract, marketPlace);
+        await stickerDBService.burnToken(tokenId, config.elastos.stickerContract, marketPlace);
     } else if(from === burnAddress) {
         await stickerDBService.replaceEvent(transferEvent);
-        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.stickerContract, marketPlace)
+        await dealWithNewToken(stickerContract, web3Rpc, blockNumber, tokenId, config.elastos.stickerContract, marketPlace)
     } else if(stickerDBService.checkAddress(to) && stickerDBService.checkAddress(from)) {
         await stickerDBService.replaceEvent(transferEvent);
-        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.stickerContract, marketPlace);
+        await stickerDBService.updateToken(tokenId, to, timestamp, blockNumber, config.elastos.stickerContract, marketPlace);
     }
 }
 
@@ -55,7 +55,7 @@ async function royaltyFeeV1(event, marketPlace) {
     let tokenId = event.returnValues._id;
     let fee = event.returnValues._fee;
     
-    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.stickerContract, marketPlace);
+    await stickerDBService.updateRoyaltiesOfToken(tokenId, fee, config.elastos.stickerContract, marketPlace);
 }
 
 async function orderForSaleV1(event, marketPlace) {
@@ -69,13 +69,13 @@ async function orderForSaleV1(event, marketPlace) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-        baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
+        baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
     
     let resultData = {orderType: result.orderType, orderState: result.orderState,
         tokenId: orderInfo._tokenId, amount: orderInfo._amount, price:orderInfo._price, startTime: result.startTime, endTime: result.endTime,
         sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
         lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-        baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+        baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
         minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: marketPlace}
 
     let updateTokenInfo = {
@@ -112,20 +112,20 @@ async function orderPriceChangedV1(event, marketPlace) {
         logIndex: event.logIndex, removed: event.removed, id: event.id,
         data: {oldPrice: orderInfo._oldPrice, newPrice: orderInfo._newPrice}, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-        baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
+        baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
     
     
     let resultData = {orderType: result.orderType, orderState: result.orderState,
         tokenId: result.tokenId, amount: result.amount, price:orderInfo._newPrice, startTime: result.startTime, endTime: result.endTime,
         sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
         lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-        baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+        baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
         minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: marketPlace}
 
     let updateTokenInfo = {
         tokenId: result.tokenId,
         price: orderInfo._newPrice,
-        baseToken: config.stickerContract,
+        baseToken: config.elastos.stickerContract,
         marketPlace: marketPlace
     };
 
@@ -147,13 +147,13 @@ async function orderCanceledV1(event, marketPlace) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-        baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
+        baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
     
     let resultData = {orderType: result.orderType, orderState: result.orderState,
         tokenId: result.tokenId, amount: result.amount, price:result.price, startTime: result.startTime, endTime: result.endTime,
         sellerAddr: orderInfo._seller, buyerAddr: result.buyerAddr, bids: result.bids, lastBidder: result.lastBidder,
         lastBid: result.lastBid, filled: result.filled, royaltyOwner: result.royaltyOwner, royaltyFee: result.royaltyFee,
-        baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+        baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
         minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: marketPlace}
 
     let updateTokenInfo = {
@@ -164,7 +164,7 @@ async function orderCanceledV1(event, marketPlace) {
         status: 'Not on sale',
         blockNumber: event.blockNumber,
         updateTime: event.updateTime,
-        baseToken: config.stickerContract,
+        baseToken: config.elastos.stickerContract,
         v1State: false,
         marketPlace: marketPlace
     };
@@ -187,14 +187,14 @@ async function orderFilledV1(event, marketPlace) {
         tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
         logIndex: event.logIndex, removed: event.removed, id: event.id, sellerAddr: result.sellerAddr, buyerAddr: result.buyerAddr,
         royaltyFee: result.royaltyFee, tokenId: result.tokenId, price: result.price, timestamp: result.updateTime, gasFee,
-        baseToken: config.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
+        baseToken: config.elastos.stickerContract, quoteToken: quoteToken, v1Event: true, marketPlace: marketPlace}
     
 
     let resultData = {orderType: result.orderType, orderState: result.orderState,
         tokenId: result.tokenId, amount: result.amount, price:orderInfo._price, 394: parseInt(orderInfo._price), startTime: result.startTime, endTime: result.endTime,
         sellerAddr: orderInfo._seller, buyerAddr: orderInfo._buyer, bids: result.bids, lastBidder: result.lastBidder,
         lastBid: result.lastBid, filled: result.filled, royaltyOwner: orderInfo._royaltyOwner, royaltyFee: orderInfo._royalty,
-        baseToken: config.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
+        baseToken: config.elastos.stickerContract, amount: result.amount, quoteToken: quoteToken, buyoutPrice: 0, reservePrice: 0,
         minPrice: result.minPrice, createTime: result.createTime, updateTime: result.updateTime, marketPlace: marketPlace}
 
     let updateTokenInfo = {
@@ -207,7 +207,7 @@ async function orderFilledV1(event, marketPlace) {
         status: 'Not on sale',
         blockNumber: event.blockNumber,
         updateTime: event.updateTime,
-        baseToken: config.stickerContract,
+        baseToken: config.elastos.stickerContract,
         v1State: false,
         marketPlace: marketPlace
     };
@@ -221,14 +221,14 @@ const getTotalEventsOfSticker = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(stickerContract, "TransferSingle", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerContract);
+        await saveEvent(item, DB_SYNC, config.elastos.stickerContract);
     }
     console.log(`collectible count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(stickerContract, "RoyaltyFee", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.stickerContract);
+        await saveEvent(item, DB_SYNC, config.elastos.stickerContract);
     }
     console.log(`royalty count: ${getAllEvents.length}`);
 };
@@ -237,35 +237,35 @@ const getTotalEventsOfFeeds = async (startBlock, endBlock) => {
     let getAllEvents = await scanEvents(pasarContract, "OrderForSale", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarContract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarContract);
     }
     console.log(`listed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderPriceChanged", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarContract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarContract);
     }
     console.log(`changed count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderCanceled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarContract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarContract);
     }
     console.log(`canceled count: ${getAllEvents.length}`);
 
     getAllEvents = await scanEvents(pasarContract, "OrderFilled", startBlock, endBlock);
 
     for (let item of getAllEvents) {
-        await saveEvent(item, DB_SYNC, config.pasarContract);
+        await saveEvent(item, DB_SYNC, config.elastos.pasarContract);
     }
     console.log(`filled count: ${getAllEvents.length}`);
 };
 
 const syncFeedCollection = async () => {
     let lastBlock = await web3Rpc.eth.getBlockNumber();
-    let startBlock = config.stickerContractDeploy;        
+    let startBlock = config.elastos.stickerContractDeploy;        
     let stickerCountContract = parseInt(await stickerContract.methods.totalSupply().call());
     console.log("Feeds Collection Count:" + stickerCountContract);
     while(startBlock < lastBlock) {
@@ -273,7 +273,7 @@ const syncFeedCollection = async () => {
         startBlock = startBlock + 1000000;
     };
     
-    startBlock = config.pasarContractDeploy;
+    startBlock = config.elastos.pasarContractDeploy;
     while(startBlock < lastBlock) {
         await getTotalEventsOfFeeds(startBlock, startBlock + 1000000);
         startBlock = startBlock + 1000000;
