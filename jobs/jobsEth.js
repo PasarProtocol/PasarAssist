@@ -116,6 +116,8 @@ module.exports = {
                 token.status = "Not on sale";
                 token.endTime = null;
                 token.orderId = null;
+                token.sold = 0;
+                token.listed = 0;
                 token.baseToken = config.ethereum.stickerContract;
 
                 let creator = data.creator ? data.creator : null;
@@ -170,6 +172,8 @@ module.exports = {
                     token.status = "Not on sale";
                     token.endTime = null;
                     token.orderId = null;
+                    token.sold = 0;
+                    token.listed = 0;
                     token.baseToken = config.ethereum.stickerContract;
                     tokens.push(token);
                     await stickerDBService.replaceToken(tokens);
@@ -275,6 +279,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
+                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.ethereum.chainType)
             })
         });
 
@@ -380,6 +385,7 @@ module.exports = {
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, orderInfo._baseToken, config.ethereum.chainType);
             })
         });
 
@@ -424,6 +430,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.ethereum.chainType);
+                await stickerDBService.updateTokenStatus(event.event, result.tokenId, token.baseToken, config.ethereum.chainType);
             })
         });
 
@@ -704,6 +711,7 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.ethereum.chainType);
+                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.ethereum.chainType)
             })
         });
 

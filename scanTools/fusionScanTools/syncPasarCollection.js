@@ -46,6 +46,7 @@ async function orderForSale(event, marketPlace) {
         await pasarDBService.insertOrderEvent(orderEventDetail);
         await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
         await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+        await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.fusion.chainType);
 }
 
 async function orderPriceChanged(event, marketPlace) {
@@ -104,6 +105,7 @@ async function orderCanceled(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, updateResult.tokenId, token.baseToken, config.fusion.chainType);
 }
 
 async function orderFilled(event, marketPlace) {
@@ -139,6 +141,7 @@ async function orderFilled(event, marketPlace) {
     await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, updateResult.tokenId, orderInfo._baseToken, config.fusion.chainType);
 }
 
 async function orderForAuction(event, marketPlace) {
@@ -173,6 +176,7 @@ async function orderForAuction(event, marketPlace) {
     await pasarDBService.insertOrderEvent(orderEventDetail);
     await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
     await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, marketPlace);
+    await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.fusion.chainType);
 }
 
 async function orderBid(event, marketPlace) {
