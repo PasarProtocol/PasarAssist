@@ -37,16 +37,26 @@ async function tempCollectiblesOfCollection() {
     let collections = await stickerDBService.getImportedCollection();
     for(let collection of collections) {
         if(collection.is721) {
+            let startBlock = null;
+            if(config.curNetwork != "testNet") {
+                startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.token);
+            }
+
             let tokenContract = new web3Rpc.eth.Contract(token721ABI, collection.token);
 
-            let getAllEvents = await scanEvents(tokenContract, "Transfer");
+            let getAllEvents = await scanEvents(tokenContract, "Transfer", startBlock);
             for (let item of getAllEvents) {
                 await saveEvent(item, DB_SYNC, collection.token);
             }
         } else {
             let tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.token);
+            
+            let startBlock = null;
+            if(config.curNetwork != "testNet") {
+                startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.token);
+            }
 
-            let getAllEvents = await scanEvents(tokenContract, "TransferSingle");
+            let getAllEvents = await scanEvents(tokenContract, "TransferSingle", startBlock);
             for (let item of getAllEvents) {
                 await saveEvent(item, DB_SYNC, collection.token);
             }
