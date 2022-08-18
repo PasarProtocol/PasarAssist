@@ -3694,13 +3694,14 @@ module.exports = {
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
                         quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
 
-            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1, "listed": 1, "sold": 1});
             await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
             await collection_collection.ensureIndex({ "token": 1, "marketPlace": 1});
 
             if(listEvents.indexOf("sale") >= 0) {
                 let result = await collection.aggregate([
-                    { $match: {$and: [{status: "Not on sale"}, {holder: {$ne: config.burnAddress}}]}},
+                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
+                    { $match: {$and: [{listed: 0}, {sold: 1}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_order",
@@ -3725,15 +3726,14 @@ module.exports = {
                     { $addFields: {type: "Sale"}},
                     { $project: fields},
                 ]).toArray();
-                for(var i = 0; i < result.length; i++) {
-                    result[i].marketTime = parseInt(result[i].marketTime);
-                    await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
-                }
+
+                await temp_collection.insertMany(result);
             }
             
             if(listEvents.indexOf("listed") >= 0) {
                 let result = await collection.aggregate([
-                    { $match: {$and: [{status: {$ne:"Not on sale"}}, {holder: {$ne: config.burnAddress}}]}},
+                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
+                    { $match: {$and: [{listed: 1}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_order",
@@ -3758,15 +3758,14 @@ module.exports = {
                     { $addFields: {type: "Listed"}},
                     { $project: fields},
                 ]).toArray();
-                for(var i = 0; i < result.length; i++) {
-                    result[i].marketTime = parseInt(result[i].marketTime);
-                    await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
-                }
+
+                await temp_collection.insertMany(result);
             }
 
             if(listEvents.indexOf("minted") >= 0) {
                 let result = await collection.aggregate([
-                    { $match: {$and: [{status: "Not on sale"}, {holder: {$ne: config.burnAddress}}]}},
+                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
+                    { $match: {$and: [{listed: 0}, {sold: 0}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_collection",
@@ -3781,17 +3780,12 @@ module.exports = {
                     { $addFields: {type: "Minted"}},
                     { $project: fields},
                 ]).toArray();
-                for(var i = 0; i < result.length; i++) {
-                    let check = await collection_order.find({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken, orderState: {$ne: "3"}}).count();
-                    if(check == 0) {
-                        result[i].marketTime = parseInt(result[i].marketTime);
-                        await temp_collection.updateOne({tokenId: result[i].tokenId, marketPlace: result[i].marketPlace, baseToken: result[i].baseToken}, {$set: result[i]}, {upsert: true});
-                    }
-                }
+                
+                await temp_collection.insertMany(result);
             }
 
-            let total = await temp_collection.find({marketTime: {$gte: checkDate}}).count();
-            let returnValue = await temp_collection.find({marketTime: {$gte: checkDate}}).sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
+            let total = await temp_collection.find().count();
+            let returnValue = await temp_collection.find().sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
             if(total > 0)
                 await temp_collection.drop();
 
