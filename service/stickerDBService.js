@@ -3790,7 +3790,7 @@ module.exports = {
             }
 
             let total = await temp_collection.find().count();
-            let returnValue = await temp_collection.find().sort({blockNumber: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
+            let returnValue = await temp_collection.find().sort({marketTime: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
             if(total > 0)
                 await temp_collection.drop();
 
