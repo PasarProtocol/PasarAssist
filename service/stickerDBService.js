@@ -3694,6 +3694,9 @@ module.exports = {
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
                         quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
 
+            let fieldsMint = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: 1, orderId: "$order.orderId", buyerAddr: 1,
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
+
             await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1, "listed": 1, "sold": 1});
             await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
             await collection_collection.ensureIndex({ "token": 1, "marketPlace": 1});
@@ -3766,7 +3769,8 @@ module.exports = {
 
             if(listEvents.indexOf("minted") >= 0) {
                 let result = await collection.aggregate([
-                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
+                    { $addFields: {type: "Minted", sellerAddr: config.burnAddress, buyerAddr: "$holder", marketTime: {$toInt: "$marketTime"}} },
+
                     { $match: {$and: [{listed: 0}, {sold: 0}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
@@ -3779,8 +3783,7 @@ module.exports = {
                         as: "collection"}
                     },
                     { $unwind: "$collection"},
-                    { $addFields: {type: "Minted"}},
-                    { $project: fields},
+                    { $project: fieldsMint},
                 ]).toArray();
                 
                 await temp_collection.insertMany(result);
