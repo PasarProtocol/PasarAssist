@@ -3709,6 +3709,7 @@ module.exports = {
                         pipeline: [
                             {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}]} },
                             {$sort: {blockNumber: -1}},
+                            {$limit: 1}
                         ],
                         as: "order"}
                     },
@@ -3741,6 +3742,7 @@ module.exports = {
                         pipeline: [
                             {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}]} },
                             {$sort: {blockNumber: -1}},
+                            {$limit: 1}
                         ],
                         as: "order"}
                     },
