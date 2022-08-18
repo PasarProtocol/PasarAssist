@@ -3714,9 +3714,9 @@ module.exports = {
                     },
                     { $lookup: {
                         from: "pasar_collection",
-                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
                             {$sort: {blockNumber: -1}},
                         ],
                         as: "collection"}
@@ -3746,9 +3746,9 @@ module.exports = {
                     },
                     { $lookup: {
                         from: "pasar_collection",
-                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
                             {$sort: {blockNumber: -1}},
                         ],
                         as: "collection"}
@@ -3769,9 +3769,9 @@ module.exports = {
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_collection",
-                        let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttoken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
                             {$sort: {blockNumber: -1}},
                         ],
                         as: "collection"}
