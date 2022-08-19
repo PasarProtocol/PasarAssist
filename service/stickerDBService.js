@@ -3742,7 +3742,7 @@ module.exports = {
                         from: "pasar_order",
                         let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$addFields: {marketTime: {$toInt: "$updateTime"}}},
+                            {$addFields: {marketTime: {$toInt: "$createTime"}}},
                             {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}, {marketTime: {$gte: checkDate}}]} },
                             {$sort: {blockNumber: -1}},
                             {$limit: 1}
