@@ -303,8 +303,14 @@ module.exports = {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token');
             let total = await collection.find({ holder: {$ne: config.burnAddress} }).count();
-            let result = await collection.find({ holder: {$ne: config.burnAddress} }).sort({createTime: -1})
-                .project({"_id": 0}).sort({"createTime": timeOrder}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
+            let result = await collection.aggregate([
+                { $match : { holder: {$ne: config.burnAddress} }},
+                { $addFields: {createTime: {$toInt: "$createTime"}} },
+                { $sort: {createTime: timeOrder}},
+                { $limit: pageSize },
+                { $skip:  (pageNum-1)*pageSize }
+            ]).toArray();
+
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
