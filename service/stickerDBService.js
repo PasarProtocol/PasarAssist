@@ -3692,7 +3692,7 @@ module.exports = {
 
             let listEvents = event.split(',');
             let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
-                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: "$order.marketTime", marketPlace: 1, collectionName: "$collection.name"}
 
             let fieldsMint = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: 1, orderId: "$order.orderId", buyerAddr: 1,
                         quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
@@ -3703,14 +3703,14 @@ module.exports = {
 
             if(listEvents.indexOf("sale") >= 0) {
                 let result = await collection.aggregate([
-                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
-                    { $match: {$and: [{listed: 0}, {sold: 1}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
+                    { $match: {$and: [{listed: 0}, {sold: 1}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_order",
                         let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}]} },
+                            {$addFields: {marketTime: {$toInt: "$updateTime"}}},
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}, {marketTime: {$gte: checkDate}}]} },
                             {$sort: {blockNumber: -1}},
                             {$limit: 1}
                         ],
@@ -3736,14 +3736,14 @@ module.exports = {
             
             if(listEvents.indexOf("listed") >= 0) {
                 let result = await collection.aggregate([
-                    { $addFields: {marketTime: {$toInt: "$marketTime"}} },
-                    { $match: {$and: [{listed: 1}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
+                    { $match: {$and: [{listed: 1}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
                         from: "pasar_order",
                         let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                         pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}]} },
+                            {$addFields: {marketTime: {$toInt: "$updateTime"}}},
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}, {marketTime: {$gte: checkDate}}]} },
                             {$sort: {blockNumber: -1}},
                             {$limit: 1}
                         ],
@@ -3769,8 +3769,7 @@ module.exports = {
 
             if(listEvents.indexOf("minted") >= 0) {
                 let result = await collection.aggregate([
-                    { $addFields: {type: "Minted", sellerAddr: config.burnAddress, buyerAddr: "$holder", marketTime: {$toInt: "$marketTime"}} },
-
+                    { $addFields: {type: "Minted", sellerAddr: config.burnAddress, buyerAddr: "$holder", marketTime: {$toInt: "$createTime"}} },
                     { $match: {$and: [{listed: 0}, {sold: 0}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
                     { $sort: {blockNumber: -1} },
                     { $lookup: {
