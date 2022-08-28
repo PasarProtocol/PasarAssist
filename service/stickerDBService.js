@@ -2858,10 +2858,11 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
-
+            let tokenJson = await jobService.getInfoByIpfsUri(uri)
             let data = {
                 name,
                 uri,
+                tokenJson,
                 blockNumber,
                 updatedTime: (new Date()/1000).toFixed()
             }
