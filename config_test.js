@@ -19,17 +19,17 @@ module.exports = {
 
         pasarContract: '0x2652d10A5e525959F7120b56f2D7a9cD0f6ee087',
         stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
-        pasarV2Contract: '0x1e7541354dBd283a8999a25b16C3BfEB7D3470c3',
-        stickerV2Contract: '0x045f6D2a910c12A8bc5E87a1b894681234d2a835',
-        pasarRegisterContract: '0xC8C92b0788E00062C100BfAca94118c770B46f78',
+        pasarV2Contract: '0x6a02E1942A6201C47BBd3246fF2b044a2536aB43',
+        stickerV2Contract: '0x3748c352cF8B3e8c6CF6800F315072a2C1fD3F82',
+        pasarRegisterContract: '0x26CB562A77eB0610D3d1e6Fc5e856B5bcc93Fb8b',
         diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
         pasarMiningContract: '0xB27CC87EaF372F78E3Ca4da38b013E154e7247e0',
 
         pasarContractDeploy: 7377671,
         stickerContractDeploy: 7377671,
-        pasarV2ContractDeploy: 13623332,
-        stickerV2ContractDeploy: 13623320,
-        pasarRegisterContractDeploy: 13623324,
+        pasarV2ContractDeploy: 14305562,
+        stickerV2ContractDeploy: 14305550,
+        pasarRegisterContractDeploy: 14305554,
         pasarMiningContractDeploy: 14255847,
 
         chainType: 1,
