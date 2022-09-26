@@ -2827,15 +2827,35 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    updatingMiningEvent: async function (pool, marketPlace, account) {
+    updatingMiningEvent: async function (pool, account) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_mining');
-            await collection.updateOne({pool, marketPlace, account}, {$set: {pool, marketPlace, account}}, {upsert: true});
+            await collection.updateOne({pool, account}, {$set: {pool, account}}, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getRewardUsersCount: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining');
+            
+            const elaCount = await collection.find({pool: "1"}).count();
+            const pasarCount = await collection.find({pool: "2"}).count();
+            const ecoCount = await collection.find({pool: "3"}).count();
+            const otherCount = await collection.find({pool: "4"}).count();
+
+            return {code: 200, message: 'success', data: {elaCount, pasarCount, ecoCount, otherCount}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
         } finally {
             await mongoClient.close();
         }

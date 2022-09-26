@@ -878,9 +878,9 @@ module.exports = {
                     logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elastos.chainType};
 
                 await stickerDBService.miningEvent(updatedEventDetail);
-                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.marketPlace, eventInfo.buyer);
-                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.marketPlace, eventInfo.seller);
-                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.marketPlace, eventInfo.creator);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.buyer);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.seller);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.creator);
             })
         });
 
