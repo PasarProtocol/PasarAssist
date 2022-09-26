@@ -2827,12 +2827,12 @@ module.exports = {
             await mongoClient.close();
         }
     },
-    updatingMiningEvent: async function (rewardType, account, amount) {
+    updatingMiningEvent: async function (pool, account) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_mining');
-            await collection.updateOne({account, rewardType}, {$set: {account, rewardType, amount}}, {upsert: true});
+            await collection.updateOne({pool, account}, {$set: {pool, account}}, {upsert: true});
         } catch (err) {
             logger.error(err);
             throw new Error();

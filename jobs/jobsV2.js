@@ -73,6 +73,7 @@ module.exports = {
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
         let isPasarMiningJobRun = false;
+        let isRewardsDistributionJobRun = false;
         let runOrderDid = false;
         let now = Date.now();
         
@@ -875,8 +876,37 @@ module.exports = {
                 let updatedEventDetail = {account: eventInfo.account, event: event.event, blockNumber: event.blockNumber,
                     tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
                     logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elastos.chainType};
+                // await stickerDBService.miningEvent(updatedEventDetail);
+                // await stickerDBService.updatingMiningEvent(eventInfo.rewardType, eventInfo.account, eventInfo.amount);
+            })
+        });
+
+        let pasarRewardsDistributionJobRunId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastTokenMiningRewardEvent(config.elastos.chainType);
+
+            isRewardsDistributionJobRun = true;
+
+            logger.info(`[TokenMiningReward] Sync start from height: ${lastHeight}`);
+
+            pasarMiningWs.events.RewardsDistribution({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[TokenMiningReward] Sync Ending ...")
+                isRewardsDistributionJobRun = false;
+
+            }).on("data", async function (event) {
+                let eventInfo = event.returnValues;
+
+                let updatedEventDetail = {pool: eventInfo.pool, market: eventInfo.market, buyer: eventInfo.buyer,
+                    seller: eventInfo.seller, creator: eventInfo.creator, amount: eventInfo.amount, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elastos.chainType};
+
                 await stickerDBService.miningEvent(updatedEventDetail);
-                await stickerDBService.updatingMiningEvent(eventInfo.rewardType, eventInfo.account, eventInfo.amount);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.buyer);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.seller);
+                await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.creator);
             })
         });
 
@@ -885,6 +915,8 @@ module.exports = {
 
             if(!isPasarMiningJobRun)
                 pasarMiningJobRunId.reschedule(new Date(now + 0 * 1000))
+            if(!isRewardsDistributionJobRun)
+                pasarRewardsDistributionJobRunId.reschedule(new Date(now + 0 * 1000))
             if(!isGetForSaleOrderJobRun) {
                 orderForSaleJobId.reschedule(new Date(now + 10 * 1000));
             }
