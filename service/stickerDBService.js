@@ -2792,6 +2792,54 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getLastTokenMiningRewardEvent: async function (marketPlace) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
+            let doc = await collection.findOne({marketPlace}, {sort:{blockNumber:-1}})
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                if(marketPlace == config.elastos.chainType) {
+                    return config.elastos.pasarMiningContractDeploy;
+                } else {
+                    return 1;
+                }
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    miningEvent: async function (event) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
+            await collection.insertOne(event);
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    updatingMiningEvent: async function (rewardType, account, amount) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining');
+            await collection.updateOne({account, rewardType}, {$set: {account, rewardType, amount}}, {upsert: true});
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
     registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

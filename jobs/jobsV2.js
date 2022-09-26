@@ -13,6 +13,7 @@ let stickerContractABI = require('../contractABI/stickerV2ABI');
 let pasarRegisterABI = require('../contractABI/pasarRegisterABI');
 let token721ABI = require('../contractABI/token721ABI');
 let token1155ABI = require('../contractABI/token1155ABI');
+let pasarMiningABI = require('../contractABI/pasarMining');
 let jobService = require('../service/jobService');
 let authService  = require('../service/authService')
 let sendMail = require('../send_mail');
@@ -49,6 +50,7 @@ module.exports = {
         let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.elastos.pasarV2Contract);
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.elastos.stickerV2Contract);
         let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.elastos.pasarRegisterContract)
+        let pasarMiningWs = new web3Ws.eth.Contract(pasarMiningABI, config.elastos.pasarMiningContract);
 
         let web3Rpc = new Web3(config.elastos.rpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarV2Contract);
@@ -70,6 +72,7 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
+        let isPasarMiningJobRun = false;
         let runOrderDid = false;
         let now = Date.now();
         
@@ -852,9 +855,36 @@ module.exports = {
             })
         });
 
-        schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '0 */2 * * * *'}, () => {
+        let pasarMiningJobRunId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastTokenMiningRewardEvent(config.elastos.chainType);
+
+            isPasarMiningJobRun = true;
+
+            logger.info(`[TokenMiningReward] Sync start from height: ${lastHeight}`);
+
+            pasarMiningWs.events.RewardWithdrawn({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[TokenMiningReward] Sync Ending ...")
+                isPasarMiningJobRun = false;
+
+            }).on("data", async function (event) {
+                let eventInfo = event.returnValues;
+
+                let updatedEventDetail = {account: eventInfo.account, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elastos.chainType};
+                await stickerDBService.miningEvent(updatedEventDetail);
+                await stickerDBService.updatingMiningEvent(eventInfo.rewardType, eventInfo.account, eventInfo.amount);
+            })
+        });
+
+        schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '* * * * * *'}, () => {
             let now = Date.now();
 
+            if(!isPasarMiningJobRun)
+                pasarMiningJobRunId.reschedule(new Date(now + 0 * 1000))
             if(!isGetForSaleOrderJobRun) {
                 orderForSaleJobId.reschedule(new Date(now + 10 * 1000));
             }
@@ -888,6 +918,7 @@ module.exports = {
                 royaltyChangedJobRun.reschedule(new Date(now + 60 * 1000))
             if(!isTokenInfoUpdatedJobRun)
                 tokenInfoUpdatedJobRun.reschedule(new Date(now + 60 * 1000))
+            
         });
 
         /**
