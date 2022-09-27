@@ -23,13 +23,15 @@ module.exports = {
         stickerV2Contract: '0x32496388d7c0CDdbF4e12BDc84D39B9E42ee4CB0',
         pasarRegisterContract: '0x2b304ffC302b402785294629674A8C2b64cEF897',
         diaTokenContract: '0x85946E4b6AB7C5c5C60A7b31415A52C0647E3272',
+        pasarMiningContract: '0xB27CC87EaF372F78E3Ca4da38b013E154e7247e0',
 
         pasarContractDeploy: 7377671,
         stickerContractDeploy: 7377671,
         pasarV2ContractDeploy: 12311847,
         stickerV2ContractDeploy: 12311834,
         pasarRegisterContractDeploy: 12311838,
-
+        pasarMiningContractDeploy: 14255847,
+        
         chainType: 1,
 
         ELAToken:'0x0000000000000000000000000000000000000000',
