@@ -692,4 +692,14 @@ router.get('/listNft', function(req, res) {
     })
 })
 
+router.get('/rewardusers', function(req, res) {
+    stickerDBService.getRewardUsersCount().then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
+
 module.exports = router;

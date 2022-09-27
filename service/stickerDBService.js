@@ -303,14 +303,8 @@ module.exports = {
             await client.connect();
             const collection = client.db(config.dbName).collection('pasar_token');
             let total = await collection.find({ holder: {$ne: config.burnAddress} }).count();
-            let result = await collection.aggregate([
-                { $match : { holder: {$ne: config.burnAddress} }},
-                { $addFields: {createTime: {$toInt: "$createTime"}} },
-                { $sort: {createTime: timeOrder}},
-                { $limit: pageSize },
-                { $skip:  (pageNum-1)*pageSize }
-            ]).toArray();
-
+            let result = await collection.find({ holder: {$ne: config.burnAddress} }).sort({createTime: -1})
+                .project({"_id": 0}).sort({"createTime": timeOrder}).limit(pageSize).skip((pageNum-1)*pageSize).toArray();
             return {code: 200, message: 'success', data: {total, result}};
         } catch (err) {
             logger.error(err);
@@ -1246,7 +1240,7 @@ module.exports = {
             await mongoClient.connect();
             let result = {};
 
-            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0', 0);
+            let createdNft = await this.getCreatedCollectiblesByAddress(walletAddr, '0');
             let assets = 0;
             if(createdNft.code == 200) {
                 assets = createdNft.data.length;
@@ -1268,7 +1262,7 @@ module.exports = {
 
             collection = mongoClient.db(config.dbName).collection('pasar_order_event');
 
-            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0', 0);
+            let soldNft = await this.getSoldCollectiblesByAddress(walletAddr, '0');
             let count_sold = 0;
             if(createdNft.code == 200) {
                 count_sold = soldNft.data.length;
@@ -2232,7 +2226,6 @@ module.exports = {
             const collection = mongoClient.db(config.dbName).collection('pasar_token');
             let collection_order  = mongoClient.db(config.dbName).collection('pasar_order');
             let collection_order_event  = mongoClient.db(config.dbName).collection('pasar_order_event');
-            
             await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
@@ -2260,15 +2253,11 @@ module.exports = {
                 default:
                     sort = {updateTime: -1}
             }
-            let checkAddress = address;
-            if(address.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(address);
-                checkAddress = {$in: addressList}
-            }
+
 
             let market_condition = { $or: [{status: 'MarketSale'}, {status: 'MarketAuction'}, {status: 'MarketBid'}, {status: 'MarketPriceChanged'}] };
             let result = await collection.aggregate([
-                { $match: {$and: [{holder: checkAddress}, market_condition, checkMarketPlace]} },
+                { $match: {$and: [{holder: address}, market_condition, checkMarketPlace]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2334,14 +2323,8 @@ module.exports = {
                     sort = {marketTime: -1}
             }
 
-            let checkAddress = address;
-            if(address.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(address);
-                checkAddress = {$in: addressList}
-            }
-
             let tokens = await token_collection.aggregate([
-                { $match: {$and: [{holder: checkAddress}, checkMarketPlace]} },
+                { $match: {$and: [{holder: address}, checkMarketPlace]} },
                 { $lookup: {
                     from: "pasar_order",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2405,15 +2388,9 @@ module.exports = {
             await token_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await order_collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
             await collection_order_event.ensureIndex({ "tokenId": 1, "baseToken": 1, "orderId": 1, "marketPlace": 1});
-            
-            let checkAddress = address;
-            if(address.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(address);
-                checkAddress = {$in: addressList}
-            }
-
+            console.log(address);
             let tokens = await order_collection.aggregate([
-                { $match: {$and: [{sellerAddr: checkAddress, orderState: "2"}, checkMarketPlace]} },
+                { $match: {$and: [{sellerAddr: address, orderState: "2"}, checkMarketPlace]} },
                 { $lookup: {from: "pasar_token",
                     let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttokenId", "$tokenId"]}}, {$expr: {$eq: ["$$tbaseToken", "$baseToken"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
@@ -2479,14 +2456,8 @@ module.exports = {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
-            let checkAddress = address;
-            if(address.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(address);
-                checkAddress = {$in: addressList}
-            }
-
             let tokens = await event_collection.aggregate([
-                { $match: {$and: [{buyerAddr: checkAddress}, {event : "OrderBid"}, checkMarketPlace]}},
+                { $match: {$and: [{buyerAddr: address}, {event : "OrderBid"}, checkMarketPlace]}},
                 { $lookup: {
                     from: "pasar_token",
                     let: {"torderId": "$orderId", "ttokenId": "$tokenId", "tbaseToken": "$baseToken"},
@@ -2554,14 +2525,8 @@ module.exports = {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
-            let checkAddress = address;
-            if(address.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(address);
-                checkAddress = {$in: addressList}
-            }
-
             let tokens = await collection.aggregate([
-                { $match: {$and: [{royaltyOwner: checkAddress}, {holder: {$ne: config.burnAddress}}, checkMarketPlace]} },
+                { $match: {$and: [{royaltyOwner: address}, {holder: {$ne: config.burnAddress}}, checkMarketPlace]} },
             ]).toArray();
 
             let result = await this.getSortCollectibles(tokens, sort)
@@ -2827,6 +2792,74 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getLastTokenMiningRewardEvent: async function (marketPlace) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
+            let doc = await collection.findOne({marketPlace}, {sort:{blockNumber:-1}})
+            if(doc) {
+                return doc.blockNumber
+            } else {
+                if(marketPlace == config.elastos.chainType) {
+                    return config.elastos.pasarMiningContractDeploy;
+                } else {
+                    return 1;
+                }
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    miningEvent: async function (event) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
+            await collection.insertOne(event);
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    updatingMiningEvent: async function (pool, account) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining');
+            await collection.updateOne({pool, account}, {$set: {pool, account}}, {upsert: true});
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
+    getRewardUsersCount: async function() {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_mining');
+            
+            const elaCount = await collection.find({pool: "1"}).count();
+            const pasarCount = await collection.find({pool: "2"}).count();
+            const ecoCount = await collection.find({pool: "3"}).count();
+            const otherCount = await collection.find({pool: "4"}).count();
+
+            return {code: 200, message: 'success', data: {elaCount, pasarCount, ecoCount, otherCount}};
+        } catch (err) {
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
     registerCollection: async function(token, owner, name, uri, symbol, is721, blockNumber, tokenJson, marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {
@@ -2858,11 +2891,10 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
-            let tokenJson = await jobService.getInfoByIpfsUri(uri)
+
             let data = {
                 name,
                 uri,
-                tokenJson,
                 blockNumber,
                 updatedTime: (new Date()/1000).toFixed()
             }
@@ -2985,17 +3017,8 @@ module.exports = {
                 checkMarketPlace = {marketPlace : marketPlace}
             }
 
-            let checkAddress = owner;
-            
-            if(owner.indexOf("did:elastos") !== -1) {
-                let addressList = await this.getAddressListFromDid(owner);
-                checkAddress = {$in: addressList}
-            }
-
-            console.log(checkAddress);
-
             let collections = await token_collection.aggregate([
-                { $match: {$and: [{owner: checkAddress}, checkMarketPlace]} },
+                { $match: {$and: [{owner: owner}, checkMarketPlace]} },
                 { $lookup: {from: "pasar_collection_royalty",
                     let: {"ttoken": "$token", "tmarketPlace": "$marketPlace"},
                     pipeline: [{$match: {$and: [{$expr: {$eq: ["$$ttoken", "$token"]}}, {$expr: {$eq: ["$$tmarketPlace", "$marketPlace"]}}]}}],
@@ -3640,247 +3663,24 @@ module.exports = {
         }
     },
 
-    getAddressListFromDid: async function(did) {
+    getRewardUsersCount: async function() {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            let collection_address_did  = mongoClient.db(config.dbName).collection('pasar_address_did');
-            let data = await collection_address_did.find({"did.did": did}).toArray();
-            let listAddress = [];
-            for(var i = 0; i < data.length; i++) {
-                listAddress.push(data[i].address);
-            }
-            return listAddress;
-        } catch(err) {
-            logger.error(err);
-            return null;
-        } finally {
-            await mongoClient.close();
-        }
-    },
-    getNftList: async function (event, duration, pageNum, pageSize) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
-            let collection_order = await mongoClient.db(config.dbName).collection('pasar_order');
-            let collection_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
-            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
-
-            let checkDate = 0;
-            switch(duration) {
-                case "0":
-                    checkDate =  new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
-                    break;
-                case "1":
-                    checkDate =  new Date().getTime() - 14 * 24 * 60 * 60 * 1000;
-                    break;
-                case "2":
-                    checkDate =  new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
-                    break;
-                case "3":
-                    checkDate =  new Date().getTime() - 60 * 24 * 60 * 60 * 1000;
-                    break;
-                case "4":
-                    checkDate =  new Date().getTime() - 90 * 24 * 60 * 60 * 1000;
-                    break;
-                case "5":
-                    checkDate =  new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
-                    break;
-                case "6":
-                    checkDate =  0;
-                    break;
-                default: 
-                    checkDate = 0;
-                    break;
-            }
-
-            checkDate = Math.floor(checkDate/1000);
-
-            let listEvents = event.split(',');
-            let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
-                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: "$order.marketTime", marketPlace: 1, collectionName: "$collection.name"}
-
-            let fieldsMint = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: 1, orderId: "$order.orderId", buyerAddr: 1,
-                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
-
-            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1, "listed": 1, "sold": 1});
-            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
-            await collection_collection.ensureIndex({ "token": 1, "marketPlace": 1});
-
-            if(listEvents.indexOf("sale") >= 0) {
-                let result = await collection.aggregate([
-                    { $match: {$and: [{listed: 0}, {sold: 1}, {holder: {$ne: config.burnAddress}}]}},
-                    { $sort: {blockNumber: -1} },
-                    { $lookup: {
-                        from: "pasar_order",
-                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
-                        pipeline: [
-                            {$addFields: {marketTime: {$toInt: "$updateTime"}}},
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}, {marketTime: {$gte: checkDate}}]} },
-                            {$sort: {blockNumber: -1}},
-                            {$limit: 1}
-                        ],
-                        as: "order"}
-                    },
-                    { $lookup: {
-                        from: "pasar_collection",
-                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
-                        pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
-                            {$sort: {blockNumber: -1}},
-                        ],
-                        as: "collection"}
-                    },
-                    { $unwind: "$order"},
-                    { $unwind: "$collection"},
-                    { $addFields: {type: "Sale"}},
-                    { $project: fields},
-                ]).toArray();
-
-                await temp_collection.insertMany(result);
-            }
-            
-            if(listEvents.indexOf("listed") >= 0) {
-                let result = await collection.aggregate([
-                    { $match: {$and: [{listed: 1}, {holder: {$ne: config.burnAddress}}]}},
-                    { $sort: {blockNumber: -1} },
-                    { $lookup: {
-                        from: "pasar_order",
-                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
-                        pipeline: [
-                            {$addFields: {marketTime: {$toInt: "$createTime"}}},
-                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}, {marketTime: {$gte: checkDate}}]} },
-                            {$sort: {blockNumber: -1}},
-                            {$limit: 1}
-                        ],
-                        as: "order"}
-                    },
-                    { $lookup: {
-                        from: "pasar_collection",
-                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
-                        pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
-                            {$sort: {blockNumber: -1}},
-                        ],
-                        as: "collection"}
-                    },
-                    { $unwind: "$order"},
-                    { $unwind: "$collection"},
-                    { $addFields: {type: "Listed"}},
-                    { $project: fields},
-                ]).toArray();
-
-                await temp_collection.insertMany(result);
-            }
-
-            if(listEvents.indexOf("minted") >= 0) {
-                let result = await collection.aggregate([
-                    { $addFields: {type: "Minted", sellerAddr: config.burnAddress, buyerAddr: "$holder", marketTime: {$toInt: "$createTime"}} },
-                    { $match: {$and: [{listed: 0}, {sold: 0}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
-                    { $sort: {blockNumber: -1} },
-                    { $lookup: {
-                        from: "pasar_collection",
-                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
-                        pipeline: [
-                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
-                            {$sort: {blockNumber: -1}},
-                        ],
-                        as: "collection"}
-                    },
-                    { $unwind: "$collection"},
-                    { $project: fieldsMint},
-                ]).toArray();
-                
-                await temp_collection.insertMany(result);
-            }
-
-            let total = await temp_collection.find().count();
-            let returnValue = await temp_collection.find().sort({marketTime: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
-            if(total > 0)
-                await temp_collection.drop();
-
-            return {code: 200, message: 'success', data: {total: total, data: returnValue}};
-        } catch(err){
-            logger.error(err);
-            return {code: 500, message: 'server error'};
-        } finally {
-            await mongoClient.close();
-        }
-    },
-    updateTokenStatus: async function(event, tokenId, baseToken, marketPlace) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
-            let currentToken = await collection.findOne({tokenId, baseToken, marketPlace});
-            let sold = currentToken.sold;
-            let listed = currentToken.listed;
-
-            if(event == "OrderForSale" || event == "OrderForAuction") {
-                listed = 1;
-            } else if(event == "OrderFilled") {
-                sold = 1;
-                listed = 0;
-            } else if(event == "OrderCanceled") {
-                listed = 0;
-            }
-
-            await collection.updateOne({tokenId, baseToken, marketPlace}, {$set: {sold, listed}});
-        } catch(err){
-            logger.error(err);
-            return {code: 500, message: 'server error'};
-        } finally {
-            await mongoClient.close();
-        }
-    },
-    getLastTokenMiningRewardEvent: async function (marketPlace) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
-            let doc = await collection.findOne({marketPlace}, {sort:{blockNumber:-1}})
-            if(doc) {
-                return doc.blockNumber
-            } else {
-                if(marketPlace == config.elastos.chainType) {
-                    return config.elastos.pasarMiningContractDeploy;
-                } else {
-                    return 1;
-                }
-            }
-        } catch (err) {
-            logger.error(err);
-            throw new Error();
-        } finally {
-            await mongoClient.close();
-        }
-    },
-    miningEvent: async function (event) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
-        try {
-            await mongoClient.connect();
-            const collection = mongoClient.db(config.dbName).collection('pasar_mining_event');
-            await collection.insertOne(event);
-        } catch (err) {
-            logger.error(err);
-            throw new Error();
-        } finally {
-            await mongoClient.close();
-        }
-    },
-    updatingMiningEvent: async function (pool, account) {
-        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        
         try {
             await mongoClient.connect();
             const collection = mongoClient.db(config.dbName).collection('pasar_mining');
-            await collection.updateOne({pool, account}, {$set: {pool, account}}, {upsert: true});
+            
+            const elaCount = await collection.find({pool: "1"}).count();
+            const pasarCount = await collection.find({pool: "2"}).count();
+            const ecoCount = await collection.find({pool: "3"}).count();
+            const otherCount = await collection.find({pool: "4"}).count();
+
+            return {code: 200, message: 'success', data: {elaCount, pasarCount, ecoCount, otherCount}};
         } catch (err) {
             logger.error(err);
-            throw new Error();
+            return {code: 500, message: 'server error'};
         } finally {
             await mongoClient.close();
         }
     },
-    
 }
