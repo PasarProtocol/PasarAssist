@@ -23,12 +23,14 @@ module.exports = {
         stickerV2Contract: '0xF63f820F4a0bC6E966D61A4b20d24916713Ebb95',
         pasarRegisterContract: '0x3d0AD66765C319c2A1c6330C1d815608543dcc19',
         diaTokenContract: '0x2C8010Ae4121212F836032973919E8AeC9AEaEE5',
+        pasarMiningContract: '0xB27CC87EaF372F78E3Ca4da38b013E154e7247e0',
 
         pasarContractDeploy: 7744408,
         stickerContractDeploy: 7744408,
         pasarV2ContractDeploy: 12698149,
         stickerV2ContractDeploy: 12695430,
         pasarRegisterContractDeploy: 12698059,
+        pasarMiningContractDeploy: 14255847,
 
         chainType: 1,
 

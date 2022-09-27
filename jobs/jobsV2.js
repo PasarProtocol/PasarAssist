@@ -13,6 +13,7 @@ let stickerContractABI = require('../contractABI/stickerV2ABI');
 let pasarRegisterABI = require('../contractABI/pasarRegisterABI');
 let token721ABI = require('../contractABI/token721ABI');
 let token1155ABI = require('../contractABI/token1155ABI');
+let pasarMiningABI = require('../contractABI/pasarMining');
 let jobService = require('../service/jobService');
 let authService  = require('../service/authService')
 let sendMail = require('../send_mail');
@@ -49,6 +50,7 @@ module.exports = {
         let pasarContractWs = new web3Ws.eth.Contract(pasarContractABI, config.elastos.pasarV2Contract);
         let stickerContractWs = new web3Ws.eth.Contract(stickerContractABI, config.elastos.stickerV2Contract);
         let pasarRegisterWs = new web3Ws.eth.Contract(pasarRegisterABI, config.elastos.pasarRegisterContract)
+        let pasarMiningWs = new web3Ws.eth.Contract(pasarMiningABI, config.elastos.pasarMiningContract);
 
         let web3Rpc = new Web3(config.elastos.rpcUrl);
         let pasarContract = new web3Rpc.eth.Contract(pasarContractABI, config.elastos.pasarV2Contract);
@@ -70,6 +72,7 @@ module.exports = {
         let isRoyaltyChangedJobRun = false;
         let isTokenInfoUpdatedJobRun = false;
         let isSyncCollectionEventJobRun = false;
+        let isRewardsDistributionJobRun = false;
         let runOrderDid = false;
         let now = Date.now();
         
@@ -117,8 +120,7 @@ module.exports = {
                 token.endTime = null;
                 token.orderId = null;
                 token.baseToken = config.elastos.stickerV2Contract;
-                token.sold = 0;
-                token.listed = 0;
+
                 let creator = data.creator ? data.creator : null;
                 if(creator) {
                     await pasarDBService.updateDid({address: result.royaltyOwner, did: creator});
@@ -172,8 +174,6 @@ module.exports = {
                     token.endTime = null;
                     token.orderId = null;
                     token.baseToken = config.elastos.stickerV2Contract;
-                    token.sold = 0;
-                    token.listed = 0;
                     tokens.push(token);
                     await stickerDBService.replaceToken(tokens);
                 })
@@ -277,7 +277,6 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(orderInfo._tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, updateResult.endTime, 'MarketSale', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
-                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 
@@ -383,7 +382,6 @@ module.exports = {
                 await pasarDBService.insertOrderPlatformFeeEvent(orderEventFeeDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, null, updateResult.updateTime, null, 'Not on sale', updateResult.buyerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
-                await stickerDBService.updateTokenStatus(event.event, result.tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 
@@ -428,7 +426,6 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderInfo._orderId, updateResult.updateTime, 0, 'Not on sale', updateResult.sellerAddr, event.blockNumber, token.quoteToken, token.baseToken, config.elastos.chainType);
-                await stickerDBService.updateTokenStatus(event.event, result.tokenId, token.baseToken, config.elastos.chainType)
             })
         });
 
@@ -710,7 +707,6 @@ module.exports = {
                 await pasarDBService.insertOrderEvent(orderEventDetail);
                 await stickerDBService.updateOrder(updateResult, event.blockNumber, orderInfo._orderId);
                 await stickerDBService.updateTokenInfo(updateResult.tokenId, orderEventDetail.price, orderEventDetail.orderId, orderInfo._startTime, orderInfo._endTime, 'MarketAuction', updateResult.sellerAddr, event.blockNumber, orderInfo._quoteToken, orderInfo._baseToken, config.elastos.chainType);
-                await stickerDBService.updateTokenStatus(event.event, orderInfo._tokenId, orderInfo._baseToken, config.elastos.chainType)
             })
         });
 
@@ -859,9 +855,40 @@ module.exports = {
             })
         });
 
-        schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '0 */2 * * * *'}, () => {
+        let pasarRewardsDistributionJobRunId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
+            let lastHeight = await stickerDBService.getLastTokenMiningRewardEvent(config.elastos.chainType);
+
+            isRewardsDistributionJobRun = true;
+
+            logger.info(`[TokenMiningReward] Sync start from height: ${lastHeight}`);
+
+            pasarMiningWs.events.RewardsDistribution({
+                fromBlock: lastHeight + 1
+            }).on("error", function (error) {
+                logger.info(error);
+                logger.info("[TokenMiningReward] Sync Ending ...")
+                isRewardsDistributionJobRun = false;
+
+            }).on("data", async function (event) {
+                let eventInfo = event.returnValues;
+
+                let updatedEventDetail = {pool: eventInfo.pool, market: eventInfo.market, buyer: eventInfo.buyer,
+                    seller: eventInfo.seller, creator: eventInfo.creator, amount: eventInfo.amount, event: event.event, blockNumber: event.blockNumber,
+                    tHash: event.transactionHash, tIndex: event.transactionIndex, blockHash: event.blockHash,
+                    logIndex: event.logIndex, removed: event.removed, id: event.id, marketPlace: config.elastos.chainType};
+
+                // await stickerDBService.miningEvent(updatedEventDetail);
+                // await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.buyer);
+                // await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.seller);
+                // await stickerDBService.updatingMiningEvent(eventInfo.pool, eventInfo.creator);
+            })
+        });
+
+        schedule.scheduleJob({start: new Date(now + 61 * 1000), rule: '* * * * * *'}, () => {
             let now = Date.now();
 
+            if(!isRewardsDistributionJobRun)
+                pasarRewardsDistributionJobRunId.reschedule(new Date(now + 10 * 1000))
             if(!isGetForSaleOrderJobRun) {
                 orderForSaleJobId.reschedule(new Date(now + 10 * 1000));
             }
@@ -895,6 +922,7 @@ module.exports = {
                 royaltyChangedJobRun.reschedule(new Date(now + 60 * 1000))
             if(!isTokenInfoUpdatedJobRun)
                 tokenInfoUpdatedJobRun.reschedule(new Date(now + 60 * 1000))
+            
         });
 
         /**
