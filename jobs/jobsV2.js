@@ -331,7 +331,7 @@ module.exports = {
             })
         });
 
-        let orderFilledJobId = schedule.scheduleJob(new Date(now + 80 * 1000), async () => {
+        let orderFilledJobId = schedule.scheduleJob(new Date(now + 10 * 1000), async () => {
             let lastHeight = await pasarDBService.getLastPasarOrderSyncHeight('OrderFilled', config.elastos.chainType);
             // if(isGetForOrderFilledJobRun == false) {
             //     //initial state
