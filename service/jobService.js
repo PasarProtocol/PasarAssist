@@ -1,4 +1,6 @@
 const { json } = require("body-parser");
+const fs = require('fs');
+const request = require('request');
 const { curNetwork } = require("../config");
 let config = require("../config");
 const config_test = require("../config_test");
@@ -287,5 +289,17 @@ module.exports = {
         data = await response.json(); 
         let blockNumber = data.list[data.list.length - 1].block_height;
         return blockNumber;
-    }
+    },
+
+    downloadImage: function(name){
+        let uri = config.ipfsNodeUrl + name;
+      
+        return new Promise((resolve, reject)=> {
+          request.head(uri, function(err, res, body){
+            console.log('content-type:', res.headers['content-type']);
+            console.log('content-length:', res.headers['content-length']);
+            request(uri).pipe(fs.createWriteStream("/home/star/Documents/work/Pasar/PasarDAssist/download/" + name + ".png")).on('close', resolve);
+          })
+        })
+    },
 }
