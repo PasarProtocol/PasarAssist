@@ -124,9 +124,9 @@ const importDataInDB = async (marketPlace) => {
 
 if (require.main == module) {
     (async ()=> {
-        // await syncRegisterCollection(config.elastos.chainType);
-        // await syncFeedCollection();
-        // await syncPasarCollection();
+        await syncRegisterCollection(config.elastos.chainType);
+        await syncFeedCollection();
+        await syncPasarCollection();
         await importDataInDB(config.elastos.chainType);
     })();
 }
