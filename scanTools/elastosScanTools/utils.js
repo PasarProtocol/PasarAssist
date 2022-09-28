@@ -1,4 +1,6 @@
 let Web3 = require('web3');
+var fs = require('fs'),
+    request = require('request');
 let stickerDBService = require('../../service/stickerDBService');
 let jobService = require('../../service/jobService');
 let config = require('../../config');
@@ -98,7 +100,9 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.sold = 0;
       token.listed = 0;
       token.marketPlace = marketPlace;
-
+      let name = token.asset.replace("pasar:image:", "pasar:image:");
+      console.log(name);
+      await downloadImage(`http://ipfs.pasarprotocol.io/ipfs/{$name}`, `${name}.png`);
       await stickerDBService.replaceToken(token);
   } catch (e) {
       logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
@@ -106,6 +110,16 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
   }
 }
 
+var downloadImage = function(uri, filename){
+  return new Promise((resolve, reject)=> {
+    request.head(uri, function(err, res, body){
+      console.log('content-type:', res.headers['content-type']);
+      console.log('content-length:', res.headers['content-length']);
+  
+      request(uri).pipe(fs.createWriteStream("/home/star/Documents/work/Pasar/PasarDAssist/download/" + filename)).on('close', resolve());
+    })
+  })
+};
 module.exports = {
   scanEvents,
   saveEvent,
