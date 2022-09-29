@@ -485,7 +485,7 @@ module.exports = {
             await collection.updateOne({tokenId: token.tokenId, baseToken: token.baseToken, marketPlace: token.marketPlace, holder: {$ne: burnAddress}}, {$set: token});
             let checkData = await collection.find(token).count();
             if(checkData == 0) {
-                await this.updateNormalToken(token);
+                // await this.updateNormalToken(token);
             }
         } catch (err) {
             logger.error(err);
@@ -529,7 +529,7 @@ module.exports = {
             updateData.marketPlace = marketPlace;
             let checkData = await collection.findOne(updateData);
             if(checkData == null) {
-                await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
+                // await this.updateTokenInfo(tokenId, price, orderId, marketTime, endTime, status, holder, blockNumber, quoteToken, baseToken, marketPlace)
             }
             
         } catch (err) {
