@@ -97,10 +97,11 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
           token.data = data.data;
       } else {
           let filename = uuidv4() + ".png";
-          await jobService.downloadImage(data.thumbnail, filename);
+          await jobService.downloadImage(data.thumbnail ? data.thumbnail : data.data.thumbnail, filename);
           token.thumbnail = filename;
+
           filename = uuidv4() + ".png";
-          await jobService.downloadImage(data.image, filename);
+          await jobService.downloadImage(data.image ? data.image : data.data.image, filename);
           token.asset = filename;
           
           token.kind = data.kind;
