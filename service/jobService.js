@@ -1,6 +1,7 @@
 const { json } = require("body-parser");
 const fs = require('fs');
 const request = require('request');
+let { v4: uuidv4 } = require('uuid');
 const { curNetwork } = require("../config");
 let config = require("../config");
 const config_test = require("../config_test");
@@ -116,6 +117,14 @@ module.exports = {
         }
         
         if(tokenInfo._from == burnAddress) {
+            let filename = uuidv4() + ".png";
+            await this.downloadImage(data.asset, filename);
+            tokenDetail.asset = filename;
+
+            filename = uuidv4() + ".png";
+            await this.downloadImage(data.thumbnail, filename);
+            tokenDetail.thumbnail = filename;
+
             tokenDetail.status = "Not on sale";
             tokenDetail.royaltyOwner = tokenInfo._to;
             tokenDetail.orderId = "";
@@ -131,8 +140,6 @@ module.exports = {
             tokenDetail.type = data.type;
             tokenDetail.name = data.name;
             tokenDetail.description = data.description;
-            tokenDetail.thumbnail = data.thumbnail;
-            tokenDetail.asset = data.asset;
             tokenDetail.kind = data.kind;
             tokenDetail.size = data.size;
             tokenDetail.adult = data.adult;
