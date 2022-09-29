@@ -312,7 +312,7 @@ module.exports = {
           request.head(uri, function(err, res, body){
             console.log('content-type:', res.headers['content-type']);
             console.log('content-length:', res.headers['content-length']);
-            request(uri).pipe(fs.createWriteStream("/home/star/Documents/work/Pasar/PasarDAssist/download/" + filename)).on('close', resolve);
+            request(uri).pipe(fs.createWriteStream("/var/www/nfts/" + filename)).on('close', resolve);
           })
         })
     },
