@@ -291,15 +291,26 @@ module.exports = {
         return blockNumber;
     },
 
-    downloadImage: function(name){
-        let uri = config.ipfsNodeUrl + name;
-      
+    downloadImage: function(uri){
+        let filename = this.checkFileName(uri);
+        
+        console.log(uri);
+        console.log(filename);
         return new Promise((resolve, reject)=> {
           request.head(uri, function(err, res, body){
             console.log('content-type:', res.headers['content-type']);
             console.log('content-length:', res.headers['content-length']);
-            request(uri).pipe(fs.createWriteStream("/home/star/Documents/work/Pasar/PasarDAssist/download/" + name + ".png")).on('close', resolve);
+            request(uri).pipe(fs.createWriteStream("/home/star/Documents/work/Pasar/PasarDAssist/download/" + filename)).on('close', resolve);
           })
         })
     },
+
+    checkFileName: function(uri) {
+        let name = new URL(uri).pathname.split('/').pop();
+
+        if(name.split('.').length == 1) {
+            name = name + ".png";
+        }
+        return name;
+    }
 }
