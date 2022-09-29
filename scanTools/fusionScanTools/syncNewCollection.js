@@ -9,6 +9,7 @@ const token721ABI = require("../../contractABI/token721ABI");
 const { scanEvents, config } = require("./utils");
 
 let jobService = require('../../service/jobService');
+let { curNetwork } = require('../../config');
 
 let web3Rpc = new Web3(config.fusion.rpcUrl);
 
@@ -29,8 +30,7 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
         if(!is721 && is1155) {
             tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.address);
         }
-        
-        if(config.curNetwork != "testNet") {
+        if(curNetwork != "testNet") {
             startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.address);
         }
         let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
