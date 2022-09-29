@@ -1,4 +1,5 @@
 let Web3 = require('web3');
+let { v4: uuidv4 } = require('uuid');
 let stickerDBService = require('../../service/stickerDBService');
 let jobService = require('../../service/jobService');
 let config = require('../../config');
@@ -98,9 +99,10 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.sold = 0;
       token.listed = 0;
       token.marketPlace = marketPlace;
-      let name = token.asset.replace("pasar:image:", "").replace("feeds:imgage:", "");
-      console.log(name);
-      await jobService.downloadImage(name);
+      let url = "https://bunn.mypinata.cloud/ipfs/QmaRmZWYGUTcrbsYaD2YVrtBXpinMtJ93XyjxLmomeBso4"
+      let filename = uuidv4() + ".png";
+
+      await jobService.downloadImage(url, filename);
       await stickerDBService.replaceToken(token);
   } catch (e) {
       logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);
