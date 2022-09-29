@@ -314,7 +314,7 @@ module.exports = {
             console.log('content-type:', res.headers['content-type']);
             console.log('content-length:', res.headers['content-length']);
             request(uri).pipe(fs.createWriteStream("/home/ubuntu/nfts/" + filename)).on('close', () => {
-                shell.mv(file.destination + image_name, '/var/www/nfts');
+                shell.mv("/home/ubuntu/nfts/" + filename, '/var/www/nfts');
                 resolve();
             });
           })
