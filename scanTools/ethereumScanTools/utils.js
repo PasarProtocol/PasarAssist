@@ -1,4 +1,5 @@
 let Web3 = require('web3');
+let { v4: uuidv4 } = require('uuid');
 let stickerDBService = require('../../service/stickerDBService');
 let jobService = require('../../service/jobService');
 let config = require('../../config');
@@ -74,20 +75,37 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.description = data.description ? data.description : '';
       token.properties = data.properties ? data.properties : '';
       token.baseToken = baseToken;
-
+      console.log(data);
       if(token.type === 'feeds-channel') {
-          token.tippingAddress = data.tippingAddress;
-          token.entry = data.entry;
-          token.data = data.avatar;
-          token.avatar = data.avatar;
-      }else if(token.type === 'video' || data.version == "2") {
-          token.data = data.data;
-      } else {
-          token.thumbnail = data.thumbnail;
-          token.asset = data.image;
-          token.kind = data.kind;
-          token.size = data.size;
-      }
+        let filename = uuidv4() + ".png";
+        await jobService.downloadImage(data.avatar, filename);
+        token.tippingAddress = data.tippingAddress;
+        token.entry = data.entry;
+        token.data = filename;
+        token.avatar = filename;
+        
+    }else if(token.type === 'video' || data.version == "2") {
+        let filename = uuidv4() + ".png";
+        await jobService.downloadImage(data.data.image, filename);
+        data.data.image = filename;
+
+        filename = uuidv4() + ".png";
+        await jobService.downloadImage(data.data.thumbnail, filename);
+        data.data.thumbnail = filename;
+
+        token.data = data.data;
+    } else {
+        let filename = uuidv4() + ".png";
+        await jobService.downloadImage(data.thumbnail ? data.thumbnail : data.data.thumbnail, filename);
+        token.thumbnail = filename;
+
+        filename = uuidv4() + ".png";
+        await jobService.downloadImage(data.image ? data.image : data.data.image, filename);
+        token.asset = filename;
+        
+        token.kind = data.kind;
+        token.size = data.size;
+    }
 
       token.adult = data.adult ? data.adult : false;
       token.price = 0;
