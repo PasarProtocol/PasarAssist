@@ -13,7 +13,7 @@ const { scanEvents, saveEvent, config, DB_SYNC } = require("./utils");
 let jobService = require('../../service/jobService');
 let stickerDBService = require('../../service/stickerDBService');
 let pasarDBService = require('../../service/pasarDBService');
-
+let { curNetwork } = require('../../config');
 let web3Rpc = new Web3(config.fusion.rpcUrl);
 let pasarRegisterContract = new web3Rpc.eth.Contract(pasarRegisterContractABI, config.fusion.pasarRegisterContract);
 let DB_REGISTER = "pasar_sync_register_fusion";
@@ -38,7 +38,7 @@ async function tempCollectiblesOfCollection() {
     for(let collection of collections) {
         if(collection.is721) {
             let startBlock = null;
-            if(config.curNetwork != "testNet") {
+            if(curNetwork != "testNet") {
                 startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.token);
             }
 
@@ -52,7 +52,7 @@ async function tempCollectiblesOfCollection() {
             let tokenContract = new web3Rpc.eth.Contract(token1155ABI, collection.token);
             
             let startBlock = null;
-            if(config.curNetwork != "testNet") {
+            if(curNetwork != "testNet") {
                 startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.token);
             }
 
