@@ -75,17 +75,34 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.description = data.description ? data.description : '';
       token.properties = data.properties ? data.properties : '';
       token.baseToken = baseToken;
-
+      
       if(token.type === 'feeds-channel') {
+          let filename = uuidv4() + ".png";
+          console.log(filename);
+          await jobService.downloadImage(data.avatar, filename);
           token.tippingAddress = data.tippingAddress;
           token.entry = data.entry;
-          token.data = data.avatar;
-          token.avatar = data.avatar;
+          token.data = filename;
+          token.avatar = filename;
+          
       }else if(token.type === 'video' || data.version == "2") {
+          let filename = uuidv4() + ".png";
+          await jobService.downloadImage(data.data.image, filename);
+          data.data.image = filename;
+
+          filename = uuidv4() + ".png";
+          await jobService.downloadImage(data.data.thumbnail, filename);
+          data.data.thumbnail = filename;
+
           token.data = data.data;
       } else {
-          token.thumbnail = data.thumbnail;
-          token.asset = data.image;
+          let filename = uuidv4() + ".png";
+          await jobService.downloadImage(data.thumbnail, filename);
+          token.thumbnail = filename;
+          filename = uuidv4() + ".png";
+          await jobService.downloadImage(data.image, filename);
+          token.asset = filename;
+          
           token.kind = data.kind;
           token.size = data.size;
       }
@@ -99,10 +116,7 @@ const dealWithNewToken = async (stickerContract, web3Rpc, blockNumber,tokenId, b
       token.sold = 0;
       token.listed = 0;
       token.marketPlace = marketPlace;
-      let url = "https://bunn.mypinata.cloud/ipfs/QmaRmZWYGUTcrbsYaD2YVrtBXpinMtJ93XyjxLmomeBso4"
-      let filename = uuidv4() + ".png";
-
-      await jobService.downloadImage(url, filename);
+      
       await stickerDBService.replaceToken(token);
   } catch (e) {
       logger.info(`[TokenInfo] Sync error at ${blockNumber} ${tokenId}`);

@@ -291,9 +291,16 @@ module.exports = {
         return blockNumber;
     },
 
-    downloadImage: function(uri, filename){
+    downloadImage: function(uri, filename) {
         console.log(uri);
-        console.log(filename);
+        if(uri.indexOf("pasar:image") != -1 || uri.indexOf("feeds:image") != -1 || uri.indexOf("feeds:imgage") != -1) {
+            uri = config.ipfsNodeUrl + uri.split(":")[2];
+        } else {
+            uri = uri.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
+            uri = uri.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
+        }
+
+        console.log(uri);
         return new Promise((resolve, reject)=> {
           request.head(uri, function(err, res, body){
             console.log('content-type:', res.headers['content-type']);
@@ -302,13 +309,4 @@ module.exports = {
           })
         })
     },
-
-    checkFileName: function(uri) {
-        let name = new URL(uri).pathname.split('/').pop();
-
-        if(name.split('.').length == 1) {
-            name = name + ".png";
-        }
-        return name;
-    }
 }
