@@ -2,6 +2,7 @@ const { json } = require("body-parser");
 const fs = require('fs');
 const request = require('request');
 let { v4: uuidv4 } = require('uuid');
+const shell = require('shelljs');
 const { curNetwork } = require("../config");
 let config = require("../config");
 const config_test = require("../config_test");
@@ -312,7 +313,10 @@ module.exports = {
           request.head(uri, function(err, res, body){
             console.log('content-type:', res.headers['content-type']);
             console.log('content-length:', res.headers['content-length']);
-            request(uri).pipe(fs.createWriteStream("/var/www/nfts/" + filename)).on('close', resolve);
+            request(uri).pipe(fs.createWriteStream("/home/ubuntu/nfts/" + filename)).on('close', () => {
+                shell.mv(file.destination + image_name, '/var/www/nfts');
+                resolve();
+            });
           })
         })
     },
