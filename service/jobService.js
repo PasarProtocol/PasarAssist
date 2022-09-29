@@ -291,9 +291,7 @@ module.exports = {
         return blockNumber;
     },
 
-    downloadImage: function(uri){
-        let filename = this.checkFileName(uri);
-        
+    downloadImage: function(uri, filename){
         console.log(uri);
         console.log(filename);
         return new Promise((resolve, reject)=> {
