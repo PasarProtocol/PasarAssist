@@ -3,6 +3,7 @@
 */
 const schedule = require('node-schedule');
 let Web3 = require('web3');
+let { v4: uuidv4 } = require('uuid');
 let pasarDBService = require('../service/pasarDBService');
 let stickerDBService = require('../service/stickerDBService');
 let indexDBService = require('../service/indexDBService');
@@ -151,18 +152,33 @@ module.exports = {
                     token.properties = data.properties;
 
                     if(token.type === 'feeds-channel') {
+                        let filename = uuidv4() + ".png";
+                        console.log(filename);
+                        await jobService.downloadImage(data.avatar, filename);
                         token.tippingAddress = data.tippingAddress;
                         token.entry = data.entry;
-                        token.avatar = data.avatar;
-                        await stickerDBService.replaceGalleriaToken(token);
-                        return;
-                    }
-
-                    if(token.type === 'video' || data.version === "2") {
+                        token.data = filename;
+                        token.avatar = filename;
+                        
+                    }else if(token.type === 'video' || data.version == "2") {
+                        let filename = uuidv4() + ".png";
+                        await jobService.downloadImage(data.data.image, filename);
+                        data.data.image = filename;
+              
+                        filename = uuidv4() + ".png";
+                        await jobService.downloadImage(data.data.thumbnail, filename);
+                        data.data.thumbnail = filename;
+              
                         token.data = data.data;
                     } else {
-                        token.thumbnail = data.thumbnail;
-                        token.asset = data.image;
+                        let filename = uuidv4() + ".png";
+                        await jobService.downloadImage(data.thumbnail ? data.thumbnail : data.data.thumbnail, filename);
+                        token.thumbnail = filename;
+              
+                        filename = uuidv4() + ".png";
+                        await jobService.downloadImage(data.image ? data.image : data.data.image, filename);
+                        token.asset = filename;
+                        
                         token.kind = data.kind;
                         token.size = data.size;
                     }
