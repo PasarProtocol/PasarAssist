@@ -299,7 +299,7 @@ module.exports = {
         return blockNumber;
     },
 
-    downloadImage: function(uri, filename) {
+    downloadImage: async function(uri, filename) {
         console.log(uri);
         if(uri.indexOf("pasar:image") != -1 || uri.indexOf("feeds:image") != -1 || uri.indexOf("feeds:imgage") != -1) {
             uri = config.ipfsNodeUrl + uri.split(":")[2];
@@ -308,16 +308,17 @@ module.exports = {
             uri = uri.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
         }
 
-        console.log(uri);
-        return new Promise((resolve, reject)=> {
-          request.head(uri, function(err, res, body){
-            console.log('content-type:', res.headers['content-type']);
-            console.log('content-length:', res.headers['content-length']);
-            request(uri).pipe(fs.createWriteStream("/home/ubuntu/nfts/" + filename)).on('close', () => {
-                shell.mv("/home/ubuntu/nfts/" + filename, '/var/www/nfts');
-                resolve();
-            });
-          })
-        })
+        await this.downloadProcess(uri, filename);
+        await shell.mv("/home/ubuntu/nfts/" + filename, '/var/www/nfts');
     },
+
+    downloadProcess: function(uri, filename) {
+        return new Promise((resolve, reject)=> {
+            request.head(uri, function(err, res, body){
+              console.log('content-type:', res.headers['content-type']);
+              console.log('content-length:', res.headers['content-length']);
+              request(uri).pipe(fs.createWriteStream("/home/ubuntu/nfts/" + filename)).on('close', resolve);
+            })
+        })
+    }
 }
