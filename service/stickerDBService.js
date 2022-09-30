@@ -2867,13 +2867,13 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
 
-            let filename = uuidv4() + ".png";
             if(tokenJson && tokenJson.data) {
-                jobService.downloadImage(tokenJson.data.avatar, filename);
+                let filename = uuidv4() + ".png";    
+                await jobService.downloadImage(tokenJson.data.avatar, filename);
                 tokenJson.data.avatar = filename;
     
                 filename = uuidv4() + ".png";
-                jobService.downloadImage(tokenJson.data.background, filename);
+                await jobService.downloadImage(tokenJson.data.background, filename);
                 tokenJson.data.background = filename;
             }
 
@@ -2903,12 +2903,25 @@ module.exports = {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
 
+            let tokenJson = await jobService.getInfoByIpfsUri(uri);
+            if(tokenJson && tokenJson.data) {
+                let filename = uuidv4() + ".png";
+                await jobService.downloadImage(tokenJson.data.avatar, filename);
+                tokenJson.data.avatar = filename;
+    
+                filename = uuidv4() + ".png";
+                await jobService.downloadImage(tokenJson.data.background, filename);
+                tokenJson.data.background = filename;
+            }
+
             let data = {
                 name,
                 uri,
+                tokenJson,
                 blockNumber,
                 updatedTime: (new Date()/1000).toFixed()
             }
+            
             await token_collection.updateOne({token, marketPlace}, {$set: data});
         } catch(err) {
             return {code: 500, message: 'server error'};
