@@ -2868,12 +2868,14 @@ module.exports = {
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
 
             let filename = uuidv4() + ".png";
-            jobService.downloadImage(tokenJson.data.avatar, filename);
-            tokenJson.data.avatar = filename;
-
-            filename = uuidv4() + ".png";
-            jobService.downloadImage(tokenJson.data.background, filename);
-            tokenJson.data.background = filename;
+            if(tokenJson && tokenJson.data) {
+                jobService.downloadImage(tokenJson.data.avatar, filename);
+                tokenJson.data.avatar = filename;
+    
+                filename = uuidv4() + ".png";
+                jobService.downloadImage(tokenJson.data.background, filename);
+                tokenJson.data.background = filename;
+            }
 
             let data = {
                 token,
