@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 var ObjectID = require('mongodb').ObjectID;
+let { v4: uuidv4 } = require('uuid');
 let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
@@ -2865,6 +2866,14 @@ module.exports = {
         try {
             await mongoClient.connect();
             const token_collection = mongoClient.db(config.dbName).collection('pasar_collection');
+
+            let filename = uuidv4() + ".png";
+            jobService.downloadImage(tokenJson.data.avatar, filename);
+            tokenJson.data.avatar = filename;
+
+            filename = uuidv4() + ".png";
+            jobService.downloadImage(tokenJson.data.background, filename);
+            tokenJson.data.background = filename;
 
             let data = {
                 token,
