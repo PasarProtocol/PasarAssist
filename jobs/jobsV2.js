@@ -136,6 +136,8 @@ module.exports = {
                 token.endTime = null;
                 token.orderId = null;
                 token.baseToken = config.elastos.stickerV2Contract;
+                token.sold = 0;
+                token.listed = 0;
 
                 let creator = data.creator ? data.creator : null;
                 if(creator) {
@@ -189,6 +191,8 @@ module.exports = {
                     token.status = "Not on sale";
                     token.endTime = null;
                     token.orderId = null;
+                    token.sold = 0;
+                    token.listed = 0;
                     token.baseToken = config.elastos.stickerV2Contract;
                     tokens.push(token);
                     await stickerDBService.replaceToken(tokens);
