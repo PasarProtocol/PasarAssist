@@ -1,7 +1,6 @@
 const { json } = require("body-parser");
 const fs = require('fs');
 const request = require('request');
-let { v4: uuidv4 } = require('uuid');
 const { curNetwork } = require("../config");
 let config = require("../config");
 const config_test = require("../config_test");
