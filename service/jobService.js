@@ -117,13 +117,8 @@ module.exports = {
         }
         
         if(tokenInfo._from == burnAddress) {
-            let filename = uuidv4() + ".png";
-            await this.downloadImage(data.asset, filename);
-            tokenDetail.asset = filename;
-
-            filename = uuidv4() + ".png";
-            await this.downloadImage(data.thumbnail, filename);
-            tokenDetail.thumbnail = filename;
+            tokenDetail.asset = data.asset;
+            tokenDetail.thumbnail = data.thumbnail;
 
             tokenDetail.status = "Not on sale";
             tokenDetail.royaltyOwner = tokenInfo._to;
@@ -296,23 +291,5 @@ module.exports = {
         data = await response.json(); 
         let blockNumber = data.list[data.list.length - 1].block_height;
         return blockNumber;
-    },
-
-    downloadImage: async function(uri, filename) {
-        console.log(uri);
-        if(uri.indexOf("pasar:image") != -1 || uri.indexOf("feeds:image") != -1 || uri.indexOf("feeds:imgage") != -1) {
-            uri = config.ipfsNodeUrl + uri.split(":")[2];
-        } else {
-            uri = uri.replace("https://gateway.pinata.cloud", "https://ipfs.ela.city");
-            uri = uri.replace("ipfs://", "https://ipfs.ela.city/ipfs/");
-        }
-
-        return new Promise((resolve, reject)=> {
-            request.head(uri, function(err, res, body){
-              console.log('content-type:', res.headers['content-type']);
-              console.log('content-length:', res.headers['content-length']);
-              request(uri).pipe(fs.createWriteStream("/var/www/images/ipfs/" + filename)).on('close', resolve);
-            })
-        })
     },
 }
