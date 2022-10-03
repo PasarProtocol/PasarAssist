@@ -3,7 +3,6 @@
 */
 const schedule = require('node-schedule');
 let Web3 = require('web3');
-let { v4: uuidv4 } = require('uuid');
 let pasarDBService = require('../service/pasarDBService');
 let stickerDBService = require('../service/stickerDBService');
 let indexDBService = require('../service/indexDBService');

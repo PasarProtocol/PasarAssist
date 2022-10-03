@@ -1,5 +1,4 @@
 let Web3 = require('web3');
-let { v4: uuidv4 } = require('uuid');
 let stickerDBService = require('../../service/stickerDBService');
 let jobService = require('../../service/jobService');
 let config = require('../../config');

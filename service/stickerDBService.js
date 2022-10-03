@@ -4,7 +4,6 @@ const cookieParser = require("cookie-parser");
 const res = require("express/lib/response");
 const {MongoClient} = require("mongodb");
 var ObjectID = require('mongodb').ObjectID;
-let { v4: uuidv4 } = require('uuid');
 let config = require("../config");
 const pasarDBService = require("./pasarDBService");
 const { ReplSet } = require('mongodb/lib/core');
