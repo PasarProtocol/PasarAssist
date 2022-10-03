@@ -152,32 +152,19 @@ module.exports = {
                     token.properties = data.properties;
 
                     if(token.type === 'feeds-channel') {
-                        let filename = uuidv4() + ".png";
-                        console.log(filename);
-                        await jobService.downloadImage(data.avatar, filename);
                         token.tippingAddress = data.tippingAddress;
                         token.entry = data.entry;
-                        token.data = filename;
-                        token.avatar = filename;
+                        token.data = data.avatar;
+                        token.avatar = data.avatar;
                         
                     }else if(token.type === 'video' || data.version == "2") {
-                        let filename = uuidv4() + ".png";
-                        await jobService.downloadImage(data.data.image, filename);
-                        data.data.image = filename;
-              
-                        filename = uuidv4() + ".png";
-                        await jobService.downloadImage(data.data.thumbnail, filename);
-                        data.data.thumbnail = filename;
+                        data.data.image = data.data.image;
+                        data.data.thumbnail = data.data.thumbnail;
               
                         token.data = data.data;
                     } else {
-                        let filename = uuidv4() + ".png";
-                        await jobService.downloadImage(data.thumbnail ? data.thumbnail : data.data.thumbnail, filename);
-                        token.thumbnail = filename;
-              
-                        filename = uuidv4() + ".png";
-                        await jobService.downloadImage(data.image ? data.image : data.data.image, filename);
-                        token.asset = filename;
+                        token.thumbnail = data.thumbnail ? data.thumbnail : data.data.thumbnail;
+                        token.asset = data.image ? data.image : data.data.image;
                         
                         token.kind = data.kind;
                         token.size = data.size;
