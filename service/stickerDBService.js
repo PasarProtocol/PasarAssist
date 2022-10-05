@@ -2884,7 +2884,10 @@ module.exports = {
                 createdTime: (new Date()/1000).toFixed(),
                 updatedTime: (new Date()/1000).toFixed()
             }
-            await token_collection.insertOne(data);
+            let check = await token_collection.find({token, marketPlace}).count();
+            if(check == 0) {
+                await token_collection.insertOne(data);
+            }
         } catch(err) {
             return {code: 500, message: 'server error'};
         } finally {
