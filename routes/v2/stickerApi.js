@@ -359,6 +359,47 @@ router.get('/getDetailedCollectibles', function(req, res) {
     })
 })
 
+router.get('/getDetailedCollectiblesListed', function(req, res) {
+    let startTime = req.query.startTime;
+    let status = req.query.status;
+    let minPrice = req.query.minPrice;
+    let maxPrice = req.query.maxPrice;
+    let collectionType = req.query.collectionType;
+    let itemType = req.query.itemType;
+    let adult = req.query.adult;
+    let orderType = req.query.order;
+    let pageNumStr = req.query.pageNum;
+    let pageSizeStr = req.query.pageSize;
+    let keyword = req.query.keyword;
+    let tokenType = req.query.tokenType;
+    let marketPlace = req.query.marketPlace ? parseInt(req.query.marketPlace) : 0;
+    let pageNum, pageSize, min, max;
+
+    try {
+        pageNum = pageNumStr ? parseInt(pageNumStr) : 1;
+        pageSize = pageSizeStr ? parseInt(pageSizeStr) : 10;
+        if(pageNum < 1 || pageSize < 1) {
+            res.json({code: 400, message: 'bad request'})
+            return;
+        }
+
+        min = minPrice ? minPrice / 10 ** 18 : 0;
+        max = maxPrice ? maxPrice / 10 ** 18 : 100000000;
+
+    }catch (e) {
+        console.log(e);
+        res.json({code: 400, message: 'bad request'});
+        return;
+    }
+    
+    stickerDBService.getDetailedCollectiblesListed(startTime, status, min, max, collectionType, itemType, adult, orderType, pageNum, pageSize, keyword, marketPlace, tokenType).then(result => {
+        res.json(result);
+    }).catch(error => {
+        console.log(error);
+        res.json({code: 500, message: 'server error'});
+    })
+})
+
 router.post('/getDetailedCollectiblesInCollection', function(req, res) {
     let status = req.body.status;
     let minPrice = req.body.minPrice;
