@@ -360,7 +360,8 @@ router.get('/getDetailedCollectibles', function(req, res) {
 })
 
 router.get('/getDetailedCollectiblesListed', function(req, res) {
-    let startTime = req.query.startTime;
+    let now  = Math.floor(Date.now() / 1000);
+    let startTime = req.query.startTime ? parseInt(req.query.startTime) : now;
     let status = req.query.status;
     let minPrice = req.query.minPrice;
     let maxPrice = req.query.maxPrice;
