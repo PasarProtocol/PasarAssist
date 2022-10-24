@@ -15,8 +15,10 @@ let web3Rpc = new Web3(config.fusion.rpcUrl);
 
 // set the address list of imported collection
 let listCollection = [                       
-    {name: "Test2", address: '0x2461Bf38AB64C161eC9eFC7468a2A96d845C296c'},
+    {name: "Domain", address: '0xA1019535E6b364523949EaF45F4B17521c1cb074'},
 ];
+
+const stepBlock = 10000;
 
 const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
     for(let collection of listCollection) {
@@ -33,23 +35,34 @@ const getTotalEvents = async (marketPlace, startBlock, endBlock) => {
         if(curNetwork != "testNet") {
             startBlock = await jobService.getFirstBlockNumberOnFusionChain(collection.address);
         }
-        let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
+        
+        let lastBlock = await web3Rpc.eth.getBlockNumber();
+        console.log(lastBlock);
+        startBlock = 7576057;
+        let endBlock = startBlock + stepBlock;
 
-        for (var i = 0; i < getAllEvents.length; i++) {
-            try {
-                await jobService.dealWithUsersToken(getAllEvents[i], collection.address, is721, tokenContract, web3Rpc, marketPlace)
-                logger.info(`collection name: ${collection.name} - current step: ${i+1} / ${getAllEvents.length}`);
-            } catch(err) {
-                logger.info(`collection name: ${collection.name} - failed step: ${i+1} / ${getAllEvents.length}`);
-                logger.info(err);
+        while(startBlock < lastBlock) {
+            console.log(startBlock + " - " + endBlock);
+            let getAllEvents = await scanEvents(tokenContract, is721 ? 'Transfer' : 'TransferSingle', startBlock, endBlock);
+            console.log(getAllEvents.length);
+            for (var i = 0; i < getAllEvents.length; i++) {
+                try {
+                    await jobService.dealWithUsersToken(getAllEvents[i], collection.address, is721, tokenContract, web3Rpc, marketPlace)
+                    logger.info(`collection name: ${collection.name} - current step: ${i+1} / ${getAllEvents.length}`);
+                } catch(err) {
+                    logger.info(`collection name: ${collection.name} - failed step: ${i+1} / ${getAllEvents.length}`);
+                    logger.info(err);
+                }
             }
-            
+            startBlock = endBlock + 1;
+            endBlock = startBlock + stepBlock;
         }
+        
     }
 };
 
 if (require.main == module) {
     (async () => {
-      await getTotalEvents(config.fusion.chainType);
+      await getTotalEvents(config.fusion.chainType, 7576057);
     })();
 }

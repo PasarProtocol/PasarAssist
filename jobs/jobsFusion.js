@@ -586,7 +586,7 @@ module.exports = {
             */
             if(!isSyncCollectionEventJobRun) {
                 isSyncCollectionEventJobRun = true;
-                await jobService.startupUsersContractEvents(web3Rpc, config.fusion.chainType);
+                await jobService.startupUsersContractEventsFusion(web3Rpc, config.fusion.chainType);
                 isSyncCollectionEventJobRun = false;
             }
         })

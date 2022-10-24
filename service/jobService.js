@@ -206,6 +206,44 @@ module.exports = {
         }
     },
 
+    startupUsersContractEventsFusion: async function (web3Rpc, marketPlace) {
+        const stickerDBService = require("./stickerDBService");
+        let data = (await stickerDBService.getCollections(0, marketPlace)).data;
+        const stepBlock = 10000;
+        
+        for(let x of data) {
+            let tokenContract = new web3Rpc.eth.Contract(x.is721 ? token721ABI : token1155ABI, x.token);
+
+            let result = await stickerDBService.getLastRegisterCollectionEvent(x.token, marketPlace);
+            let startBlock = result == 0 ? "earliest" : result + 1;
+
+            let lastBlock = await web3Rpc.eth.getBlockNumber();
+
+            if(result == 0 && marketPlace == config.fusion.chainType && curNetwork != "testNet") {
+                startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
+            }
+
+            let endBlock = startBlock + stepBlock;
+
+            while(startBlock < lastBlock) {
+                console.log(startBlock + " - " + endBlock);
+                const getAllEvents = await tokenContract.getPastEvents(x.is721 ? 'Transfer' : 'TransferSingle', {fromBlock: startBlock, toBlock: endBlock});
+
+                for (var i = 0; i < getAllEvents.length; i++) {
+                    try {
+                        let jobService = require('./jobService.js');
+                        await jobService.dealWithUsersToken(getAllEvents[i], x.token, x.is721, tokenContract, web3Rpc, marketPlace)
+                    } catch(err) {
+                        logger.info(`collection name: ${x.name}`);
+                        logger.info(err);
+                    }
+                }
+                startBlock = endBlock + 1;
+                endBlock = startBlock + stepBlock;
+            }
+        }
+    },
+
     parsePasar: function(data) {
         let returnValue = {};
         returnValue.tokenJsonVersion = data.version;
