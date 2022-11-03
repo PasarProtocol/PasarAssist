@@ -3862,6 +3862,157 @@ module.exports = {
         }
     },
 
+    getNftList: async function (event, duration, pageNum, pageSize) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            let collection = await mongoClient.db(config.dbName).collection('pasar_token');
+            let collection_order = await mongoClient.db(config.dbName).collection('pasar_order');
+            let collection_collection = await mongoClient.db(config.dbName).collection('pasar_collection');
+            let temp_collection =  mongoClient.db(config.dbName).collection('collectible_temp_' + Date.now().toString());
+
+            let checkDate = 0;
+            switch(duration) {
+                case "0":
+                    checkDate =  new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
+                    break;
+                case "1":
+                    checkDate =  new Date().getTime() - 14 * 24 * 60 * 60 * 1000;
+                    break;
+                case "2":
+                    checkDate =  new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+                    break;
+                case "3":
+                    checkDate =  new Date().getTime() - 60 * 24 * 60 * 60 * 1000;
+                    break;
+                case "4":
+                    checkDate =  new Date().getTime() - 90 * 24 * 60 * 60 * 1000;
+                    break;
+                case "5":
+                    checkDate =  new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
+                    break;
+                case "6":
+                    checkDate =  0;
+                    break;
+                default: 
+                    checkDate = 0;
+                    break;
+            }
+
+            checkDate = Math.floor(checkDate/1000);
+
+            let listEvents = event.split(',');
+            let fields = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: "$order.sellerAddr", orderId: "$order.orderId", buyerAddr: "$order.buyerAddr",
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: "$order.marketTime", marketPlace: 1, collectionName: "$collection.name"}
+
+            let fieldsMint = {_id: 0, tokenId: 1, type: 1, price: "$order.price", name: 1, description: 1, asset: 1, data: 1, thumbnail: 1, sellerAddr: 1, orderId: "$order.orderId", buyerAddr: 1,
+                        quoteToken: "$order.quoteToken", baseToken: 1, blockNumber: 1, marketTime: 1, marketPlace: 1, collectionName: "$collection.name"}
+
+            await collection.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1, "listed": 1, "sold": 1});
+            await collection_order.ensureIndex({ "tokenId": 1, "baseToken": 1, "marketPlace": 1});
+            await collection_collection.ensureIndex({ "token": 1, "marketPlace": 1});
+
+            if(listEvents.indexOf("sale") >= 0) {
+                let result = await collection.aggregate([
+                    { $match: {$and: [{listed: 0}, {sold: 1}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_order",
+                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$addFields: {marketTime: {$toInt: "$updateTime"}}},
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "2"}, {marketTime: {$gte: checkDate}}]} },
+                            {$sort: {blockNumber: -1}},
+                            {$limit: 1}
+                        ],
+                        as: "order"}
+                    },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$order"},
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Sale"}},
+                    { $project: fields},
+                ]).toArray();
+
+                await temp_collection.insertMany(result);
+            }
+            
+            if(listEvents.indexOf("listed") >= 0) {
+                let result = await collection.aggregate([
+                    { $match: {$and: [{listed: 1}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_order",
+                        let: {"ttokenId": "$tokenId", "tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$addFields: {marketTime: {$toInt: "$createTime"}}},
+                            {$match: {$and: [{"$expr": {"$eq":["$$ttokenId","$tokenId"]}}, {"$expr": {"$eq":["$$tbaseToken","$baseToken"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}, {orderState: "1"}, {marketTime: {$gte: checkDate}}]} },
+                            {$sort: {blockNumber: -1}},
+                            {$limit: 1}
+                        ],
+                        as: "order"}
+                    },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$order"},
+                    { $unwind: "$collection"},
+                    { $addFields: {type: "Listed"}},
+                    { $project: fields},
+                ]).toArray();
+
+                await temp_collection.insertMany(result);
+            }
+
+            if(listEvents.indexOf("minted") >= 0) {
+                let result = await collection.aggregate([
+                    { $addFields: {type: "Minted", sellerAddr: config.burnAddress, buyerAddr: "$holder", marketTime: {$toInt: "$createTime"}} },
+                    { $match: {$and: [{listed: 0}, {sold: 0}, {marketTime: {$gte: checkDate}}, {holder: {$ne: config.burnAddress}}]}},
+                    { $sort: {blockNumber: -1} },
+                    { $lookup: {
+                        from: "pasar_collection",
+                        let: {"tbaseToken": "$baseToken", "tmarketPlace": "$marketPlace"},
+                        pipeline: [
+                            {$match: {$and: [{"$expr": {"$eq":["$$tbaseToken","$token"]}}, {"$expr": {"$eq":["$$tmarketPlace","$marketPlace"]}}]} },
+                            {$sort: {blockNumber: -1}},
+                        ],
+                        as: "collection"}
+                    },
+                    { $unwind: "$collection"},
+                    { $project: fieldsMint},
+                ]).toArray();
+                
+                await temp_collection.insertMany(result);
+            }
+
+            let total = await temp_collection.find().count();
+            let returnValue = await temp_collection.find().sort({marketTime: -1}).skip((pageNum-1)*pageSize).limit(pageSize).toArray();
+            if(total > 0)
+                await temp_collection.drop();
+
+            return {code: 200, message: 'success', data: {total: total, data: returnValue}};
+        } catch(err){
+            logger.error(err);
+            return {code: 500, message: 'server error'};
+        } finally {
+            await mongoClient.close();
+        }
+    },
+
     checkAddress: function (address) {
         let listCheckingAddress = [
           config.elastos.stickerContract,
