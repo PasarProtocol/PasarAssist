@@ -2991,6 +2991,24 @@ module.exports = {
             await mongoClient.close();
         }
     },
+    getLatestRegisterCollectionEvent: async function (marketPlace) {
+        let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
+        try {
+            await mongoClient.connect();
+            const collection = mongoClient.db(config.dbName).collection('pasar_token_event');
+            let doc = await collection.find({marketPlace}).sort({blockNumber: -1}).limit(1).toArray();
+            if(doc && doc.length == 1) {
+                return doc[0].blockNumber
+            } else {
+                return 0;
+            }
+        } catch (err) {
+            logger.error(err);
+            throw new Error();
+        } finally {
+            await mongoClient.close();
+        }
+    },
     getLastTokenMiningRewardEvent: async function (marketPlace) {
         let mongoClient = new MongoClient(config.mongodb, {useNewUrlParser: true, useUnifiedTopology: true});
         try {

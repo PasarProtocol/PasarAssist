@@ -188,7 +188,7 @@ module.exports = {
             let startBlock = result == 0 ? "earliest" : result + 1;
             let  endBlock = "latest";
 
-            if(result == 0 && marketPlace == config.fusion.chainType && curNetwork != "testNet") {
+            if(result == 0 && marketPlace == config.fusion.chainType) {
                 startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
             }
 
@@ -219,12 +219,16 @@ module.exports = {
 
             let lastBlock = await web3Rpc.eth.getBlockNumber();
 
-            if(result == 0 && marketPlace == config.fusion.chainType && curNetwork != "testNet") {
-                startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
+            if(result == 0 && marketPlace == config.fusion.chainType) {
+                if(curNetwork != "testNet") {
+                    startBlock = await this.getFirstBlockNumberOnFusionChain(x.token);
+                } else {
+                    startBlock = await stickerDBService.getLatestRegisterCollectionEvent(marketPlace);
+                }
             }
 
             let endBlock = startBlock + stepBlock;
-
+            
             while(startBlock < lastBlock) {
                 console.log(startBlock + " - " + endBlock);
                 const getAllEvents = await tokenContract.getPastEvents(x.is721 ? 'Transfer' : 'TransferSingle', {fromBlock: startBlock, toBlock: endBlock});

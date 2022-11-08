@@ -1001,12 +1001,17 @@ module.exports = {
             /**
                 *  Get the rate of token for ela
             */
-            let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum&vs_currencies=usd');
-            let jsonData = await response.json();
+            try {
+                let response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=elastos,ethereum&vs_currencies=usd');
+                let jsonData = await response.json();
+                
+                let rate = jsonData.ethereum.usd / jsonData.elastos.usd;
+                stickerDBService.updatePriceRate(config.ethereum.ELAToken, 1, config.ethereum.chainType)
+                stickerDBService.updatePriceRate(config.DefaultToken, rate, config.ethereum.chainType)
+            } catch(err) {
+                console.log(err);
+            }
             
-            let rate = jsonData.ethereum.usd / jsonData.elastos.usd;
-            stickerDBService.updatePriceRate(config.ethereum.ELAToken, 1, config.ethereum.chainType)
-            stickerDBService.updatePriceRate(config.DefaultToken, rate, config.ethereum.chainType)
         })
     }
 }
