@@ -38,16 +38,16 @@ module.exports = {
     },
 
     ethereum: {
-        wsUrl: 'wss://ropsten.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
-        rpcUrl: 'https://ropsten.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
+        wsUrl: 'wss://goerli.infura.io/ws/v3/02505ed478e64ee481a74236dc9e91f1',
+        rpcUrl: 'https://goerli.infura.io/v3/02505ed478e64ee481a74236dc9e91f1',
 
-        pasarContract: '0x61EAE56bc110249648fB9eAe7eA4cfa185e0A498',
-        stickerContract: '0xed1978c53731997f4DAfBA47C9b07957Ef6F3961',
-        pasarRegisterContract: '0xC1d40312232ec4b308E69713A98c3A2b21c8F5E0',
+        pasarContract: '0xAB5bB5FcEFc9703814AF68077387BC09Be12190b',
+        stickerContract: '0x7d797f3564073FFF8E75D9D5Be57EBC01512b554',
+        pasarRegisterContract: '0x2C8615B32cf6535Eb38DD076aD822E7c2362a4c7',
 
-        pasarContractDeploy: 12565400,
-        stickerContractDeploy: 12549901,
-        pasarRegisterContractDeploy: 12565395,
+        pasarContractDeploy: 7920234,
+        stickerContractDeploy: 7920243,
+        pasarRegisterContractDeploy: 7920236,
 
         chainType: 2,
 
